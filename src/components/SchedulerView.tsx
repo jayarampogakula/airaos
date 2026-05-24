@@ -4,6 +4,7 @@ import {
   MapPin, Plus, AlertCircle, Link2, ExternalLink 
 } from 'lucide-react';
 import { Appointment, Contact, Agent } from '../types';
+import { NativeBookingCalendar } from './NativeBookingCalendar';
 
 interface SchedulerViewProps {
   appointments: Appointment[];
@@ -253,15 +254,11 @@ export const SchedulerView: React.FC<SchedulerViewProps> = ({
                   title="Booking Portal"
                 />
               ) : (
-                <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1, justifyContent: 'center' }}>
-                  <AlertCircle size={36} style={{ color: '#f59e0b' }} />
-                  <div>
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>No Self-Hosted Booking Link Connected</h4>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '380px', margin: '4px auto 12px auto' }}>
-                      To enable direct calendar bookings on your VPS, configure your self-hosted booking link in the Super Admin infrastructure dashboard.
-                    </p>
-                  </div>
-                </div>
+                <NativeBookingCalendar
+                  agents={agents}
+                  contacts={contacts}
+                  onAddAppointment={onAddAppointment}
+                />
               )}
             </div>
           )}

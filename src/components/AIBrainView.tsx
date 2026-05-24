@@ -47,51 +47,38 @@ export const AIBrainView: React.FC<AIBrainViewProps> = ({ tenant }) => {
     setPlaygroundInput('');
     setIsQuerying(true);
 
-    setTimeout(() => {
-      let reasoning = '';
-      let reply = '';
-
-      const textLower = userText.toLowerCase();
-      if (tenant.id === 't-1') {
-        // Dental Clinic
-        if (textLower.includes('hour') || textLower.includes('open') || textLower.includes('time')) {
-          reasoning = 'Retrieving chunks from: Smile Dental FAQ.pdf (chk-1)\nScore: 0.98\nResult: "Smile Dental Clinic hours are Monday to Friday, 9:00 AM to 6:00 PM."\nPrompt Alignment: Grounded answer successfully.';
-          reply = 'Smile Dental Clinic is open Monday through Friday, from 9:00 AM to 6:00 PM. We are closed on Saturdays and Sundays. Can I help you book an appointment during our working hours?';
-        } else if (textLower.includes('price') || textLower.includes('cost') || textLower.includes('cleaning') || textLower.includes('whitening')) {
-          reasoning = 'Retrieving chunks from: Smile Dental FAQ.pdf (chk-2)\nScore: 0.95\nResult: "Standard dental cleaning costs $120. In-office teeth whitening costs $450."\nPrompt Alignment: Formatting price options.';
-          reply = 'Our standard dental cleaning costs $120. If you are interested in teeth whitening, that is $450 per session. We accept major credit cards, Stripe billing, and most dental insurance plans. Would you like to schedule a visit?';
-        } else if (textLower.includes('appointment') || textLower.includes('book') || textLower.includes('schedule')) {
-          reasoning = 'Tool Call Detected: Calendar Check Availability API\nStatus: Active\nArgs: { "service": "Dentist consultation" }\nPrompt Alignment: Requesting schedule date/time.';
-          reply = 'I can certainly help you book an appointment! We have open slots tomorrow morning at 10:00 AM or in the afternoon at 3:30 PM. Would either of those times work for you?';
-        } else {
-          reasoning = 'RAG Search: Smile Dental FAQ.pdf\nScore: 0.23 (Low confidence)\nReasoning: Falling back to general LLM safety rules with Sarah receptionist persona.';
-          reply = 'I am Sarah, the receptionist here. I want to make sure I give you the correct info. Could you clarify if you are asking about scheduling an appointment, our pricing structure, or clinical operations?';
-        }
-      } else if (tenant.id === 't-2') {
-        // Real Estate
-        if (textLower.includes('price') || textLower.includes('cost') || textLower.includes('how much')) {
-          reasoning = 'Constraint Check: "Never give out exact unit prices before capturing name and email."\nStatus: Triggered\nPrompt Alignment: Prompting for contact info.';
-          reply = 'We have penthouses and luxury apartments starting at $850,000 up to $2.5M. Before I share the exact price lists and layouts, could you please provide your email address and name so I can register you in our VIP ledger?';
-        } else if (textLower.includes('layout') || textLower.includes('penthouse') || textLower.includes('bedroom')) {
-          reasoning = 'Retrieving chunks from: Apex Heights Catalog.pdf\nScore: 0.92\nResult: "Penthouses feature spacious 2 and 3 bedroom layouts, custom Italian kitchens, private rooftop plunge pool."';
-          reply = 'The penthouses at Apex Heights feature spacious 2-bedroom and 3-bedroom configurations with floor-to-ceiling windows, custom Italian kitchens, and private rooftop plunge pools. Would you like to schedule a tour of the model unit?';
-        } else {
-          reasoning = 'RAG Search: Apex Heights Catalog.pdf\nScore: 0.44\nPrompt Alignment: Engaging customer with real estate assistant persona.';
-          reply = 'I would be delighted to help you find your dream home at Apex Heights. Are you looking for a residential penthouse, or are you interested in our standard 1-bedroom luxury suites?';
-        }
-      } else {
-        // Tech support
-        reasoning = 'Retrieving chunks from: ByteTech User Guide.pdf\nScore: 0.88\nResult: "Verify Bearer Token in authorization headers."';
-        reply = 'I am Chloe, your technical support assistant. If you are seeing connection errors, please verify your API request headers contain the correct Bearer Token. If you have already checked that, let me know your endpoint path so I can log a support ticket.';
-      }
-
-      setPlaygroundHistory(prev => [...prev, { 
-        role: 'assistant', 
-        text: reply,
-        reasoning: reasoning 
-      }]);
-      setIsQuerying(false);
-    }, 1200);
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: userText,
+        history: playgroundHistory.map(m => ({ sender: m.role, text: m.text })),
+        tenantId: tenant.id
+      })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch chat response');
+        return res.json();
+      })
+      .then(data => {
+        setPlaygroundHistory(prev => [...prev, { 
+          role: 'assistant', 
+          text: data.text,
+          reasoning: data.reasoning 
+        }]);
+        setIsQuerying(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setPlaygroundHistory(prev => [...prev, { 
+          role: 'assistant', 
+          text: 'Error: Could not connect to the local AI Brain backend. Make sure the backend server is running.',
+          reasoning: 'Connection to backend failed.' 
+        }]);
+        setIsQuerying(false);
+      });
   };
 
   return (

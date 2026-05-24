@@ -135,6 +135,23 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     };
   });
 
+  useEffect(() => {
+    fetch('/api/integrations')
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then(data => {
+        if (data && Object.keys(data).length > 0) {
+          setIntegrations(prev => ({ ...prev, ...data }));
+          localStorage.setItem('coolify_integrations', JSON.stringify(data));
+        }
+      })
+      .catch(() => {
+        console.warn('Backend integrations API not reachable. Using localStorage.');
+      });
+  }, []);
+
   const [infraGuideOpen, setInfraGuideOpen] = useState(false);
 
   const marketplaceTemplates = [
@@ -165,8 +182,21 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   const handleSaveIntegrations = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('coolify_integrations', JSON.stringify(integrations));
-    setSaveSuccess('integrations');
-    setTimeout(() => setSaveSuccess(null), 2500);
+    
+    fetch('/api/integrations', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(integrations)
+    })
+      .then(() => {
+        setSaveSuccess('integrations');
+        setTimeout(() => setSaveSuccess(null), 2500);
+      })
+      .catch(err => {
+        console.warn('Failed to save integrations to backend:', err);
+        setSaveSuccess('integrations');
+        setTimeout(() => setSaveSuccess(null), 2500);
+      });
   };
 
   // Calculate platform metrics

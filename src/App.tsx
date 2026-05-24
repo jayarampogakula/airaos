@@ -85,6 +85,40 @@ function App() {
     localStorage.setItem('agentstack_website_refreshes', JSON.stringify(websiteRefreshesCount));
   }, [websiteRefreshesCount]);
 
+  useEffect(() => {
+    const loadBackendData = async () => {
+      try {
+        const [contactsRes, dealsRes, appRes, convRes] = await Promise.all([
+          fetch('/api/contacts'),
+          fetch('/api/deals'),
+          fetch('/api/appointments'),
+          fetch('/api/conversations')
+        ]);
+
+        if (contactsRes.ok) {
+          const data = await contactsRes.json();
+          if (data && data.length > 0) setContacts(data);
+        }
+        if (dealsRes.ok) {
+          const data = await dealsRes.json();
+          if (data && data.length > 0) setDeals(data);
+        }
+        if (appRes.ok) {
+          const data = await appRes.json();
+          if (data && data.length > 0) setAppointments(data);
+        }
+        if (convRes.ok) {
+          const data = await convRes.json();
+          if (data && data.length > 0) setConversations(data);
+        }
+      } catch (err) {
+        console.warn('Backend server not online. Running in simulation mode with local mock storage.', err);
+      }
+    };
+
+    loadBackendData();
+  }, []);
+
   const selectedTenant = tenants.find(t => t.id === selectedTenantId) || tenants[0];
 
   // Dynamic White Label Branding Application
@@ -273,9 +307,15 @@ function App() {
       }
       return d;
     }));
+
+    fetch(`/api/deals/${dealId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage })
+    }).catch(err => console.warn('Could not sync deal stage to backend.', err));
   };
 
-  const handleAddContact = (newContactData: Omit<Contact, 'id' | 'createdAt' | 'tags' | 'notes'>) => {
+  const handleAddContact = async (newContactData: Omit<Contact, 'id' | 'createdAt' | 'tags' | 'notes'>) => {
     const newContact: Contact = {
       ...newContactData,
       id: `c-${Date.now()}`,
@@ -296,24 +336,48 @@ function App() {
       createdAt: new Date().toISOString()
     };
     setDeals(prev => [...prev, newDeal]);
+
+    try {
+      await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newContact)
+      });
+      await fetch('/api/deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDeal)
+      });
+    } catch (err) {
+      console.warn('Could not sync contact/deal to backend.', err);
+    }
   };
 
   const handleAddAppointment = (newApp: Appointment) => {
-    setAppointments(prev => [newApp, ...prev]);
+    setAppointments(prev => {
+      if (prev.some(a => a.id === newApp.id)) return prev;
+      return [newApp, ...prev];
+    });
 
-    // Add note to contact profile
     setContacts(prev => prev.map(c => {
       if (c.id === newApp.contactId) {
         const timeStr = new Date(newApp.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const note = `Calendar Scheduler Slot Booked: ${newApp.type} on ${new Date(newApp.dateTime).toLocaleDateString()} at ${timeStr}`;
+        if (c.notes.includes(note)) return c;
         return {
           ...c,
-          notes: [...c.notes, `Calendar Scheduler Slot Booked: ${newApp.type} on ${new Date(newApp.dateTime).toLocaleDateString()} at ${timeStr}`]
+          notes: [...c.notes, note]
         };
       }
       return c;
     }));
 
-    // Trigger Appointment Automation workflow run
+    fetch('/api/appointments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newApp)
+    }).catch(err => console.warn('Could not sync appointment to backend.', err));
+
     triggerWorkflowPulse('wf-2');
   };
 
@@ -324,6 +388,10 @@ function App() {
       }
       return a;
     }));
+
+    fetch(`/api/appointments/${appId}`, {
+      method: 'DELETE'
+    }).catch(err => console.warn('Could not sync cancel to backend.', err));
   };
 
   const handleAddVoiceConversation = (contactName: string, phone: string, scriptGoal: string, transcript: ChatMessage[], feedback?: string, email?: string) => {

@@ -1,14 +1,24 @@
-# Step 1: Build the React application
-FROM node:20-alpine AS build
+# Build the application and run server
+FROM node:22-alpine
 WORKDIR /app
+
+# Copy dependency files
 COPY package*.json ./
+
+# Install all dependencies
 RUN npm install
+
+# Copy source code
 COPY . .
+
+# Build the React application (generates /app/dist)
 RUN npm run build
 
-# Step 2: Serve the application with Nginx
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Run database seeder to initialize the database
+RUN node server/seed.js
+
+# Expose port 3001 for Express server
+EXPOSE 3001
+
+# Start the Express production server
+CMD ["node", "server/index.js"]
