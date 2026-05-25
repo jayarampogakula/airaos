@@ -11,6 +11,15 @@ export interface Tenant {
     welcome: string;
     escalation: string;
   };
+  credits?: number;
+  billingHistory?: Array<{
+    id: string;
+    date: string;
+    type: string;
+    description: string;
+    amount: number;
+    status: string;
+  }>;
 }
 
 export interface Agent {

@@ -16,6 +16,9 @@ import { SuperAdminView } from './components/SuperAdminView';
 import { TeamAccessView } from './components/TeamAccessView';
 import { IntegrationsView } from './components/IntegrationsView';
 import { CrewAIView } from './components/CrewAIView';
+import { BillingUpgradeView } from './components/BillingUpgradeView';
+import { PhonePeSimulator } from './components/PhonePeSimulator';
+
 
 import { 
   mockTenants, mockAgents, mockContacts, mockDeals, 
@@ -41,6 +44,8 @@ function App() {
   const [isImpersonating, setIsImpersonating] = useState<boolean>(() => {
     return localStorage.getItem('agentstack_isImpersonating') === 'true';
   });
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
 
   // Sync to localStorage
   useEffect(() => {
@@ -89,11 +94,12 @@ function App() {
   useEffect(() => {
     const loadBackendData = async () => {
       try {
-        const [contactsRes, dealsRes, appRes, convRes] = await Promise.all([
+        const [contactsRes, dealsRes, appRes, convRes, tenantsRes] = await Promise.all([
           fetch('/api/contacts'),
           fetch('/api/deals'),
           fetch('/api/appointments'),
-          fetch('/api/conversations')
+          fetch('/api/conversations'),
+          fetch('/api/tenants')
         ]);
 
         if (contactsRes.ok) {
@@ -111,6 +117,10 @@ function App() {
         if (convRes.ok) {
           const data = await convRes.json();
           if (data && data.length > 0) setConversations(data);
+        }
+        if (tenantsRes.ok) {
+          const data = await tenantsRes.json();
+          if (data && data.length > 0) setTenants(data);
         }
       } catch (err) {
         console.warn('Backend server not online. Running in simulation mode with local mock storage.', err);
@@ -142,12 +152,25 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const roleParam = params.get('role');
+    const statusParam = params.get('status');
+    const txParam = params.get('tx');
     const hash = window.location.hash;
 
     if (roleParam === 'superadmin' || roleParam === 'admin' || hash === '#admin') {
       setCurrentRole('superadmin');
       setActiveTab('tenants');
       setViewMode('app');
+    } else if (hash.startsWith('#billing') || statusParam === 'success' || txParam) {
+      setCurrentRole('tenant');
+      setActiveTab('billing');
+      setViewMode('app');
+
+      if (statusParam === 'success') {
+        alert(`Payment processed successfully!\nTransaction Reference ID: ${txParam || 'N/A'}.\nYour plan and credits have been updated.`);
+        // Clean parameters from address bar
+        const cleanUrl = window.location.origin + window.location.pathname + '#billing';
+        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+      }
     }
   }, []);
 
@@ -169,7 +192,7 @@ function App() {
     const superadminTabs = ['tenants', 'plans', 'infrastructure', 'marketplace'];
     const tenantTabs = [
       'dashboard', 'brain', 'employees', 'inbox', 'crm', 
-      'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations', 'crew'
+      'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations', 'crew', 'billing'
     ];
 
     if (currentRole === 'superadmin') {
@@ -724,6 +747,10 @@ function App() {
     return <LandingPageView onLoginSuccess={handleLoginSuccess} />;
   }
 
+  if (window.location.hash.startsWith('#phonepe-checkout')) {
+    return <PhonePeSimulator />;
+  }
+
   return (
     <div className="app-container">
       {/* Sidebar */}
@@ -737,7 +764,10 @@ function App() {
         setActiveTab={setActiveTab}
         usageLimits={getUsageLimits()}
         onLogout={handleLogout}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
+      <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
 
       {/* Main workspace */}
       <div className="main-content">
@@ -755,6 +785,21 @@ function App() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button 
+              onClick={() => setSidebarOpen(true)}
+              className="btn btn-secondary mobile-menu-btn"
+              style={{
+                padding: '4px 8px',
+                marginRight: '8px',
+                fontSize: '1rem',
+                lineHeight: '1',
+                height: '32px',
+                width: '32px',
+                display: 'none'
+              }}
+            >
+              ☰
+            </button>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Workspace</span>
             <span style={{ color: 'var(--text-muted)' }}>/</span>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '600' }}>
@@ -932,6 +977,12 @@ function App() {
                 <CrewAIView
                   agents={getFilteredAgents()}
                   contacts={getFilteredContacts()}
+                />
+              )}
+              {activeTab === 'billing' && (
+                <BillingUpgradeView
+                  tenant={selectedTenant}
+                  usageLimits={getUsageLimits()}
                 />
               )}
             </>

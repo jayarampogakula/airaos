@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   LayoutDashboard, Brain, UserCheck, MessageSquare, Users, Calendar, 
   GitBranch, PhoneCall, Database, Settings, Code, ShieldAlert,
-  ChevronDown, ChevronRight, AlertCircle, ShoppingBag, Globe, Link
+  ChevronDown, ChevronRight, AlertCircle, ShoppingBag, Globe, Link, CreditCard
 } from 'lucide-react';
 import { Tenant } from '../types';
 
@@ -23,6 +23,8 @@ interface SidebarProps {
     websitesLimit?: number;
   };
   onLogout: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -34,7 +36,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   usageLimits,
-  onLogout
+  onLogout,
+  isOpen,
+  onClose
 }) => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
@@ -44,7 +48,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       tabs: [
         { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
         { id: 'inbox', label: 'Unified Inbox', icon: MessageSquare },
-        { id: 'crm', label: 'CRM Pipeline', icon: Users }
+        { id: 'crm', label: 'CRM Pipeline', icon: Users },
+        { id: 'billing', label: 'Billing & Credits', icon: CreditCard }
       ]
     },
     {
@@ -91,19 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div 
-      className="glass-panel" 
-      style={{
-        width: '260px',
-        height: '100vh',
-        borderRadius: '0px',
-        borderLeft: 'none',
-        borderTop: 'none',
-        borderBottom: 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        zIndex: 50,
-        backgroundColor: '#0a0d16'
-      }}
+      className={`sidebar-container glass-panel ${isOpen ? 'open' : ''}`}
     >
       {/* Brand Header */}
       <div 
@@ -230,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => { setActiveTab(tab.id); if (onClose) onClose(); }}
                     className="btn"
                     style={{
                       width: '100%',
@@ -262,7 +255,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); if (onClose) onClose(); }}
                 className="btn"
                 style={{
                   width: '100%',

@@ -42,6 +42,19 @@ function searchKnowledgeChunks(query, chunks) {
 }
 
 // ----------------------------------------
+// Agents & Tenants Endpoints
+// ----------------------------------------
+app.get('/api/agents', (req, res) => {
+  const db = readDb();
+  res.json(db.agents || []);
+});
+
+app.get('/api/tenants', (req, res) => {
+  const db = readDb();
+  res.json(db.tenants || []);
+});
+
+// ----------------------------------------
 // CRM Pipeline Endpoints
 // ----------------------------------------
 app.get('/api/contacts', (req, res) => {
@@ -379,6 +392,141 @@ app.post('/api/crew/run', async (req, res) => {
     console.error('CrewAI Execution Error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ----------------------------------------
+// PhonePe Payment Gateway Router
+// ----------------------------------------
+app.post('/api/phonepe/pay', async (req, res) => {
+  const { tenantId, amount, type, planName, creditsCount } = req.body;
+  const db = readDb();
+  
+  if (!tenantId || !amount) {
+    return res.status(400).json({ error: 'tenantId and amount parameters are required.' });
+  }
+
+  const tenant = db.tenants.find(t => t.id === tenantId);
+  if (!tenant) {
+    return res.status(404).json({ error: 'Tenant not found.' });
+  }
+
+  const saltKey = db.integrations?.phonepeSaltKey || process.env.PHONEPE_SALT_KEY;
+  const merchantId = db.integrations?.phonepeMerchantId || process.env.PHONEPE_MERCHANT_ID;
+  const isProduction = !!(saltKey && merchantId);
+
+  const transactionId = `TX-${Date.now()}`;
+  const host = req.get('host');
+  const protocol = req.protocol;
+  
+  const callbackUrl = `${protocol}://${host}/api/phonepe/callback?transactionId=${transactionId}&tenantId=${tenantId}&amount=${amount}&type=${type}&planName=${planName || ''}&creditsCount=${creditsCount || 0}`;
+
+  if (isProduction) {
+    try {
+      const crypto = await import('crypto');
+      const amountInPaise = Math.round(parseFloat(amount) * 100);
+      
+      const payload = {
+        merchantId: merchantId,
+        merchantTransactionId: transactionId,
+        merchantUserId: `USER-${tenantId}`,
+        amount: amountInPaise,
+        redirectUrl: callbackUrl,
+        redirectMode: "GET",
+        callbackUrl: `${protocol}://${host}/api/phonepe/webhook`,
+        mobileNumber: "9999999999",
+        paymentInstrument: {
+          type: "PAY_PAGE"
+        }
+      };
+
+      const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
+      const saltIndex = 1;
+      const signatureString = base64Payload + "/pg/v1/pay" + saltKey;
+      const sha256 = crypto.default.createHash('sha256').update(signatureString).digest('hex');
+      const checksum = sha256 + "###" + saltIndex;
+
+      const phonepeUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://api.phonepe.com/apis/hermes/pg/v1/pay'
+        : 'https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay';
+
+      const response = await fetch(phonepeUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-VERIFY': checksum,
+          'accept': 'application/json'
+        },
+        body: JSON.stringify({ request: base64Payload })
+      });
+
+      if (!response.ok) {
+        throw new Error(`PhonePe Gateway returned status ${response.status}`);
+      }
+
+      const resData = await response.json();
+      if (resData.success && resData.data?.instrumentResponse?.redirectInfo?.url) {
+        return res.json({ success: true, redirectUrl: resData.data.instrumentResponse.redirectInfo.url });
+      } else {
+        throw new Error(resData.message || 'Payment initiation failed');
+      }
+    } catch (err) {
+      console.error("PhonePe API error:", err);
+      // Fallback to simulator URL in case API fails
+      const clientHost = req.get('referer') || `${protocol}://${host}/`;
+      const fallbackSimUrl = `${clientHost.split('?')[0]}#phonepe-checkout?transactionId=${transactionId}&tenantId=${tenantId}&amount=${amount}&type=${type}&planName=${planName || ''}&creditsCount=${creditsCount || 0}`;
+      return res.json({ success: true, redirectUrl: fallbackSimUrl, warning: `API call failed (${err.message}). Redirected to sandbox simulator.` });
+    }
+  } else {
+    // Return simulator URL pointing to client app route #phonepe-checkout
+    const clientHost = req.get('referer') || `${protocol}://${host}/`;
+    const checkOutSimulatorUrl = `${clientHost.split('?')[0]}#phonepe-checkout?transactionId=${transactionId}&tenantId=${tenantId}&amount=${amount}&type=${type}&planName=${planName || ''}&creditsCount=${creditsCount || 0}`;
+    return res.json({ success: true, redirectUrl: checkOutSimulatorUrl });
+  }
+});
+
+app.get('/api/phonepe/callback', (req, res) => {
+  const { transactionId, tenantId, amount, type, planName, creditsCount } = req.query;
+  const db = readDb();
+
+  const tenantIndex = db.tenants.findIndex(t => t.id === tenantId);
+  if (tenantIndex !== -1) {
+    const tenant = db.tenants[tenantIndex];
+    tenant.billingHistory = tenant.billingHistory || [];
+    
+    if (type === 'plan_upgrade' && planName) {
+      tenant.plan = planName;
+      tenant.billingHistory.push({
+        id: transactionId,
+        date: new Date().toLocaleDateString(),
+        type: "Plan Upgrade",
+        description: `Upgraded subscription to ${planName} Plan`,
+        amount: parseFloat(amount),
+        status: "Completed"
+      });
+    } else if (type === 'buy_credits') {
+      tenant.credits = (tenant.credits || 0) + parseInt(creditsCount);
+      tenant.billingHistory.push({
+        id: transactionId,
+        date: new Date().toLocaleDateString(),
+        type: "Credits Purchase",
+        description: `Purchased ${creditsCount} extra credits`,
+        amount: parseFloat(amount),
+        status: "Completed"
+      });
+    }
+
+    db.tenants[tenantIndex] = tenant;
+    writeDb(db);
+  }
+
+  const protocol = req.protocol;
+  const host = req.get('host');
+  const appRedirectUrl = `${protocol}://${host}/?status=success&tx=${transactionId}#billing`;
+  res.redirect(appRedirectUrl);
+});
+
+app.post('/api/phonepe/webhook', (req, res) => {
+  res.json({ success: true });
 });
 
 // ----------------------------------------

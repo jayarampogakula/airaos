@@ -13,7 +13,9 @@ const initialTenants = [
     emailTemplates: {
       welcome: 'Hello {contact_name}, welcome to Smile Dental! We have set up your profile.',
       escalation: 'Alert: Conversation with {contact_name} has been escalated to support staff.'
-    }
+    },
+    credits: 0,
+    billingHistory: []
   },
   {
     id: 't-2',
@@ -27,7 +29,9 @@ const initialTenants = [
     emailTemplates: {
       welcome: 'Hi {contact_name}, thank you for reaching out to Apex Heights! Your sales assistant Marcus will assist you.',
       escalation: 'Immediate Attention: Lead {contact_name} is requesting pricing for Premium Penthouse.'
-    }
+    },
+    credits: 0,
+    billingHistory: []
   },
   {
     id: 't-3',
@@ -41,7 +45,9 @@ const initialTenants = [
     emailTemplates: {
       welcome: 'Hi {contact_name}, your support request has been logged. Let us solve it!',
       escalation: 'Escalation Alert: Technical support issue reported by {contact_name}.'
-    }
+    },
+    credits: 0,
+    billingHistory: []
   }
 ];
 

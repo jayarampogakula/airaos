@@ -599,5 +599,110 @@ button, input, textarea, select {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border-glass);
 }
+
+/* ========================================
+   Mobile & Responsive Web Design Adjustments
+   ======================================== */
+@media (max-width: 1024px) {
+  /* Stack grid layouts to full width on tablet/mobile */
+  .grid-cols-12 {
+    gap: 14px !important;
+  }
+  .col-span-3, .col-span-4, .col-span-5, .col-span-6, .col-span-7, .col-span-8, .col-span-9 {
+    grid-column: span 12 / span 12 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* Hamburger-controlled mobile drawer overlay style */
+  .sidebar-container {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 280px !important;
+    height: 100vh !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 1000 !important;
+    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .sidebar-container.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Header adjustments */
+  .view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .content-body {
+    padding: 16px 12px !important;
+  }
+
+  /* Unified Inbox mobile stack layout */
+  .chat-layout {
+    flex-direction: column !important;
+    height: calc(100vh - 140px) !important;
+  }
+
+  .chat-inbox-list {
+    width: 100% !important;
+    height: 200px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-glass) !important;
+  }
+
+  .chat-main-window {
+    flex: 1 !important;
+  }
+
+  .chat-profile-sidebar {
+    display: none !important; /* Hide secondary detail sidebar on mobile to prioritize conversation */
+  }
+
+  /* CRM Kanban grid wrapping */
+  .kanban-board {
+    gap: 12px !important;
+  }
+
+  .kanban-column {
+    flex: 0 0 100% !important;
+  }
+
+  /* Tables horizontal scrolling */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+  }
+}
+
