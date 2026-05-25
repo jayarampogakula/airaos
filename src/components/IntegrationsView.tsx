@@ -735,67 +735,134 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                 💬 <strong>Communication Channels & Workflows:</strong> Link helpdesks, messaging tokens, and background automation triggers.
               </div>
 
-              <div className="grid-cols-12" style={{ gap: '14px' }}>
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Account ID</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="123"
-                    value={config.chatwootAccountId}
-                    onChange={(e) => setConfig({ ...config, chatwootAccountId: e.target.value })}
-                  />
-                </div>
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot API Access Token</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    placeholder="User API token for this Chatwoot account"
-                    value={config.chatwootApiAccessToken}
-                    onChange={(e) => setConfig({ ...config, chatwootApiAccessToken: e.target.value })}
-                  />
-                </div>
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>WhatsApp Business Token</label>
-                  <input 
-                    type="password" 
-                    className="form-input" 
-                    placeholder="EAAGxxxxxxxxxxxxxxxx"
-                    value={config.whatsappToken}
-                    onChange={(e) => setConfig({ ...config, whatsappToken: e.target.value })}
-                  />
-                </div>
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Inbox Token</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="inbox_token_xxxxxxxx"
-                    value={config.chatwootInboxToken}
-                    onChange={(e) => setConfig({ ...config, chatwootInboxToken: e.target.value })}
-                  />
+              {/* Section 1: Chatwoot Helpdesk Integration */}
+              <div style={{ border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255,255,255,0.01)' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary-color)' }}>
+                  💬 Chatwoot Customer Helpdesk Settings
+                </span>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                  <span>
+                    💡 <strong>Auto-Provisioning:</strong> The platform will automatically connect your communication channels and register them in Chatwoot when you click "Connect Channel" below.
+                  </span>
                 </div>
 
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot URL</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="https://chat.my-domain.com"
-                    value={config.chatwootUrl}
-                    onChange={(e) => setConfig({ ...config, chatwootUrl: e.target.value })}
-                  />
+                <div className="grid-cols-12" style={{ gap: '14px' }}>
+                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Console URL</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="https://chat.my-domain.com"
+                      value={config.chatwootUrl}
+                      onChange={(e) => setConfig({ ...config, chatwootUrl: e.target.value })}
+                      disabled={currentRole === 'tenant'}
+                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
+                    />
+                    {currentRole === 'tenant' && (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
+                    )}
+                  </div>
+                  
+                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot API Access Token</label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      placeholder="User API token for this Chatwoot account"
+                      value={config.chatwootApiAccessToken}
+                      onChange={(e) => setConfig({ ...config, chatwootApiAccessToken: e.target.value })}
+                      disabled={currentRole === 'tenant'}
+                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
+                    />
+                    {currentRole === 'tenant' ? (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
+                    ) : (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Get this from your Chatwoot Profile Settings</span>
+                    )}
+                  </div>
+
+                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Account ID</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="123"
+                      value={config.chatwootAccountId}
+                      onChange={(e) => setConfig({ ...config, chatwootAccountId: e.target.value })}
+                      disabled={currentRole === 'tenant'}
+                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
+                    />
+                    {currentRole === 'tenant' ? (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
+                    ) : (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Found in your Chatwoot URL (e.g. /accounts/1)</span>
+                    )}
+                  </div>
+
+                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Inbox Token (Default)</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="inbox_token_xxxxxxxx"
+                      value={config.chatwootInboxToken}
+                      onChange={(e) => setConfig({ ...config, chatwootInboxToken: e.target.value })}
+                      disabled={currentRole === 'tenant'}
+                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
+                    />
+                    {currentRole === 'tenant' ? (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
+                    ) : (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Inbox Token routing general platform inquiries</span>
+                    )}
+                  </div>
                 </div>
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>n8n Workflow Engine URL</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="https://flow.my-domain.com"
-                    value={config.n8nUrl}
-                    onChange={(e) => setConfig({ ...config, n8nUrl: e.target.value })}
-                  />
+              </div>
+
+              {/* Section 2: WhatsApp Cloud Platform Integration */}
+              <div style={{ border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255,255,255,0.01)' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-color)' }}>
+                  📲 WhatsApp Business API Setup
+                </span>
+                
+                <div className="grid-cols-12" style={{ gap: '14px' }}>
+                  <div className="col-span-12 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.7rem' }}>WhatsApp Business Token</label>
+                    <input 
+                      type="password" 
+                      className="form-input" 
+                      placeholder="EAAGxxxxxxxxxxxxxxxx"
+                      value={config.whatsappToken}
+                      onChange={(e) => setConfig({ ...config, whatsappToken: e.target.value })}
+                    />
+                    <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Temporary or Permanent System User Token from Meta Developers Console</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: n8n Workflow Automation Engine */}
+              <div style={{ border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255,255,255,0.01)' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', color: '#ff6c37' }}>
+                  ⚡ n8n Workflow Automation Engine
+                </span>
+                
+                <div className="grid-cols-12" style={{ gap: '14px' }}>
+                  <div className="col-span-12 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.7rem' }}>n8n Workflow Engine URL</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="https://flow.my-domain.com"
+                      value={config.n8nUrl}
+                      onChange={(e) => setConfig({ ...config, n8nUrl: e.target.value })}
+                      disabled={currentRole === 'tenant'}
+                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
+                    />
+                    {currentRole === 'tenant' && (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -932,7 +999,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>AI Brain</span>
                 <span style={{ fontWeight: 'bold', color: (config.difyApiKey || globalHasApiKey) ? 'var(--success-color)' : 'var(--danger-color)' }}>
-                  {(config.difyApiKey || globalHasApiKey) ? 'Configured (Active)' : 'Empty (Simulated)'}
+                  {(config.difyApiKey || globalHasApiKey) ? 'Configured (Active)' : 'Pending Setup'}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
@@ -949,13 +1016,15 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>PhonePe PG</span>
                   <span style={{ fontWeight: 'bold', color: config.phonepeMerchantId ? 'var(--success-color)' : 'var(--danger-color)' }}>
-                    {config.phonepeMerchantId ? 'Configured' : 'Offline (Simulated)'}
+                    {config.phonepeMerchantId ? 'Configured' : 'Offline (Pending Setup)'}
                   </span>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Trunk Latency</span>
-                <span style={{ color: 'var(--success-color)' }}>12ms (SSL Secured)</span>
+                <span style={{ color: (config.twilioAccountSid || config.byoSipServer) ? 'var(--success-color)' : 'var(--danger-color)' }}>
+                  {(config.twilioAccountSid || config.byoSipServer) ? 'Connected (SSL Secured)' : 'Inactive (Offline)'}
+                </span>
               </div>
             </div>
           </div>
@@ -966,10 +1035,10 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
               <Globe size={14} /> Webhook Routing URL
             </h3>
             <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '8px' }}>
-              To receive inbound SMS, WhatsApp replies, or incoming voice calls when utilizing your custom numbers, set your Twilio/SIP phone webhook URL to:
+              To route inbound calls/SMS from your custom number (e.g. Twilio or custom SIP), copy this URL and paste it as the <strong>Webhook (HTTP POST)</strong> handler under your Twilio console settings or SIP Carrier dashboard:
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', fontFamily: 'monospace', color: 'var(--accent-color)', marginBottom: '8px', wordBreak: 'break-all' }}>
-              <span>https://api.airaos.com/v1/inbound/{tenant.id}</span>
+              <span>{window.location.origin}/api/voice/inbound?tenantId={tenant.id}</span>
             </div>
             <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
               Ensure to set the request method to <strong>HTTP POST</strong> in your carrier dashboard.

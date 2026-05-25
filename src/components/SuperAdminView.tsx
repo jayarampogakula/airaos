@@ -38,6 +38,12 @@ export interface IntegrationSettings {
   twilioAuthToken: string;
   twilioPhoneNumber: string;
   openaiApiKey: string;
+  activePaymentGateway: 'phonepe' | 'razorpay' | 'none';
+  phonepeMerchantId: string;
+  phonepeSaltKey: string;
+  phonepeSaltIndex: string;
+  razorpayKeyId: string;
+  razorpayKeySecret: string;
 }
 
 export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
@@ -151,7 +157,13 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
           twilioAccountSid: parsed.twilioAccountSid || '',
           twilioAuthToken: parsed.twilioAuthToken || '',
           twilioPhoneNumber: parsed.twilioPhoneNumber || '',
-          openaiApiKey: parsed.openaiApiKey || ''
+          openaiApiKey: parsed.openaiApiKey || '',
+          activePaymentGateway: parsed.activePaymentGateway || 'none',
+          phonepeMerchantId: parsed.phonepeMerchantId || '',
+          phonepeSaltKey: parsed.phonepeSaltKey || '',
+          phonepeSaltIndex: parsed.phonepeSaltIndex || '1',
+          razorpayKeyId: parsed.razorpayKeyId || '',
+          razorpayKeySecret: parsed.razorpayKeySecret || ''
         };
       } catch (e) {}
     }
@@ -170,7 +182,13 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       twilioAccountSid: '',
       twilioAuthToken: '',
       twilioPhoneNumber: '',
-      openaiApiKey: ''
+      openaiApiKey: '',
+      activePaymentGateway: 'none',
+      phonepeMerchantId: '',
+      phonepeSaltKey: '',
+      phonepeSaltIndex: '1',
+      razorpayKeyId: '',
+      razorpayKeySecret: ''
     };
   });
 
@@ -902,37 +920,6 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
             <div className="grid-cols-12" style={{ gap: '20px' }}>
               
-              {/* Dify CRM Mapping */}
-              <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>🤖</span> Dify AI Engine (Chat & Knowledge API)
-                </h4>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Dify Self-Hosted URL</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={integrations.difyUrl} 
-                    onChange={(e) => setIntegrations({ ...integrations, difyUrl: e.target.value })} 
-                    placeholder="https://dify.yourdomain.com"
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Dify Global API Token</label>
-                  <div style={{ position: 'relative' }}>
-                    <Key size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="password" 
-                      className="form-input" 
-                      style={{ paddingLeft: '28px' }}
-                      value={integrations.difyApiKey} 
-                      onChange={(e) => setIntegrations({ ...integrations, difyApiKey: e.target.value })} 
-                      placeholder="app-xxxxxxxxxxxxxxxxxxxxxxxx"
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Chatwoot Mapping */}
               <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -965,7 +952,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               </div>
 
               {/* Workflow Automation Mapping */}
-              <div className="col-span-4 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>⚙️</span> Workflow Automation
                 </h4>
@@ -991,55 +978,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 </div>
               </div>
 
-              {/* Calendar Scheduler Mapping */}
-              <div className="col-span-4 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>📅</span> Calendar Scheduling Engine
-                </h4>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Booking Link / Page Slug</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={integrations.calUrl} 
-                    onChange={(e) => setIntegrations({ ...integrations, calUrl: e.target.value })} 
-                    placeholder="https://scheduler.yourdomain.com/team/reception"
-                  />
-                </div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                  Used to generate dynamically loaded calendar frames for patients/customers during live agent chats.
-                </div>
-              </div>
-
-              {/* Twenty CRM Mapping */}
-              <div className="col-span-4 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#a78bfa', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>🏢</span> Twenty CRM API Integrations
-                </h4>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Twenty CRM Endpoint</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={integrations.twentyUrl} 
-                    onChange={(e) => setIntegrations({ ...integrations, twentyUrl: e.target.value })} 
-                    placeholder="https://twenty.yourdomain.com"
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Twenty API Key</label>
-                  <input 
-                    type="password" 
-                    className="form-input" 
-                    value={integrations.twentyApiKey} 
-                    onChange={(e) => setIntegrations({ ...integrations, twentyApiKey: e.target.value })} 
-                    placeholder="twenty_api_key_xxxxxxxx"
-                  />
-                </div>
-              </div>
-
               {/* SIP Gateway Mapping */}
-              <div className="col-span-4 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>🎙️</span> Voice AI Gateway (SIP)
                 </h4>
@@ -1066,7 +1006,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               </div>
 
               {/* Twilio Carrier Integration */}
-              <div className="col-span-4 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0ea5e9', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>📞</span> Twilio Voice Integration
                 </h4>
@@ -1100,6 +1040,90 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                     placeholder="+15550192834"
                   />
                 </div>
+              </div>
+
+              {/* Payment Gateways Config */}
+              <div className="col-span-12 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.02)' }}>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>💳</span> Payment Gateway Configuration (PhonePe / Razorpay)
+                </h4>
+                <div className="grid-cols-12" style={{ gap: '16px' }}>
+                  <div className="col-span-4 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Active Payment Gateway</label>
+                    <select 
+                      className="form-input" 
+                      value={integrations.activePaymentGateway || 'none'}
+                      onChange={(e) => setIntegrations({ ...integrations, activePaymentGateway: e.target.value as any })}
+                    >
+                      <option value="none">Disabled / Simulation Mode</option>
+                      <option value="phonepe">PhonePe API Gateway</option>
+                      <option value="razorpay">Razorpay API Gateway</option>
+                    </select>
+                  </div>
+                  <div className="col-span-8" style={{ display: 'flex', alignItems: 'center', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                    Choose which payment gateway to enable. When active, billing upgrades and credit transactions will route through the selected provider.
+                  </div>
+                </div>
+
+                {integrations.activePaymentGateway === 'phonepe' && (
+                  <div className="grid-cols-12" style={{ gap: '12px', borderTop: '1px solid var(--border-glass)', paddingTop: '12px' }}>
+                    <div className="col-span-4 form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.65rem' }}>PhonePe Merchant ID</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        value={integrations.phonepeMerchantId || ''} 
+                        onChange={(e) => setIntegrations({ ...integrations, phonepeMerchantId: e.target.value })} 
+                        placeholder="PGMERCHANTID"
+                      />
+                    </div>
+                    <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.65rem' }}>PhonePe Salt Key (API Key)</label>
+                      <input 
+                        type="password" 
+                        className="form-input" 
+                        value={integrations.phonepeSaltKey || ''} 
+                        onChange={(e) => setIntegrations({ ...integrations, phonepeSaltKey: e.target.value })} 
+                        placeholder="099eb0cd-02cf-4e2a-8aca-xxxxxxxxxxxx"
+                      />
+                    </div>
+                    <div className="col-span-2 form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Salt Index</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        value={integrations.phonepeSaltIndex || '1'} 
+                        onChange={(e) => setIntegrations({ ...integrations, phonepeSaltIndex: e.target.value })} 
+                        placeholder="1"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {integrations.activePaymentGateway === 'razorpay' && (
+                  <div className="grid-cols-12" style={{ gap: '12px', borderTop: '1px solid var(--border-glass)', paddingTop: '12px' }}>
+                    <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Razorpay Key ID</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        value={integrations.razorpayKeyId || ''} 
+                        onChange={(e) => setIntegrations({ ...integrations, razorpayKeyId: e.target.value })} 
+                        placeholder="rzp_live_xxxxxxxxxxxxxx"
+                      />
+                    </div>
+                    <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Razorpay Key Secret</label>
+                      <input 
+                        type="password" 
+                        className="form-input" 
+                        value={integrations.razorpayKeySecret || ''} 
+                        onChange={(e) => setIntegrations({ ...integrations, razorpayKeySecret: e.target.value })} 
+                        placeholder="xxxxxxxxxxxxxxxxxxxxxxxx"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* OpenAI API Key Integration */}
@@ -1246,9 +1270,16 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               />
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', fontSize: '0.8rem', cursor: 'pointer' }}>
-              <Save size={16} /> Save Receptionist Settings
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px' }}>
+              {saveSuccess === 'support_bot' && (
+                <span className="badge badge-success" style={{ padding: '6px 12px' }}>
+                  ✓ Receptionist settings saved successfully!
+                </span>
+              )}
+              <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                <Save size={16} /> Save Receptionist Settings
+              </button>
+            </div>
           </form>
         </div>
       )}

@@ -169,8 +169,16 @@ async function executeTool(action, input, db, logCallback, tenantId = 't-1') {
     case 'KNOWLEDGE_BASE_SEARCH': {
       const { query } = input;
       if (!query) return { error: "Missing query parameter." };
-      
-      const results = searchKnowledgeChunks(query, db.knowledge_chunks || []);
+
+      const allChunks = db.knowledge_chunks || [];
+      const tenantChunks = allChunks.filter(chunk => {
+        const chunkTenantId = chunk.tenantId || (
+          (chunk.sourceId === 'ks-5' || chunk.sourceId === 'ks-6') ? 't-2' : 
+          (chunk.sourceId === 'ks-7') ? 't-3' : 't-1'
+        );
+        return chunkTenantId === tenantId;
+      });
+      const results = searchKnowledgeChunks(query, tenantChunks);
       return { success: true, results };
     }
     

@@ -46,9 +46,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
   const testProfiles = [
     {
       role: 'tenant' as const,
-      name: 'Jairam Multi-Workspace',
+      name: 'Admin Multi-Workspace',
       desc: 'Access Smile Dentals, KP Real Estates, and ABC Coaching from one account.',
-      email: 'jairam@airaos.com',
+      email: 'admin@airaos.com',
       password: 'password123',
       color: '#ef4444',
       badge: 'Owner',

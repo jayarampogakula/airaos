@@ -36,16 +36,16 @@ function createTenant(id, name, plan = 'Growth', primaryColor = '#0ea5e9', logo 
     primaryColor,
     secondaryColor: '#0f172a',
     settings: {
-      chatwootUrl: '',
-      chatwootAccountId: '',
-      chatwootApiAccessToken: '',
+      chatwootUrl: 'https://chat.cleveradai.in',
+      chatwootAccountId: '1',
+      chatwootApiAccessToken: 'GC8whkYToqKKV9kW98gdDntX',
       n8nUrl: '',
       timezone: 'Asia/Calcutta'
     },
     chatwootMapping: {
-      accountId: '',
+      accountId: '1',
       accountName: name,
-      status: 'not_provisioned',
+      status: 'connected',
       inboxIds: [],
       channelIds: []
     },
@@ -115,24 +115,27 @@ export function ensureSaasSchema(data) {
       createTenant('t-3', 'ABC Coaching', 'Growth', '#10b981', 'A')
     ];
   } else {
-    db.tenants = db.tenants.map((tenant) => ({
-      ...tenant,
-      slug: tenant.slug || slugify(tenant.name),
-      settings: tenant.settings || {
-        chatwootUrl: tenant.integrations?.chatwootUrl || '',
-        chatwootAccountId: tenant.integrations?.chatwootAccountId || '',
-        chatwootApiAccessToken: tenant.integrations?.chatwootApiAccessToken || '',
-        n8nUrl: tenant.integrations?.n8nUrl || '',
-        timezone: 'Asia/Calcutta'
-      },
-      chatwootMapping: tenant.chatwootMapping || {
-        accountId: tenant.settings?.chatwootAccountId || '',
-        accountName: tenant.name,
-        status: tenant.settings?.chatwootAccountId ? 'connected' : 'not_provisioned',
-        inboxIds: [],
-        channelIds: []
-      }
-    }));
+    db.tenants = db.tenants.map((tenant) => {
+      const settings = {
+        chatwootUrl: 'https://chat.cleveradai.in',
+        chatwootAccountId: '1',
+        chatwootApiAccessToken: 'GC8whkYToqKKV9kW98gdDntX',
+        n8nUrl: tenant.settings?.n8nUrl || '',
+        timezone: tenant.settings?.timezone || 'Asia/Calcutta'
+      };
+      return {
+        ...tenant,
+        slug: tenant.slug || slugify(tenant.name),
+        settings,
+        chatwootMapping: {
+          accountId: '1',
+          accountName: tenant.name,
+          status: 'connected',
+          inboxIds: tenant.chatwootMapping?.inboxIds || [],
+          channelIds: tenant.chatwootMapping?.channelIds || []
+        }
+      };
+    });
   }
 
   const defaultTenantId = db.tenants[0]?.id || 't-1';
@@ -346,9 +349,9 @@ export function ensureSaasSchema(data) {
   if (!Array.isArray(db.users) || db.users.length === 0) {
     db.users = [
       {
-        id: 'u-jairam',
-        name: 'Jairam',
-        email: 'jairam@airaos.com',
+        id: 'u-admin',
+        name: 'Admin',
+        email: 'admin@airaos.com',
         passwordHash: hashPassword('password123'),
         createdAt: new Date().toISOString()
       },
@@ -378,9 +381,9 @@ export function ensureSaasSchema(data) {
 
   if (!Array.isArray(db.memberships) || db.memberships.length === 0) {
     db.memberships = [
-      { id: 'm-jairam-smile', userId: 'u-jairam', tenantId: 't-1', role: 'Owner', status: 'active', createdAt: new Date().toISOString() },
-      { id: 'm-jairam-kp', userId: 'u-jairam', tenantId: 't-2', role: 'Owner', status: 'active', createdAt: new Date().toISOString() },
-      { id: 'm-jairam-abc', userId: 'u-jairam', tenantId: 't-3', role: 'Owner', status: 'active', createdAt: new Date().toISOString() },
+      { id: 'm-admin-smile', userId: 'u-admin', tenantId: 't-1', role: 'Owner', status: 'active', createdAt: new Date().toISOString() },
+      { id: 'm-admin-kp', userId: 'u-admin', tenantId: 't-2', role: 'Owner', status: 'active', createdAt: new Date().toISOString() },
+      { id: 'm-admin-abc', userId: 'u-admin', tenantId: 't-3', role: 'Owner', status: 'active', createdAt: new Date().toISOString() },
       { id: 'm-smile-owner', userId: 'u-smile', tenantId: 't-1', role: 'Owner', status: 'active', createdAt: new Date().toISOString() },
       { id: 'm-kp-owner', userId: 'u-kp', tenantId: 't-2', role: 'Owner', status: 'active', createdAt: new Date().toISOString() },
       { id: 'm-abc-owner', userId: 'u-abc', tenantId: 't-3', role: 'Owner', status: 'active', createdAt: new Date().toISOString() }

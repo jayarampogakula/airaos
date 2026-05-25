@@ -122,7 +122,10 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
 
   useEffect(() => {
     loadInbox();
+    const interval = setInterval(loadInbox, 8000);
+    return () => clearInterval(interval);
   }, [tenantId, searchText, channelFilter]);
+
 
   const visibleConversations = liveConversations.length || inboxSource === 'chatwoot' ? liveConversations : conversations;
 
@@ -220,6 +223,15 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
     }).catch(() => {});
   };
 
+  const handleUpdateStatus = (status: Conversation['status']) => {
+    if (!activeConv) return;
+    setLiveConversations((prev) => prev.map((conversation) => (
+      conversation.id === activeConv.id ? { ...conversation, status } : conversation
+    )));
+    onUpdateConvStatus(activeConv.id, status);
+  };
+
+
   const channelIcons: Record<string, string> = {
     web: 'Web',
     website: 'Web',
@@ -313,16 +325,17 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 {activeConv.status === 'ai_active' ? (
-                  <button onClick={() => onUpdateConvStatus(activeConv.id, 'human_escalated')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '6px 12px', borderColor: 'var(--danger-color)', color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button onClick={() => handleUpdateStatus('human_escalated')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '6px 12px', borderColor: 'var(--danger-color)', color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Pause size={12} /> Pause AI
                   </button>
                 ) : (
-                  <button onClick={() => onUpdateConvStatus(activeConv.id, 'ai_active')} className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button onClick={() => handleUpdateStatus('ai_active')} className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Play size={12} /> Enable AI
                   </button>
                 )}
-                <button onClick={() => onUpdateConvStatus(activeConv.id, 'closed')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '6px 12px' }}>Close Chat</button>
+                <button onClick={() => handleUpdateStatus('closed')} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '6px 12px' }}>Close Chat</button>
               </div>
+
             </div>
 
             <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-glass)', display: 'flex', gap: '10px', alignItems: 'center', fontSize: '0.75rem' }}>

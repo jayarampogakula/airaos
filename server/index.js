@@ -630,7 +630,17 @@ app.get('/api/current-tenant/chatwoot/inbox', authMiddleware, tenantMiddleware, 
       tenant: req.tenant,
       path: `/api/v1/accounts/${accountId}/conversations?${params.toString()}`
     });
-    const normalizedPayload = (payload?.data?.payload || payload?.payload || []).map((conversation) => normalizeChatwootConversation(conversation, req.db, req.tenantId));
+    
+    // Get all inbox IDs configured for the active tenant
+    const tenantInboxes = new Set([
+      ...(req.db.chatwootInboxes || []).filter((inbox) => inbox.tenantId === req.tenantId).map((inbox) => String(inbox.chatwootInboxId)),
+      ...(req.db.channelConfigs || []).filter((channel) => channel.tenantId === req.tenantId && channel.chatwootInboxId).map((channel) => String(channel.chatwootInboxId))
+    ]);
+
+    const rawConversations = payload?.data?.payload || payload?.payload || [];
+    const filteredConversations = rawConversations.filter((c) => tenantInboxes.has(String(c.inbox_id)));
+
+    const normalizedPayload = filteredConversations.map((conversation) => normalizeChatwootConversation(conversation, req.db, req.tenantId));
     res.json({
       ...payload,
       data: {
@@ -759,6 +769,41 @@ app.post('/api/current-tenant/chatwoot/conversations/:id/labels', authMiddleware
   saveDb(req);
   res.json({ labels, source: 'local' });
 });
+
+app.post('/api/current-tenant/chatwoot/conversations/:id/status', authMiddleware, tenantMiddleware, async (req, res) => {
+  const status = req.body.status;
+  if (!status) {
+    return res.status(400).json({ error: 'Status is required.' });
+  }
+
+  const accountId = getChatwootAccountId(req.tenant);
+  const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && (item.id === req.params.id || item.chatwootConversationId === req.params.id));
+  const conversation = conversationIndex !== -1 ? req.db.conversations[conversationIndex] : null;
+  const chatwootConvId = conversation?.chatwootConversationId || (!req.params.id.startsWith('conv-') ? req.params.id : null);
+
+  if (accountId && chatwootConvId) {
+    try {
+      const chatwootStatus = status === 'closed' ? 'resolved' : status === 'ai_active' ? 'pending' : 'open';
+      await chatwootRequest({
+        tenant: req.tenant,
+        method: 'POST',
+        path: `/api/v1/accounts/${accountId}/conversations/${chatwootConvId}/toggle_status`,
+        body: { status: chatwootStatus }
+      });
+    } catch (err) {
+      if (!req.body.allowLocalFallback) return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (conversationIndex !== -1) {
+    req.db.conversations[conversationIndex].status = status;
+    saveDb(req);
+    return res.json({ conversation: req.db.conversations[conversationIndex], source: accountId && chatwootConvId ? 'chatwoot' : 'local' });
+  }
+
+  res.status(404).json({ error: 'Conversation not found.' });
+});
+
 
 // ----------------------------------------
 // Agents & Tenants Endpoints
@@ -1076,7 +1121,7 @@ app.put('/api/tenants/:id/integrations', authMiddleware, (req, res) => {
 // ----------------------------------------
 app.post('/api/chat', async (req, res) => {
   const db = readDb();
-  const { message, history = [], tenantId = 't-1', agentId = 'a-1' } = req.body;
+  const { message, history = [], tenantId = 't-1', agentId = 'a-1', identity } = req.body;
 
   let agent;
   if (agentId === 'platform-support') {
@@ -1091,8 +1136,153 @@ app.post('/api/chat', async (req, res) => {
   const tenant = db.tenants.find(t => t.id === tenantId);
   const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
 
-  // Retrieve relevant knowledge grounding chunks (RAG)
-  const groundingContext = searchKnowledgeChunks(message, db.knowledge_chunks || []);
+  // Retrieve relevant knowledge grounding chunks (RAG) filtered by tenant
+  const allChunks = db.knowledge_chunks || [];
+  const tenantChunks = allChunks.filter(chunk => {
+    const chunkTenantId = chunk.tenantId || (
+      (chunk.sourceId === 'ks-5' || chunk.sourceId === 'ks-6') ? 't-2' : 
+      (chunk.sourceId === 'ks-7') ? 't-3' : 't-1'
+    );
+    return chunkTenantId === tenantId;
+  });
+  const groundingContext = searchKnowledgeChunks(message, tenantChunks);
+
+  // Check if identity is passed and link contact/conversation
+  let contact = null;
+  let conversation = null;
+  let chatwootConversationId = null;
+
+  if (identity && identity.email) {
+    // Find or create local contact
+    contact = db.contacts.find((c) => c.email === identity.email && c.tenantId === tenantId);
+    if (!contact) {
+      contact = {
+        id: `c-${Date.now()}`,
+        tenantId,
+        createdAt: new Date().toISOString(),
+        tags: ['Web Lead'],
+        notes: ['Created dynamically via chatbot widget session.'],
+        name: identity.name || 'Web Visitor',
+        email: identity.email,
+        phone: identity.phone || '',
+        company: 'Chatbot Lead Capture',
+        city: '',
+        assignedAgentId: agentId || 'a-1'
+      };
+      db.contacts.push(contact);
+    }
+
+    // Find or create local conversation
+    conversation = db.conversations.find((c) => c.contactId === contact.id && c.tenantId === tenantId && c.channel === 'web');
+    if (!conversation) {
+      conversation = {
+        id: `conv-${Date.now()}`,
+        tenantId,
+        contactId: contact.id,
+        status: 'ai_active',
+        channel: 'web',
+        messages: [],
+        lastMessageText: '',
+        lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        assignedAgentId: agentId || 'a-1',
+        unreadCount: 0
+      };
+      db.conversations.push(conversation);
+    }
+
+    // Append user message locally
+    const customerMsg = {
+      id: `m-cust-${Date.now()}`,
+      tenantId,
+      conversationId: conversation.id,
+      sender: 'customer',
+      text: message,
+      timestamp: new Date().toISOString()
+    };
+    conversation.messages.push(customerMsg);
+    conversation.lastMessageText = message;
+    conversation.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    writeDb(db);
+  }
+
+  // Chatwoot synchronization details
+  const hasChatwoot = tenant && tenant.settings && tenant.settings.chatwootAccountId && tenant.settings.chatwootApiAccessToken;
+  let websiteChannel = null;
+  if (hasChatwoot) {
+    websiteChannel = (db.channelConfigs || []).find(
+      (c) => c.tenantId === tenantId && c.type === 'website' && c.chatwootInboxId
+    );
+  }
+
+  if (hasChatwoot && websiteChannel && identity && identity.email) {
+    try {
+      const accountId = tenant.settings.chatwootAccountId;
+      // Search contact in Chatwoot
+      let cwContact = null;
+      const searchRes = await chatwootRequest({
+        tenant,
+        path: `/api/v1/accounts/${accountId}/contacts/search?q=${encodeURIComponent(identity.email)}`
+      });
+      const searchPayload = searchRes.payload || searchRes.data?.payload || [];
+      if (searchPayload.length > 0) {
+        cwContact = searchPayload[0];
+      } else {
+        // Create contact in Chatwoot
+        cwContact = await chatwootRequest({
+          tenant,
+          method: 'POST',
+          path: `/api/v1/accounts/${accountId}/contacts`,
+          body: {
+            name: identity.name || 'Web Visitor',
+            email: identity.email,
+            phone_number: identity.phone || '',
+            inbox_id: parseInt(websiteChannel.chatwootInboxId)
+          }
+        });
+        if (cwContact.payload) cwContact = cwContact.payload;
+      }
+
+      if (cwContact && cwContact.id) {
+        chatwootConversationId = conversation.chatwootConversationId;
+        if (!chatwootConversationId) {
+          // Create conversation in Chatwoot
+          const cwConv = await chatwootRequest({
+            tenant,
+            method: 'POST',
+            path: `/api/v1/accounts/${accountId}/conversations`,
+            body: {
+              source_id: `web-${conversation.id}`,
+              inbox_id: parseInt(websiteChannel.chatwootInboxId),
+              contact_id: parseInt(cwContact.id),
+              status: 'open'
+            }
+          });
+          chatwootConversationId = String(cwConv.id);
+          conversation.chatwootConversationId = chatwootConversationId;
+          // Persist the mapping
+          const currentDb = readDb();
+          const targetConv = currentDb.conversations.find(c => c.id === conversation.id);
+          if (targetConv) {
+            targetConv.chatwootConversationId = chatwootConversationId;
+            writeDb(currentDb);
+          }
+        }
+
+        // Post customer message to Chatwoot
+        await chatwootRequest({
+          tenant,
+          method: 'POST',
+          path: `/api/v1/accounts/${accountId}/conversations/${chatwootConversationId}/messages`,
+          body: {
+            content: message,
+            message_type: 'incoming'
+          }
+        });
+      }
+    } catch (cwErr) {
+      console.error('Chatwoot customer message sync error:', cwErr.message);
+    }
+  }
 
   const apiKey = integrations.difyApiKey || process.env.OPENAI_API_KEY;
 
@@ -1130,6 +1320,44 @@ app.post('/api/chat', async (req, res) => {
 
       const resData = await response.json();
       const reply = resData.choices[0].message.content;
+
+      // Save reply locally
+      if (conversation) {
+        const currentDb = readDb();
+        const localConv = currentDb.conversations.find((c) => c.id === conversation.id);
+        if (localConv) {
+          const aiMsg = {
+            id: `m-ai-${Date.now()}`,
+            tenantId,
+            conversationId: localConv.id,
+            sender: 'ai',
+            text: reply,
+            timestamp: new Date().toISOString()
+          };
+          localConv.messages.push(aiMsg);
+          localConv.lastMessageText = reply;
+          localConv.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          writeDb(currentDb);
+        }
+
+        // Sync AI reply to Chatwoot
+        if (hasChatwoot && chatwootConversationId) {
+          try {
+            const accountId = tenant.settings.chatwootAccountId;
+            await chatwootRequest({
+              tenant,
+              method: 'POST',
+              path: `/api/v1/accounts/${accountId}/conversations/${chatwootConversationId}/messages`,
+              body: {
+                content: reply,
+                message_type: 'outgoing'
+              }
+            });
+          } catch (cwErr) {
+            console.error('Chatwoot AI message sync error (OpenAI flow):', cwErr.message);
+          }
+        }
+      }
       
       return res.json({
         text: reply,
@@ -1141,29 +1369,67 @@ app.post('/api/chat', async (req, res) => {
   }
 
   // Fallback reasoning simulation
-  setTimeout(() => {
+  setTimeout(async () => {
     let reply = `I am ${agent.name}, your virtual coordinator. I received your message: "${message}".`;
     let reasoning = `Retrieved ${groundingContext.length} knowledge chunks.\nSimulated offline fallback.`;
 
     const textLower = message.toLowerCase();
     if (agentId === 'platform-support') {
-      if (textLower.includes('sip') || textLower.includes('byo') || textLower.includes('carrier') || textLower.includes('trunk')) {
+      if (/\b(sip|byo|carrier|trunk)\b/i.test(message)) {
         reply = `To integrate SIP or Bring Your Own (BYO) carrier in AiraOS, go to **Settings > Integrations**. Under the **BYO Carrier Settings** section, input your custom SIP server host address, username, password, and the phone number. Click **Save Settings** to persist the details to the system.`;
-      } else if (textLower.includes('twilio')) {
+      } else if (/\b(twilio)\b/i.test(message)) {
         reply = `To integrate Twilio, go to **Settings > Integrations** and expand **Twilio Settings**. Enter your Twilio Account SID, Auth Token, and Twilio Phone Number, then save the configuration. The platform routes outbound/inbound calls using these credentials.`;
-      } else if (textLower.includes('rate') || textLower.includes('price') || textLower.includes('pack') || textLower.includes('tier') || textLower.includes('cost') || textLower.includes('credit')) {
+      } else if (/\b(rate|rates|price|prices|pricing|package|packages|pack|tier|tiers|cost|costs|credit|credits|billing|subscribe|subscription)\b/i.test(message)) {
         reply = `AiraOS has 3 subscription packages:\n- **Growth ($499/mo):** 2,000 chats, 500 voice minutes, 2 web edits.\n- **Scale ($1,200/mo):** 5,000 chats, 1,000 voice minutes, 5 web edits.\n- **Enterprise ($2,500/mo):** 10,000 chats, 2,500 voice minutes, unlimited web edits.\n\n**Overage fees:** $0.05 per extra chat, $0.15 per extra voice minute. Inbound calls are $0.10/min, and outbound calls are $0.20/min. Custom voice synthesis costs $0.02/min.`;
-      } else if (textLower.includes('hi') || textLower.includes('hello') || textLower.includes('help') || textLower.includes('hey')) {
+      } else if (/\b(hi|hello|help|hey|greetings|support)\b/i.test(message)) {
         reply = `Hello! I am the Platform Assistant. I am here to help you resolve doubts on integrating SIP trunking, connecting Twilio API keys, configuring BYO Carriers, or reviewing plan packages and rates. How can I help you today?`;
       } else {
         reply = `I understand your concern about "${message}". To set up integrations (like Twilio, BYO SIP Carrier, PhonePe API keys, or CRM sync channels), navigate to **Settings > Integrations**. You can configure billing limits under **Settings > Billing & Subscriptions**. Let me know if you need more details!`;
       }
-    } else if (textLower.includes('hour') || textLower.includes('open') || textLower.includes('time')) {
+    } else if (/\b(hour|hours|open|time|times)\b/i.test(message)) {
       reply = `We are open Monday to Friday, 9:00 AM to 6:00 PM. Would you like to schedule a slot during these hours?`;
-    } else if (textLower.includes('book') || textLower.includes('appointment') || textLower.includes('schedule')) {
+    } else if (/\b(book|booking|appointment|appointments|schedule|scheduling)\b/i.test(message)) {
       reply = `I can help you schedule that! We have open slots tomorrow morning at 10:00 AM or tomorrow afternoon at 2:30 PM. Which one works for you?`;
     } else if (groundingContext.length > 0) {
       reply = `Based on our guides: "${groundingContext[0].substring(0, 150)}..." How can I help you further with this?`;
+    }
+
+    // Save reply locally
+    if (conversation) {
+      const currentDb = readDb();
+      const localConv = currentDb.conversations.find((c) => c.id === conversation.id);
+      if (localConv) {
+        const aiMsg = {
+          id: `m-ai-${Date.now()}`,
+          tenantId,
+          conversationId: localConv.id,
+          sender: 'ai',
+          text: reply,
+          timestamp: new Date().toISOString()
+        };
+        localConv.messages.push(aiMsg);
+        localConv.lastMessageText = reply;
+        localConv.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        writeDb(currentDb);
+      }
+
+      // Sync AI reply to Chatwoot
+      if (hasChatwoot && chatwootConversationId) {
+        try {
+          const accountId = tenant.settings.chatwootAccountId;
+          await chatwootRequest({
+            tenant,
+            method: 'POST',
+            path: `/api/v1/accounts/${accountId}/conversations/${chatwootConversationId}/messages`,
+            body: {
+              content: reply,
+              message_type: 'outgoing'
+            }
+          });
+        } catch (cwErr) {
+          console.error('Chatwoot AI message sync error (Fallback flow):', cwErr.message);
+        }
+      }
     }
 
     res.json({ text: reply, reasoning });
@@ -1224,78 +1490,131 @@ app.post('/api/phonepe/pay', async (req, res) => {
     return res.status(404).json({ error: 'Tenant not found.' });
   }
 
-  const saltKey = db.integrations?.phonepeSaltKey || process.env.PHONEPE_SALT_KEY;
-  const merchantId = db.integrations?.phonepeMerchantId || process.env.PHONEPE_MERCHANT_ID;
-  const isProduction = !!(saltKey && merchantId);
-
+  const activeGateway = db.integrations?.activePaymentGateway || 'phonepe';
   const transactionId = `TX-${Date.now()}`;
   const host = req.get('host');
   const protocol = req.protocol;
   
   const callbackUrl = `${protocol}://${host}/api/phonepe/callback?transactionId=${transactionId}&tenantId=${tenantId}&amount=${amount}&type=${type}&planName=${planName || ''}&creditsCount=${creditsCount || 0}`;
 
-  if (isProduction) {
-    try {
-      const crypto = await import('crypto');
-      const amountInPaise = Math.round(parseFloat(amount) * 100);
-      
-      const payload = {
-        merchantId: merchantId,
-        merchantTransactionId: transactionId,
-        merchantUserId: `USER-${tenantId}`,
-        amount: amountInPaise,
-        redirectUrl: callbackUrl,
-        redirectMode: "GET",
-        callbackUrl: `${protocol}://${host}/api/phonepe/webhook`,
-        mobileNumber: "9999999999",
-        paymentInstrument: {
-          type: "PAY_PAGE"
+  if (activeGateway === 'phonepe') {
+    const saltKey = db.integrations?.phonepeSaltKey || process.env.PHONEPE_SALT_KEY;
+    const merchantId = db.integrations?.phonepeMerchantId || process.env.PHONEPE_MERCHANT_ID;
+    const saltIndex = db.integrations?.phonepeSaltIndex || '1';
+
+    if (saltKey && merchantId) {
+      try {
+        const crypto = await import('crypto');
+        const amountInPaise = Math.round(parseFloat(amount) * 100);
+        
+        const payload = {
+          merchantId: merchantId,
+          merchantTransactionId: transactionId,
+          merchantUserId: `USER-${tenantId}`,
+          amount: amountInPaise,
+          redirectUrl: callbackUrl,
+          redirectMode: "GET",
+          callbackUrl: `${protocol}://${host}/api/phonepe/webhook`,
+          mobileNumber: "9999999999",
+          paymentInstrument: {
+            type: "PAY_PAGE"
+          }
+        };
+
+        const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
+        const signatureString = base64Payload + "/pg/v1/pay" + saltKey;
+        const sha256 = crypto.default.createHash('sha256').update(signatureString).digest('hex');
+        const checksum = sha256 + "###" + saltIndex;
+
+        const phonepeUrl = process.env.NODE_ENV === 'production' 
+          ? 'https://api.phonepe.com/apis/hermes/pg/v1/pay'
+          : 'https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay';
+
+        const response = await fetch(phonepeUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-VERIFY': checksum,
+            'accept': 'application/json'
+          },
+          body: JSON.stringify({ request: base64Payload })
+        });
+
+        if (!response.ok) {
+          throw new Error(`PhonePe Gateway returned status ${response.status}`);
         }
-      };
 
-      const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
-      const saltIndex = 1;
-      const signatureString = base64Payload + "/pg/v1/pay" + saltKey;
-      const sha256 = crypto.default.createHash('sha256').update(signatureString).digest('hex');
-      const checksum = sha256 + "###" + saltIndex;
-
-      const phonepeUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://api.phonepe.com/apis/hermes/pg/v1/pay'
-        : 'https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay';
-
-      const response = await fetch(phonepeUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-VERIFY': checksum,
-          'accept': 'application/json'
-        },
-        body: JSON.stringify({ request: base64Payload })
-      });
-
-      if (!response.ok) {
-        throw new Error(`PhonePe Gateway returned status ${response.status}`);
+        const resData = await response.json();
+        if (resData.success && resData.data?.instrumentResponse?.redirectInfo?.url) {
+          return res.json({ success: true, redirectUrl: resData.data.instrumentResponse.redirectInfo.url });
+        } else {
+          throw new Error(resData.message || 'Payment initiation failed');
+        }
+      } catch (err) {
+        console.error("PhonePe API error:", err);
+        const clientHost = req.get('referer') || `${protocol}://${host}/`;
+        const fallbackSimUrl = `${clientHost.split('?')[0]}#phonepe-checkout?transactionId=${transactionId}&tenantId=${tenantId}&amount=${amount}&type=${type}&planName=${planName || ''}&creditsCount=${creditsCount || 0}`;
+        return res.json({ success: true, redirectUrl: fallbackSimUrl, warning: `API call failed (${err.message}). Redirected to sandbox simulator.` });
       }
-
-      const resData = await response.json();
-      if (resData.success && resData.data?.instrumentResponse?.redirectInfo?.url) {
-        return res.json({ success: true, redirectUrl: resData.data.instrumentResponse.redirectInfo.url });
-      } else {
-        throw new Error(resData.message || 'Payment initiation failed');
-      }
-    } catch (err) {
-      console.error("PhonePe API error:", err);
-      // Fallback to simulator URL in case API fails
-      const clientHost = req.get('referer') || `${protocol}://${host}/`;
-      const fallbackSimUrl = `${clientHost.split('?')[0]}#phonepe-checkout?transactionId=${transactionId}&tenantId=${tenantId}&amount=${amount}&type=${type}&planName=${planName || ''}&creditsCount=${creditsCount || 0}`;
-      return res.json({ success: true, redirectUrl: fallbackSimUrl, warning: `API call failed (${err.message}). Redirected to sandbox simulator.` });
     }
-  } else {
-    // Return simulator URL pointing to client app route #phonepe-checkout
-    const clientHost = req.get('referer') || `${protocol}://${host}/`;
-    const checkOutSimulatorUrl = `${clientHost.split('?')[0]}#phonepe-checkout?transactionId=${transactionId}&tenantId=${tenantId}&amount=${amount}&type=${type}&planName=${planName || ''}&creditsCount=${creditsCount || 0}`;
-    return res.json({ success: true, redirectUrl: checkOutSimulatorUrl });
+  } else if (activeGateway === 'razorpay') {
+    const keyId = db.integrations?.razorpayKeyId;
+    const keySecret = db.integrations?.razorpayKeySecret;
+
+    if (keyId && keySecret) {
+      try {
+        const amountInPaise = Math.round(parseFloat(amount) * 100);
+        const response = await fetch('https://api.razorpay.com/v1/payment_links', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic ' + Buffer.from(keyId + ':' + keySecret).toString('base64')
+          },
+          body: JSON.stringify({
+            amount: amountInPaise,
+            currency: 'INR',
+            accept_partial: false,
+            expire_by: Math.floor(Date.now() / 1000) + 1800,
+            reference_id: transactionId,
+            description: `AiraOS Subscription / Credits: ${planName || creditsCount + ' Credits'}`,
+            customer: {
+              name: tenant.name || 'Tenant Owner',
+              email: tenant.email || 'billing@customer.com',
+              contact: '+919999999999'
+            },
+            notify: {
+              sms: false,
+              email: false
+            },
+            reminder_enable: false,
+            callback_url: callbackUrl,
+            callback_method: 'get'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Razorpay API returned status ${response.status}`);
+        }
+
+        const resData = await response.json();
+        if (resData.short_url) {
+          return res.json({ success: true, redirectUrl: resData.short_url });
+        } else {
+          throw new Error('Razorpay failed to return short_url');
+        }
+      } catch (err) {
+        console.error("Razorpay API error:", err);
+        const clientHost = req.get('referer') || `${protocol}://${host}/`;
+        const fallbackSimUrl = `${clientHost.split('?')[0]}#phonepe-checkout?transactionId=${transactionId}&tenantId=${tenantId}&amount=${amount}&type=${type}&planName=${planName || ''}&creditsCount=${creditsCount || 0}`;
+        return res.json({ success: true, redirectUrl: fallbackSimUrl, warning: `API call failed (${err.message}). Redirected to sandbox simulator.` });
+      }
+    }
   }
+
+  // Fallback to simulator URL pointing to client app route #phonepe-checkout
+  const clientHost = req.get('referer') || `${protocol}://${host}/`;
+  const checkOutSimulatorUrl = `${clientHost.split('?')[0]}#phonepe-checkout?transactionId=${transactionId}&tenantId=${tenantId}&amount=${amount}&type=${type}&planName=${planName || ''}&creditsCount=${creditsCount || 0}`;
+  return res.json({ success: true, redirectUrl: checkOutSimulatorUrl });
 });
 
 app.get('/api/phonepe/callback', (req, res) => {
@@ -1342,6 +1661,141 @@ app.get('/api/phonepe/callback', (req, res) => {
 app.post('/api/phonepe/webhook', (req, res) => {
   res.json({ success: true });
 });
+
+app.post('/api/webhook/chatwoot', (req, res) => {
+  const body = req.body;
+  const event = body.event;
+
+  console.log(`Received Chatwoot webhook event: ${event}`);
+
+  if (!event) {
+    return res.status(200).json({ success: true, message: 'No event field' });
+  }
+
+  const db = readDb();
+
+  if (event === 'message_created') {
+    const chatwootConversationId = String(body.conversation?.id || body.conversation_id || '');
+    const inboxId = String(body.inbox?.id || body.conversation?.inbox_id || '');
+
+    if (!chatwootConversationId) {
+      return res.status(200).json({ success: true, message: 'No conversation ID' });
+    }
+
+    let conversation = db.conversations.find(c => String(c.chatwootConversationId) === chatwootConversationId);
+    const localInbox = db.chatwootInboxes.find(i => String(i.chatwootInboxId) === inboxId);
+
+    if (!conversation && localInbox) {
+      const tenantId = localInbox.tenantId;
+      const sender = body.sender || {};
+      const contactEmail = sender.email || '';
+
+      // Find or create contact
+      let contact = db.contacts.find(c => c.tenantId === tenantId && (c.email === contactEmail || (c.phone && c.phone === sender.phone_number)));
+      if (!contact) {
+        contact = {
+          id: `c-cw-${Date.now()}`,
+          tenantId,
+          name: sender.name || sender.available_name || 'Chatwoot Contact',
+          email: contactEmail,
+          phone: sender.phone_number || '',
+          createdAt: new Date().toISOString(),
+          company: 'Chatwoot Sync'
+        };
+        db.contacts.push(contact);
+      }
+
+      conversation = {
+        id: `conv-cw-${chatwootConversationId}`,
+        tenantId,
+        contactId: contact.id,
+        chatwootConversationId,
+        status: body.conversation?.status === 'resolved' ? 'closed' : 'human_escalated',
+        channel: localInbox.channelType || 'web',
+        messages: [],
+        lastMessageText: '',
+        lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unreadCount: 0
+      };
+      db.conversations.push(conversation);
+    }
+
+    if (conversation) {
+      const msgContent = body.content || '';
+      const msgTimestamp = body.created_at || new Date().toISOString();
+      const isPrivate = !!body.private;
+      const senderType = body.sender?.type;
+      const messageType = body.message_type;
+
+      let mappedSender = 'human';
+      if (messageType === 'incoming') {
+        mappedSender = 'customer';
+      } else if (senderType === 'bot') {
+        mappedSender = 'ai';
+      } else if (isPrivate) {
+        mappedSender = 'note';
+      }
+
+      // Prevent duplicate processing of messages synced by other routes
+      const isDuplicate = conversation.messages.some(m =>
+        m.text === msgContent &&
+        Math.abs(new Date(m.timestamp) - new Date(msgTimestamp)) < 15000
+      );
+
+      if (!isDuplicate) {
+        const newMessage = {
+          id: `m-cw-${body.id || Date.now()}`,
+          tenantId: conversation.tenantId,
+          conversationId: conversation.id,
+          sender: mappedSender,
+          text: msgContent,
+          private: isPrivate,
+          timestamp: new Date(msgTimestamp).toISOString()
+        };
+
+        conversation.messages.push(newMessage);
+
+        if (!isPrivate) {
+          conversation.lastMessageText = msgContent;
+          conversation.lastMessageTime = new Date(msgTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          if (mappedSender === 'customer') {
+            conversation.unreadCount = (conversation.unreadCount || 0) + 1;
+          } else {
+            conversation.unreadCount = 0;
+          }
+        }
+
+        if (mappedSender === 'human') {
+          conversation.status = 'human_escalated';
+        }
+
+        writeDb(db);
+        console.log(`Synced message to conversation ${conversation.id}`);
+      }
+    }
+  } else if (event === 'conversation_status_changed') {
+    const chatwootConversationId = String(body.id || body.conversation?.id || '');
+    const newStatus = body.status || body.conversation?.status;
+
+    if (chatwootConversationId && newStatus) {
+      const conversation = db.conversations.find(c => String(c.chatwootConversationId) === chatwootConversationId);
+      if (conversation) {
+        if (newStatus === 'resolved') {
+          conversation.status = 'closed';
+        } else if (newStatus === 'open') {
+          conversation.status = 'human_escalated';
+        } else if (newStatus === 'pending') {
+          conversation.status = 'ai_active';
+        }
+        writeDb(db);
+        console.log(`Synced status of conversation ${conversation.id} to ${conversation.status}`);
+      }
+    }
+  }
+
+  res.json({ success: true });
+});
+
 
 // ----------------------------------------
 // Twilio Voice AI Gateway
@@ -1435,12 +1889,21 @@ app.post('/api/voice/gather', async (req, res) => {
     });
   }
 
-  // Generate response from AI Chat completions
-  const agent = db.agents[0];
+  // Generate response from AI Chat completions scoped by tenant agent
+  const agent = db.agents.find(a => a.tenantId === tenantId) || db.agents[0];
   const history = convIndex !== -1 ? db.conversations[convIndex].messages : [];
   
   let replyText = "I am processing your request. Please hold on.";
-  const groundingContext = searchKnowledgeChunks(speechInput, db.knowledge_chunks || []);
+  
+  const allChunks = db.knowledge_chunks || [];
+  const tenantChunks = allChunks.filter(chunk => {
+    const chunkTenantId = chunk.tenantId || (
+      (chunk.sourceId === 'ks-5' || chunk.sourceId === 'ks-6') ? 't-2' : 
+      (chunk.sourceId === 'ks-7') ? 't-3' : 't-1'
+    );
+    return chunkTenantId === tenantId;
+  });
+  const groundingContext = searchKnowledgeChunks(speechInput, tenantChunks);
   
   const tenant = db.tenants.find(t => t.id === tenantId);
   const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
@@ -1657,6 +2120,9 @@ app.post('/api/voice/outbound', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Serve static assets from public folder as fallback (e.g. for chatbot widget script/html in dev)
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Serve frontend dist static assets in production
 const distPath = path.join(__dirname, '../dist');

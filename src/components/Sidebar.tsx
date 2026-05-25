@@ -4,9 +4,10 @@ import {
   GitBranch, PhoneCall, Database, Settings, Code, ShieldAlert,
   ChevronDown, ChevronRight, AlertCircle, ShoppingBag, Globe, Link, CreditCard
 } from 'lucide-react';
-import { Tenant } from '../types';
+import { Tenant, User } from '../types';
 
 interface SidebarProps {
+  user?: User | null;
   currentRole: 'tenant' | 'superadmin';
   selectedTenant: Tenant;
   tenants: Tenant[];
@@ -28,6 +29,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
+  user,
   currentRole,
   selectedTenant,
   tenants,
@@ -48,7 +50,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       tabs: [
         { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
         { id: 'inbox', label: 'Unified Inbox', icon: MessageSquare },
-        { id: 'crm', label: 'CRM Pipeline', icon: Users }
+        { id: 'crm', label: 'CRM Pipeline', icon: Users },
+        { id: 'scheduler', label: 'Calendar Scheduler', icon: Calendar }
       ]
     },
     {
@@ -70,7 +73,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: "Voice Call Center",
       tabs: [
         { id: 'voice', label: 'Inbound/Outbound Calls', icon: PhoneCall },
-        { id: 'scheduler', label: 'Calendar Scheduler', icon: Calendar },
         { id: 'workflow', label: 'Automation Workflows', icon: GitBranch }
       ]
     },
@@ -248,6 +250,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
       </div>
+
+      {/* Role Selector for Platform Admins */}
+      {user?.email === 'admin@airaos.com' && (
+        <div style={{ padding: '0 16px 12px 16px' }}>
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
+            <button
+              type="button"
+              onClick={() => onSelectRole('tenant')}
+              className="btn"
+              style={{
+                flex: 1,
+                padding: '6px',
+                fontSize: '0.72rem',
+                fontWeight: '600',
+                backgroundColor: currentRole === 'tenant' ? 'var(--primary-color)' : 'transparent',
+                color: currentRole === 'tenant' ? 'white' : 'var(--text-secondary)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                justifyContent: 'center'
+              }}
+            >
+              Workspace View
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectRole('superadmin')}
+              className="btn"
+              style={{
+                flex: 1,
+                padding: '6px',
+                fontSize: '0.72rem',
+                fontWeight: '600',
+                backgroundColor: currentRole === 'superadmin' ? 'var(--primary-color)' : 'transparent',
+                color: currentRole === 'superadmin' ? 'white' : 'var(--text-secondary)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                justifyContent: 'center'
+              }}
+            >
+              Super Admin
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Items */}
       <div 

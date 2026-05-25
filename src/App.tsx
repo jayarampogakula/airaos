@@ -31,6 +31,7 @@ import { Tenant, Agent, Contact, Deal, Conversation, Appointment, Workflow, Know
 
 function App() {
   const {
+    user,
     activeTenant,
     activeTenantId,
     apiFetch,
@@ -153,6 +154,76 @@ function App() {
     loadBackendData();
   }, [apiFetch, isAuthenticated, activeTenantId]);
 
+  // Dynamically inject/remove Platform Support Bot script widget
+  useEffect(() => {
+    if (platformSupportBot?.enabled) {
+      // Prevent duplicate scripts or widgets
+      const existingScript = document.getElementById('airaos-platform-bot-script');
+      if (existingScript) return;
+
+      const getAppBasePath = () => {
+        const path = window.location.pathname;
+        if (path.endsWith('.html')) {
+          return path.substring(0, path.lastIndexOf('/') + 1);
+        }
+        return path.endsWith('/') ? path : path + '/';
+      };
+
+      const script = document.createElement('script');
+      script.id = 'airaos-platform-bot-script';
+      script.src = getAppBasePath() + 'widget.js';
+      script.setAttribute('data-tenant-id', selectedTenantId || 't-1');
+      script.setAttribute('data-title', platformSupportBot.name || 'Platform Guide');
+      script.setAttribute('data-color', '#6366f1');
+      script.setAttribute('data-position', 'right');
+      script.setAttribute('data-mode', 'hybrid');
+      script.setAttribute('data-agent-id', 'platform-support');
+      script.defer = true;
+      document.head.appendChild(script);
+
+      return () => {
+        // Cleanup if disabled or component updates
+        const scriptEl = document.getElementById('airaos-platform-bot-script');
+        if (scriptEl) scriptEl.remove();
+        
+        // Remove launcher and container elements created by widget.js
+        const launcher = document.querySelector('.airaos-widget-launcher');
+        const container = document.querySelector('.airaos-widget-container');
+        if (launcher) launcher.remove();
+        if (container) container.remove();
+        
+        // Remove stylesheet injected by widget.js
+        const styles = document.getElementsByTagName('style');
+        for (let i = 0; i < styles.length; i++) {
+          if (styles[i].innerHTML.includes('airaos-widget-launcher')) {
+            styles[i].remove();
+            break;
+          }
+        }
+
+        delete (window as any).AiraOSWidgetLoaded;
+      };
+    } else {
+      // If disabled, make sure it is cleaned up
+      const scriptEl = document.getElementById('airaos-platform-bot-script');
+      if (scriptEl) scriptEl.remove();
+      const launcher = document.querySelector('.airaos-widget-launcher');
+      const container = document.querySelector('.airaos-widget-container');
+      if (launcher) launcher.remove();
+      if (container) container.remove();
+      
+      const styles = document.getElementsByTagName('style');
+      for (let i = 0; i < styles.length; i++) {
+        if (styles[i].innerHTML.includes('airaos-widget-launcher')) {
+          styles[i].remove();
+          break;
+        }
+      }
+
+      delete (window as any).AiraOSWidgetLoaded;
+    }
+  }, [platformSupportBot?.enabled, platformSupportBot?.name, selectedTenantId]);
+
   const selectedTenant = activeTenant || tenants.find(t => t.id === selectedTenantId) || tenants[0];
 
   // Dynamic White Label Branding Application
@@ -212,7 +283,7 @@ function App() {
 
   // Adjust active tabs when switching between Roles
   useEffect(() => {
-    const superadminTabs = ['tenants', 'plans', 'infrastructure', 'marketplace'];
+    const superadminTabs = ['tenants', 'plans', 'infrastructure', 'marketplace', 'support_bot'];
     const tenantTabs = [
       'dashboard', 'brain', 'employees', 'inbox', 'crm', 
       'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations', 'crew', 'billing'
@@ -339,7 +410,14 @@ function App() {
       }
       return c;
     }));
+
+    apiFetch(`/api/current-tenant/chatwoot/conversations/${convId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, allowLocalFallback: true })
+    }).catch(err => console.warn('Could not sync status to server:', err));
   };
+
 
   const handleAddContactNote = (contactId: string, note: string) => {
     setContacts(prev => prev.map(c => {
@@ -816,6 +894,7 @@ function App() {
     <div className="app-container">
       {/* Sidebar */}
       <Sidebar
+        user={user}
         currentRole={currentRole}
         selectedTenant={selectedTenant}
         tenants={tenants}
@@ -983,6 +1062,7 @@ function App() {
                   onAddVoiceConversation={handleAddVoiceConversation}
                   tenantId={selectedTenantId}
                   tenantName={selectedTenant.name}
+                  onSwitchTab={setActiveTab}
                 />
               )}
               {activeTab === 'knowledge' && (
@@ -1010,6 +1090,7 @@ function App() {
                     }));
                   }}
                   onAddContact={handleAddContact}
+                  onSwitchTab={setActiveTab}
                 />
               )}
               {activeTab === 'website' && (
@@ -1029,6 +1110,7 @@ function App() {
                     }));
                   }}
                   onAddContact={handleAddContact}
+                  onSwitchTab={setActiveTab}
                 />
               )}
               {activeTab === 'whitelabel' && (

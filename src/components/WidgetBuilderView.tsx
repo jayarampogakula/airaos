@@ -7,7 +7,7 @@ import {
 import { Tenant, Agent, ChatMessage } from '../types';
 
 interface WidgetBuilderViewProps {
-  tenant: Tenant;
+  tenant: Tenant | null | undefined;
   agents: Agent[];
   onAddAppointment: (newApp: any) => void;
   conversations: any[];
@@ -17,7 +17,18 @@ interface WidgetBuilderViewProps {
   websiteEditsUsed: number;
   onIncrementWebsiteEdits: () => void;
   onAddContact: (newContactData: { name: string; email: string; phone: string; company: string }) => void;
+  onSwitchTab?: (tab: string) => void;
 }
+
+const getBaseDomain = () => {
+  const host = window.location.host;
+  const hostname = window.location.hostname;
+  const cleaned = hostname.replace(/^(app|dashboard|www|admin)\./i, '');
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return host.replace(/^(app|dashboard|www|admin)\./i, '');
+  }
+  return cleaned;
+};
 
 export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   tenant,
@@ -29,7 +40,8 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   websiteEditsLimit,
   websiteEditsUsed,
   onIncrementWebsiteEdits,
-  onAddContact
+  onAddContact,
+  onSwitchTab
 }) => {
   // Config tab toggler synced with props mode
   const [configTab, setConfigTab] = useState<'website' | 'widget'>(mode);
@@ -39,9 +51,9 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   }, [mode]);
 
   // Widget customizer states
-  const [widgetTitle, setWidgetTitle] = useState(`${tenant.name} AI Assistant`);
+  const [widgetTitle, setWidgetTitle] = useState(() => tenant ? `${tenant.name} AI Assistant` : 'AI Assistant');
   const [greeting, setGreeting] = useState("Hello! How can I help you today?");
-  const [widgetColor, setWidgetColor] = useState(tenant.primaryColor);
+  const [widgetColor, setWidgetColor] = useState(() => tenant?.primaryColor || '#0ea5e9');
   const [position, setPosition] = useState<'right' | 'left'>('right');
   const [widgetMode, setWidgetMode] = useState<'chat' | 'voice' | 'hybrid'>('hybrid');
   
@@ -62,7 +74,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   const activeAgent = agents.find(a => a.id === selectedAgentId) || agents[0];
 
   // AI Website Builder states
-  const [businessName, setBusinessName] = useState(tenant.name);
+  const [businessName, setBusinessName] = useState(() => tenant?.name || '');
   const [slogan, setSlogan] = useState('');
   const [description, setDescription] = useState('');
   const [services, setServices] = useState('');
@@ -73,14 +85,17 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
 
   // DNS / Domain routing state
   const [domainType, setDomainType] = useState<'subdomain' | 'custom'>(() => {
+    if (!tenant) return 'subdomain';
     return (localStorage.getItem(`tenant_domain_type_${tenant.id}`) as 'subdomain' | 'custom') || 'subdomain';
   });
   const [customDomain, setCustomDomain] = useState(() => {
+    if (!tenant) return '';
     return localStorage.getItem(`tenant_custom_domain_${tenant.id}`) || '';
   });
 
   // Lead capture states
   const [requirePreChatLeadCapture, setRequirePreChatLeadCapture] = useState(() => {
+    if (!tenant) return false;
     return localStorage.getItem(`widget_prechat_leadcapture_${tenant.id}`) === 'true';
   });
   const [leadName, setLeadName] = useState('');
@@ -89,15 +104,16 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   const [hasSubmittedLead, setHasSubmittedLead] = useState(false);
 
   useEffect(() => {
+    if (!tenant) return;
     localStorage.setItem(`widget_prechat_leadcapture_${tenant.id}`, String(requirePreChatLeadCapture));
-  }, [requirePreChatLeadCapture, tenant.id]);
+  }, [requirePreChatLeadCapture, tenant?.id]);
 
   useEffect(() => {
     setHasSubmittedLead(false);
     setLeadName('');
     setLeadEmail('');
     setLeadPhone('');
-  }, [tenant.id, requirePreChatLeadCapture]);
+  }, [tenant?.id, requirePreChatLeadCapture]);
 
   const handleLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,9 +133,10 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   };
 
   useEffect(() => {
+    if (!tenant) return;
     localStorage.setItem(`tenant_domain_type_${tenant.id}`, domainType);
     localStorage.setItem(`tenant_custom_domain_${tenant.id}`, customDomain);
-  }, [domainType, customDomain, tenant.id]);
+  }, [domainType, customDomain, tenant?.id]);
 
   // AI generation simulator states
   const [isGenerating, setIsGenerating] = useState(false);
@@ -127,7 +144,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   // Derive conversation messages from the global props to enable real-time sync with Unified Inbox
-  const activeConvId = tenant.id === 't-1' ? 'conv-1' : tenant.id === 't-2' ? 'conv-2' : 'conv-3';
+  const activeConvId = tenant?.id === 't-1' ? 'conv-1' : tenant?.id === 't-2' ? 'conv-2' : 'conv-3';
   const activeConversation = conversations.find(c => c.id === activeConvId);
   const chatMessages: ChatMessage[] = activeConversation ? activeConversation.messages : [];
 
@@ -155,6 +172,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
 
   // Load configuration from localStorage on tenant switch
   useEffect(() => {
+    if (!tenant) return;
     const savedConfig = localStorage.getItem(`tenant_website_config_${tenant.id}`);
     if (savedConfig) {
       try {
@@ -195,10 +213,11 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
       }
       setIsWebsiteGenerated(false);
     }
-  }, [tenant.id]);
+  }, [tenant?.id]);
 
   // Sync widget customizations to active tenant defaults
   useEffect(() => {
+    if (!tenant) return;
     setWidgetTitle(`${tenant.name} AI Assistant`);
     setWidgetColor(tenant.primaryColor);
     
@@ -210,7 +229,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
     }
     
     setGreeting(defaultGreeting);
-  }, [tenant.id, activeAgent, tenant.name, tenant.primaryColor]);
+  }, [tenant?.id, activeAgent, tenant?.name, tenant?.primaryColor]);
 
   const handleStartVoiceCall = () => {
     setIsCalling(true);
@@ -245,7 +264,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
           agentId: activeAgent?.id || 'a-1',
           dateTime: appointmentDate.toISOString(),
           duration: 30,
-          location: tenant.id === 't-1' ? 'Suite 200, Main Clinic' : tenant.id === 't-2' ? 'Penthouse A, Apex Heights' : 'ByteTech Conference Room',
+          location: tenant?.id === 't-1' ? 'Suite 200, Main Clinic' : tenant?.id === 't-2' ? 'Penthouse A, Apex Heights' : 'ByteTech Conference Room',
           type: bookSlot,
           status: 'scheduled'
         };
@@ -279,7 +298,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
         agentId: activeAgent?.id || 'a-1',
         dateTime: appointmentDate.toISOString(),
         duration: 30,
-        location: tenant.id === 't-1' ? 'Suite 200, Main Clinic' : tenant.id === 't-2' ? 'Penthouse A, Apex Heights' : 'ByteTech Conference Room',
+        location: tenant?.id === 't-1' ? 'Suite 200, Main Clinic' : tenant?.id === 't-2' ? 'Penthouse A, Apex Heights' : 'ByteTech Conference Room',
         type: slot.split('(')[0].trim() || 'General Consultation',
         status: 'scheduled'
       };
@@ -293,8 +312,16 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
     }, 1200);
   };
 
+  if (!tenant) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '300px', color: 'var(--text-secondary)' }}>
+        Loading builder settings...
+      </div>
+    );
+  }
+
   const scriptTag = `<script 
-  src="https://cdn.airaos.com/widget.js" 
+  src="${window.location.origin}/widget.js" 
   data-tenant-id="${tenant.id}" 
   data-title="${widgetTitle}" 
   data-color="${widgetColor}" 
@@ -391,7 +418,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
       `[THEME ENGINE] Compiling CSS stylesheets for selected style: "${theme.toUpperCase()}"...`,
       `[THEME ENGINE] Building responsive section anchors (#home, #services, #about, #contact)...`,
       `[WIDGET INJECTOR] Embedding dynamic AiraOS live-chat and voice widget...`,
-      `[ROUTER] Mapping Traefik reverse-proxy domain: https://${businessName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.airaos.com...`,
+      `[ROUTER] Mapping Traefik reverse-proxy domain: https://${tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)}...`,
       `[ROUTER] Registering LetsEncrypt SSL security certification...`,
       `[SUCCESS] AI Web Node deployed successfully! Site is now LIVE and responsive.`
     ];
@@ -663,7 +690,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
       <div className="grid-cols-12" style={{ height: 'calc(100vh - 170px)' }}>
         
         {/* Left column: Configurations & Code */}
-        <div className="col-span-5 glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', height: '100%' }}>
+        <div className="col-span-5 glass-panel" style={{ padding: '20px 20px 80px 20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', height: '100%' }}>
           
           {configTab === 'website' ? (
             /* Tab 1: AI Website Builder Form */
@@ -794,7 +821,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {terminalLogs.map((log, lIdx) => (
-                      <div key={lIdx} style={{ color: log.startsWith('[SUCCESS]') ? '#6ee7b7' : log.startsWith('[SYSTEM]') ? '#a78bfa' : '#34d399' }}>
+                      <div key={lIdx} style={{ color: log && log.startsWith('[SUCCESS]') ? '#6ee7b7' : log && log.startsWith('[SYSTEM]') ? '#a78bfa' : '#34d399' }}>
                         {log}
                       </div>
                     ))}
@@ -822,7 +849,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                       checked={domainType === 'subdomain'} 
                       onChange={() => setDomainType('subdomain')} 
                     />
-                    Host on platform subdomain ({tenant.domain})
+                    Host on platform subdomain ({tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)})
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>
                     <input 
@@ -871,7 +898,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                         <tr>
                           <td style={{ padding: '4px 6px', fontWeight: 'bold' }}>CNAME</td>
                           <td style={{ padding: '4px 6px' }}>www</td>
-                          <td style={{ padding: '4px 6px', color: 'var(--primary-color)' }}>{tenant.domain}</td>
+                          <td style={{ padding: '4px 6px', color: 'var(--primary-color)' }}>{tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -1015,7 +1042,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '12px', fontFamily: 'monospace' }}>
-                {domainType === 'custom' && customDomain ? `https://${customDomain}` : `https://${businessName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.airaos.com`}
+                {domainType === 'custom' && customDomain ? `https://${customDomain}` : `https://${tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)}`}
               </span>
             </div>
             
@@ -1024,48 +1051,83 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
             </div>
           </div>
 
-          {/* Web Preview Content */}
-          <div style={{ flex: 1, position: 'relative', overflowY: 'auto' }}>
+          {/* Web Preview Content Wrapper (non-scrollable relative container) */}
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             
-            {isWebsiteGenerated ? (
-              /* Render The Custom Generated Business Site */
-              renderMockupWebsite()
-            ) : (
-              /* High fidelity placeholder state prompting site builder usage */
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100%', padding: '40px', textAlign: 'center' }}>
-                <div style={{ 
-                  width: '64px', 
-                  height: '64px', 
-                  borderRadius: '16px', 
-                  background: 'rgba(99, 102, 241, 0.08)', 
-                  border: '1px solid rgba(99, 102, 241, 0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '2rem',
-                  marginBottom: '16px',
-                  boxShadow: '0 8px 24px rgba(99, 102, 241, 0.1)'
-                }}>
-                  🌐
-                </div>
-                
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--text-primary)', marginBottom: '8px' }}>
-                  No Website Found on Subdomain
-                </h3>
-                
-                <p style={{ maxWidth: '400px', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '24px' }}>
-                  This client tenant does not have a live business site yet. Use the **AI Website Builder** tab to generate a custom, premium home page embedded with your conversational AI receptionist in seconds.
-                </p>
+            {/* Scrollable Preview Area */}
+            <div style={{ flex: 1, position: 'relative', overflowY: 'auto' }}>
+              {isWebsiteGenerated ? (
+                /* Render The Custom Generated Business Site */
+                renderMockupWebsite()
+              ) : (
+                /* High fidelity placeholder state prompting site builder usage */
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100%', padding: '40px', textAlign: 'center' }}>
+                  <div style={{ 
+                    width: '64px', 
+                    height: '64px', 
+                    borderRadius: '16px', 
+                    background: 'rgba(99, 102, 241, 0.08)', 
+                    border: '1px solid rgba(99, 102, 241, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '2rem',
+                    marginBottom: '16px',
+                    boxShadow: '0 8px 24px rgba(99, 102, 241, 0.1)'
+                  }}>
+                    🌐
+                  </div>
+                  
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                    {configTab === 'website' ? 'Generate Your Business Website' : 'No Website Found on Subdomain'}
+                  </h3>
+                  
+                  <p style={{ maxWidth: '400px', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '24px' }}>
+                    {configTab === 'website' 
+                      ? 'Fill out the business profile details, slogan, and description on the left, then click the button below to generate and publish your premium business website with your AI receptionist.' 
+                      : 'This client tenant does not have a live business site yet. Switch to the AI Website Builder tab to generate a custom, premium home page embedded with your conversational AI receptionist in seconds.'}
+                  </p>
 
-                <button 
-                  onClick={() => setConfigTab('website')}
-                  className="btn btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', padding: '8px 16px', cursor: 'pointer' }}
-                >
-                  Configure AI Site Builder <ArrowRight size={14} />
-                </button>
-              </div>
-            )}
+                  {configTab === 'website' ? (
+                    <button 
+                      onClick={handleGenerateWebsite}
+                      disabled={isGenerating || websiteEditsUsed >= websiteEditsLimit}
+                      className="btn btn-primary"
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', padding: '8px 16px', cursor: 'pointer' }}
+                    >
+                      <Sparkles size={14} /> {isGenerating ? 'AI Architect Generating...' : 'Generate Website Now'}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        if (onSwitchTab) {
+                          onSwitchTab('website');
+                        } else {
+                          setConfigTab('website');
+                        }
+                      }}
+                      className="btn btn-primary"
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', padding: '8px 16px', cursor: 'pointer' }}
+                    >
+                      Switch to Website Builder <ArrowRight size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Web canvas backdrop grid */}
+              {!isWebsiteGenerated && (
+                <div 
+                  style={{ 
+                    position: 'absolute', 
+                    top: 0, left: 0, right: 0, bottom: 0, 
+                    backgroundImage: 'radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)', 
+                    backgroundSize: '20px 20px',
+                    zIndex: 0
+                  }} 
+                />
+              )}
+            </div>
 
             {/* Simulated Live Widget Button */}
             {!widgetOpen && (
@@ -1212,7 +1274,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                       <div style={{ marginBottom: '10px' }}>
                         <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold', textAlign: 'left' }}>SIMULATE SPEAKING OUT LOUD:</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {tenant.id === 't-1' ? (
+                          {tenant?.id === 't-1' ? (
                             <>
                               <button 
                                 onClick={() => handleSimulateSpeechOption('I need to book a dentist visit.', 'Certainly! I have a slot tomorrow at 2:30 PM. I will book that for you.', 'Teeth Cleaning')}
@@ -1227,7 +1289,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                                 🗣️ "What are your opening hours?"
                               </button>
                             </>
-                          ) : tenant.id === 't-2' ? (
+                          ) : tenant?.id === 't-2' ? (
                             <>
                               <button 
                                 onClick={() => handleSimulateSpeechOption('I want to schedule a penthouse tour.', 'Great! We have showing slots tomorrow at 10:00 AM. Let me reserve that for you.', 'Penthouse Tour')}
@@ -1379,19 +1441,6 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                   </>
                 )}
               </div>
-            )}
-
-            {/* Web canvas backdrop grid */}
-            {!isWebsiteGenerated && (
-              <div 
-                style={{ 
-                  position: 'absolute', 
-                  top: 0, left: 0, right: 0, bottom: 0, 
-                  backgroundImage: 'radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)', 
-                  backgroundSize: '20px 20px',
-                  zIndex: 0
-                }} 
-              />
             )}
 
           </div>

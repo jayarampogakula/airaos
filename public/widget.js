@@ -19,6 +19,7 @@
   const color = scriptTag ? scriptTag.getAttribute('data-color') || '#0ea5e9' : '#0ea5e9';
   const position = scriptTag ? scriptTag.getAttribute('data-position') || 'right' : 'right';
   const mode = scriptTag ? scriptTag.getAttribute('data-mode') || 'hybrid' : 'hybrid';
+  const agentId = scriptTag ? scriptTag.getAttribute('data-agent-id') || '' : '';
 
   // Create widget container & launcher styles
   const style = document.createElement('style');
@@ -95,62 +96,76 @@
   `;
   document.head.appendChild(style);
 
-  // Determine site base path
-  const scriptUrl = scriptTag ? scriptTag.src : '';
-  const urlParts = scriptUrl.split('/');
-  const baseDomain = urlParts[0] + '//' + urlParts[2]; // e.g., http://localhost:3001 or http://vps-ip:3001
-
-  // Create launcher button
-  const launcher = document.createElement('div');
-  launcher.className = 'airaos-widget-launcher';
-  launcher.innerHTML = `
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s ease;">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-    </svg>
-  `;
-  document.body.appendChild(launcher);
-
-  // Create iframe container
-  const container = document.createElement('div');
-  container.className = 'airaos-widget-container';
-  
-  const iframeSrc = `${baseDomain}/widget-chat.html?tenantId=${encodeURIComponent(tenantId)}&color=${encodeURIComponent(color)}&title=${encodeURIComponent(title)}&mode=${encodeURIComponent(mode)}`;
-  container.innerHTML = `
-    <iframe class="airaos-widget-iframe" src="${iframeSrc}" allow="microphone"></iframe>
-  `;
-  document.body.appendChild(container);
-
-  // Toggle widget state
-  let isOpen = false;
-  
-  function toggleWidget() {
-    isOpen = !isOpen;
-    if (isOpen) {
-      container.classList.add('open');
-      launcher.classList.add('open');
-      launcher.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(90deg);">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      `;
-    } else {
-      container.classList.remove('open');
-      launcher.classList.remove('open');
-      launcher.innerHTML = `
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-      `;
+  // Determine site base path (including subdirectory if deployed in one)
+  let baseDomain = window.location.origin;
+  if (scriptTag && scriptTag.src) {
+    const scriptUrl = scriptTag.src;
+    if (scriptUrl.indexOf('/') !== -1) {
+      baseDomain = scriptUrl.substring(0, scriptUrl.lastIndexOf('/'));
     }
   }
 
-  launcher.addEventListener('click', toggleWidget);
+  function initWidget() {
+    if (!document.body) return;
 
-  // Listen for close instructions from inside iframe (e.g. mobile closing)
-  window.addEventListener('message', function(event) {
-    if (event.data === 'airaos-widget-close') {
-      if (isOpen) toggleWidget();
+    // Create launcher button
+    const launcher = document.createElement('div');
+    launcher.className = 'airaos-widget-launcher';
+    launcher.innerHTML = `
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s ease;">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+    `;
+    document.body.appendChild(launcher);
+
+    // Create iframe container
+    const container = document.createElement('div');
+    container.className = 'airaos-widget-container';
+    
+    const iframeSrc = `${baseDomain}/widget-chat.html?tenantId=${encodeURIComponent(tenantId)}&color=${encodeURIComponent(color)}&title=${encodeURIComponent(title)}&mode=${encodeURIComponent(mode)}&agentId=${encodeURIComponent(agentId)}`;
+    container.innerHTML = `
+      <iframe class="airaos-widget-iframe" src="${iframeSrc}" allow="microphone"></iframe>
+    `;
+    document.body.appendChild(container);
+
+    // Toggle widget state
+    let isOpen = false;
+    
+    function toggleWidget() {
+      isOpen = !isOpen;
+      if (isOpen) {
+        container.classList.add('open');
+        launcher.classList.add('open');
+        launcher.innerHTML = `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(90deg);">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        `;
+      } else {
+        container.classList.remove('open');
+        launcher.classList.remove('open');
+        launcher.innerHTML = `
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        `;
+      }
     }
-  });
+
+    launcher.addEventListener('click', toggleWidget);
+
+    // Listen for close instructions from inside iframe (e.g. mobile closing)
+    window.addEventListener('message', function(event) {
+      if (event.data === 'airaos-widget-close') {
+        if (isOpen) toggleWidget();
+      }
+    });
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initWidget();
+  } else {
+    document.addEventListener('DOMContentLoaded', initWidget);
+  }
 })();

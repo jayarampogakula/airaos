@@ -540,6 +540,7 @@
     const tenantId = params.get('tenantId') || 't-1';
     const widgetColor = params.get('color') || '#0ea5e9';
     const widgetTitle = params.get('title') || 'AI Assistant';
+    const agentId = params.get('agentId') || '';
 
     // Logged-in auto-fill parameters
     const paramName = params.get('userName') || '';
@@ -598,52 +599,75 @@
     async function init() {
       checkSessionExpiry();
 
-      try {
-        const response = await fetch('/api/agents');
-        if (response.ok) {
-          agents = await response.json();
-          const targetId = tenantId === 't-1' ? 'a-1' : tenantId === 't-2' ? 'a-2' : tenantId === 't-3' ? 'a-3' : 'a-1';
-          activeAgent = agents.find(a => a.id === targetId) || agents[0];
-          
-          if (activeAgent) {
+      if (agentId === 'platform-support') {
+        try {
+          const response = await fetch('/api/platform-support-bot');
+          if (response.ok) {
+            const botData = await response.json();
+            activeAgent = {
+              id: 'platform-support',
+              name: botData.name || 'Platform Guide',
+              avatar: botData.avatar || '🤖',
+              welcomeMessage: botData.welcomeMessage
+            };
+            document.getElementById('widget-title').innerText = activeAgent.name;
             document.getElementById('agent-avatar').innerText = activeAgent.avatar ? '' : '🤖';
             if (activeAgent.avatar) {
-              document.getElementById('agent-avatar').innerHTML = `<img src="${activeAgent.avatar}" class="avatar" alt="" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+              document.getElementById('agent-avatar').innerHTML = `<span style="font-size:1.25rem;">${activeAgent.avatar}</span>`;
             }
           }
+        } catch (e) {
+          console.error(e);
         }
-      } catch (e) {
-        console.error(e);
-      }
-
-      // Check Logged-in parameters first
-      if (paramName && paramEmail) {
-        const identity = { name: paramName, email: paramEmail, phone: paramPhone };
-        localStorage.setItem(`airaos_identity_${tenantId}`, JSON.stringify(identity));
         leadCaptureStep = 0;
-      }
-
-      // Load cached identity or start lead capture
-      const savedIdentityStr = localStorage.getItem(`airaos_identity_${tenantId}`);
-      if (savedIdentityStr) {
-        try {
-          const identity = JSON.parse(savedIdentityStr);
-          capturedName = identity.name;
-          capturedEmail = identity.email;
-          capturedPhone = identity.phone;
-          leadCaptureStep = 0;
-          
-          // Pre-fill email transcript address field
-          document.getElementById('transcript-email').value = capturedEmail;
-          
-          // Pre-populate fields in tab-book
-          document.getElementById('client-name').value = capturedName;
-          document.getElementById('client-email').value = capturedEmail;
-          document.getElementById('client-phone').value = capturedPhone;
-        } catch(e) {}
       } else {
-        // Unknown user - start lead capture flow
-        leadCaptureStep = 1;
+        try {
+          const response = await fetch(`/api/agents?tenantId=${tenantId}`);
+          if (response.ok) {
+            agents = await response.json();
+            const targetId = tenantId === 't-1' ? 'a-1' : tenantId === 't-2' ? 'a-2' : tenantId === 't-3' ? 'a-3' : 'a-1';
+            activeAgent = agents.find(a => a.id === targetId) || agents[0];
+            
+            if (activeAgent) {
+              document.getElementById('agent-avatar').innerText = activeAgent.avatar ? '' : '🤖';
+              if (activeAgent.avatar) {
+                document.getElementById('agent-avatar').innerHTML = `<img src="${activeAgent.avatar}" class="avatar" alt="" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+              }
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+
+        // Check Logged-in parameters first
+        if (paramName && paramEmail) {
+          const identity = { name: paramName, email: paramEmail, phone: paramPhone };
+          localStorage.setItem(`airaos_identity_${tenantId}`, JSON.stringify(identity));
+          leadCaptureStep = 0;
+        }
+
+        // Load cached identity or start lead capture
+        const savedIdentityStr = localStorage.getItem(`airaos_identity_${tenantId}`);
+        if (savedIdentityStr) {
+          try {
+            const identity = JSON.parse(savedIdentityStr);
+            capturedName = identity.name;
+            capturedEmail = identity.email;
+            capturedPhone = identity.phone;
+            leadCaptureStep = 0;
+            
+            // Pre-fill email transcript address field
+            document.getElementById('transcript-email').value = capturedEmail;
+            
+            // Pre-populate fields in tab-book
+            document.getElementById('client-name').value = capturedName;
+            document.getElementById('client-email').value = capturedEmail;
+            document.getElementById('client-phone').value = capturedPhone;
+          } catch(e) {}
+        } else {
+          // Unknown user - start lead capture flow
+          leadCaptureStep = 1;
+        }
       }
 
       // Initialize chat logs
@@ -669,6 +693,11 @@
     }
 
     function loadWelcomeGreeting() {
+      if (agentId === 'platform-support') {
+        const greeting = activeAgent ? activeAgent.welcomeMessage : 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?';
+        addMessage(greeting, 'ai');
+        return;
+      }
       if (leadCaptureStep === 1) {
         const greeting = `Hello! Welcome to our virtual assistant. Before we begin, could you please tell me your full name?`;
         addMessage(greeting, 'ai');
@@ -815,6 +844,14 @@
       scrollToBottom();
 
       try {
+        const savedIdentityStr = localStorage.getItem(`airaos_identity_${tenantId}`);
+        let identity = null;
+        if (savedIdentityStr) {
+          try {
+            identity = JSON.parse(savedIdentityStr);
+          } catch(e){}
+        }
+
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -822,7 +859,8 @@
             message: text,
             tenantId: tenantId,
             agentId: activeAgent ? activeAgent.id : 'a-1',
-            history: chatHistory.slice(-10) // pass context history
+            history: chatHistory.slice(-10), // pass context history
+            identity: identity
           })
         });
 
