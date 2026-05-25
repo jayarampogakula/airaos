@@ -86,58 +86,80 @@ export const CrewAIView: React.FC<CrewAIViewProps> = ({ agents, contacts }) => {
     setStepLogs([]);
 
     const logMessage = (msg: string) => {
-      setStepLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+      setStepLogs(prev => [...prev, msg]);
     };
 
-    logMessage("Initializing CrewAI Workspace...");
-    logMessage(`Assembled crew of ${crewAgents.length} agents to execute ${tasks.length} sequential tasks.`);
+    logMessage(`[${new Date().toLocaleTimeString()}] [System] Preparing native CrewAI orchestrator workspace...`);
+    logMessage(`[${new Date().toLocaleTimeString()}] [System] Assembling crew: ${crewAgents.length} agents, ${tasks.length} sequential tasks.`);
 
-    let previousOutput = '';
-    const outputs: { [key: string]: string } = {};
+    try {
+      const response = await fetch('/api/crew/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          crewAgents,
+          tasks,
+          inputs: {}
+        })
+      });
 
-    for (let i = 0; i < tasks.length; i++) {
-      const task = tasks[i];
-      const agent = agents.find(a => a.id === task.assignedAgentId) || agents[0];
+      if (!response.ok) throw new Error('API execution failed');
+      const data = await response.json();
+
+      if (data.success) {
+        // Replay backend logs sequentially with short delay to feel interactive
+        for (let i = 0; i < data.logs.length; i++) {
+          const logLine = data.logs[i];
+          logMessage(logLine);
+
+          // Update active step indicator based on logs
+          const matchTask = logLine.match(/Task (\d+)\/\d+ delegated to Agent/i);
+          if (matchTask && matchTask[1]) {
+            setCurrentStepIdx(parseInt(matchTask[1]) - 1);
+          }
+
+          // If a task completed successfully, reveal its output
+          const matchComplete = logLine.match(/Task (\d+) executed successfully by (.*)/i);
+          if (matchComplete && matchComplete[1]) {
+            const taskIndex = parseInt(matchComplete[1]) - 1;
+            const completedTask = tasks[taskIndex];
+            if (completedTask && data.stepOutputs[completedTask.id]) {
+              setStepOutputs(prev => ({
+                ...prev,
+                [completedTask.id]: data.stepOutputs[completedTask.id]
+              }));
+            }
+          }
+
+          await new Promise(r => setTimeout(r, 600));
+        }
+
+        setFinalResult(data.finalResult);
+      } else {
+        logMessage(`[${new Date().toLocaleTimeString()}] [Error] ${data.error || 'Execution failed.'}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      logMessage(`[${new Date().toLocaleTimeString()}] [Error] Crew run failed: ${err.message}`);
       
-      setCurrentStepIdx(i);
-      logMessage(`Task ${i + 1} delegated to Agent ${agent.name} (${agent.department}).`);
-      logMessage(`Instructions: "${task.description.substring(0, 80)}..."`);
-
-      try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: `Execute the following task.\nTask Description: ${task.description}\nExpected Output Format: ${task.expectedOutput}\n\nContext from previous tasks:\n${previousOutput || 'No previous context.'}`,
-            tenantId: 't-1',
-            agentId: agent.id
-          })
-        });
-
-        if (!response.ok) throw new Error('API call failed');
-        const data = await response.json();
-        
-        outputs[task.id] = data.text;
-        setStepOutputs(prev => ({ ...prev, [task.id]: data.text }));
-        previousOutput += `\n[Task ${i + 1} Output by ${agent.name}]:\n${data.text}\n`;
-        logMessage(`Task ${i + 1} executed successfully by ${agent.name}.`);
-      } catch (err) {
-        console.error(err);
-        const fallbackText = `[Simulated Output] Task successfully handled by ${agent.name}. Output matches requirements: "${task.expectedOutput}"`;
-        outputs[task.id] = fallbackText;
+      // Fallback behavior
+      logMessage(`[${new Date().toLocaleTimeString()}] [System] Falling back to offline local simulation...`);
+      let previousOutput = '';
+      for (let i = 0; i < tasks.length; i++) {
+        const task = tasks[i];
+        const agent = agents.find(a => a.id === task.assignedAgentId) || agents[0];
+        setCurrentStepIdx(i);
+        logMessage(`[${new Date().toLocaleTimeString()}] Task ${i + 1} delegated to ${agent.name}.`);
+        await new Promise(r => setTimeout(r, 1000));
+        const fallbackText = `[Offline Mode] Task successfully resolved by ${agent.name}.`;
         setStepOutputs(prev => ({ ...prev, [task.id]: fallbackText }));
         previousOutput += `\n[Task ${i + 1} Output by ${agent.name}]:\n${fallbackText}\n`;
-        logMessage(`Task ${i + 1} failed. Falling back to local agent sandbox completion.`);
       }
-      
-      // Delay for realistic pacing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      setFinalResult(previousOutput);
+    } finally {
+      setIsRunning(false);
+      setCurrentStepIdx(null);
     }
-
-    logMessage("All tasks finished. Compiling final Crew report...");
-    setFinalResult(previousOutput);
-    setCurrentStepIdx(null);
-    setIsRunning(false);
   };
 
   // Crew Templates

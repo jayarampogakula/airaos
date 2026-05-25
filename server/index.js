@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { readDb, writeDb } from './db.js';
+import { runCrew } from './crewEngine.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -349,6 +351,34 @@ app.post('/api/chat', async (req, res) => {
 
     res.json({ text: reply, reasoning });
   }, 1000);
+});
+
+// ----------------------------------------
+// CrewAI Native Execution Route
+// ----------------------------------------
+app.post('/api/crew/run', async (req, res) => {
+  const db = readDb();
+  const { crewAgents, tasks, inputs = {} } = req.body;
+
+  if (!crewAgents || !tasks || !Array.isArray(crewAgents) || !Array.isArray(tasks)) {
+    return res.status(400).json({ error: 'Parameters crewAgents and tasks are required and must be arrays.' });
+  }
+
+  const apiKey = db.integrations?.difyApiKey || process.env.OPENAI_API_KEY;
+
+  try {
+    const result = await runCrew({
+      crewAgentIds: crewAgents,
+      tasks,
+      inputs,
+      db,
+      apiKey
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('CrewAI Execution Error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ----------------------------------------
