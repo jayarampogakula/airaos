@@ -4,7 +4,8 @@ import {
   Globe, Activity, Play, Save, Link, ArrowRight, ShieldCheck, Sparkles,
   CreditCard, ExternalLink
 } from 'lucide-react';
-import { Tenant } from '../types';
+import { ChannelConfig, ManagedChannelType, Tenant } from '../types';
+import { useAuth } from '../auth/AuthProvider';
 
 interface IntegrationsViewProps {
   tenant: Tenant;
@@ -19,6 +20,8 @@ export interface UnifiedIntegrationConfig {
   twilioPhoneNumber: string;
   whatsappToken: string;
   chatwootInboxToken: string;
+  chatwootAccountId: string;
+  chatwootApiAccessToken: string;
   inboundRouting: 'twilio' | 'byo';
   outboundRouting: 'twilio' | 'byo';
   byoSipServer: string;
@@ -32,6 +35,7 @@ export interface UnifiedIntegrationConfig {
 }
 
 export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, currentRole = 'tenant' }) => {
+  const { apiFetch } = useAuth();
   const [config, setConfig] = useState<UnifiedIntegrationConfig>({
     mode: 'managed',
     difyApiKey: '',
@@ -40,6 +44,8 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
     twilioPhoneNumber: '',
     whatsappToken: '',
     chatwootInboxToken: '',
+    chatwootAccountId: '',
+    chatwootApiAccessToken: '',
     inboundRouting: 'twilio',
     outboundRouting: 'twilio',
     byoSipServer: '',
@@ -57,6 +63,9 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({});
+  const [channels, setChannels] = useState<ChannelConfig[]>([]);
+  const [channelDrafts, setChannelDrafts] = useState<Record<string, Record<string, string>>>({});
+  const [channelSaving, setChannelSaving] = useState<string | null>(null);
   
   // Track if admin has loaded a global openai api key
   const [globalHasApiKey, setGlobalHasApiKey] = useState(false);
@@ -72,7 +81,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
     const loadIntegrations = async () => {
       // 1. Fetch global integrations to check if platform key is active
       try {
-        const globalRes = await fetch('/api/integrations');
+        const globalRes = await apiFetch('/api/integrations');
         if (globalRes.ok) {
           const globalData = await globalRes.json();
           if (globalData && (globalData.difyApiKey || globalData.openaiApiKey)) {
@@ -85,11 +94,11 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
 
       // 2. Fetch tenant or global integrations based on currentRole
       const fetchUrl = currentRole === 'tenant' 
-        ? `/api/tenants/${tenant.id}/integrations` 
+        ? '/api/current-tenant/settings'
         : '/api/integrations';
 
       try {
-        const res = await fetch(fetchUrl);
+        const res = await apiFetch(fetchUrl);
         if (res.ok) {
           const data = await res.json();
           if (data) {
@@ -102,6 +111,8 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
               twilioPhoneNumber: data.twilioPhoneNumber || '',
               whatsappToken: data.whatsappToken || '',
               chatwootInboxToken: data.chatwootInboxToken || '',
+              chatwootAccountId: data.chatwootAccountId || '',
+              chatwootApiAccessToken: data.chatwootApiAccessToken || '',
               inboundRouting: data.inboundRouting || 'twilio',
               outboundRouting: data.outboundRouting || 'twilio',
               byoSipServer: data.byoSipServer || '',
@@ -143,6 +154,8 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
             twilioPhoneNumber: parsed.twilioPhoneNumber || '',
             whatsappToken: parsed.whatsappToken || '',
             chatwootInboxToken: parsed.chatwootInboxToken || '',
+            chatwootAccountId: parsed.chatwootAccountId || '',
+            chatwootApiAccessToken: parsed.chatwootApiAccessToken || '',
             inboundRouting: parsed.inboundRouting || 'twilio',
             outboundRouting: parsed.outboundRouting || 'twilio',
             byoSipServer: parsed.byoSipServer || '',
@@ -164,6 +177,23 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
     loadIntegrations();
   }, [tenant.id, currentRole]);
 
+  useEffect(() => {
+    const loadChannels = async () => {
+      if (currentRole !== 'tenant') return;
+      try {
+        const res = await apiFetch('/api/current-tenant/channels');
+        if (res.ok) {
+          const data = await res.json();
+          setChannels(data.channels || []);
+        }
+      } catch (err) {
+        console.warn('Could not load tenant channel management settings.', err);
+      }
+    };
+
+    loadChannels();
+  }, [tenant.id, currentRole, apiFetch]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -179,6 +209,8 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
       twilioPhoneNumber: config.twilioPhoneNumber,
       whatsappToken: config.whatsappToken,
       chatwootInboxToken: config.chatwootInboxToken,
+      chatwootAccountId: config.chatwootAccountId,
+      chatwootApiAccessToken: config.chatwootApiAccessToken,
       inboundRouting: config.inboundRouting,
       outboundRouting: config.outboundRouting,
       byoSipServer: config.byoSipServer,
@@ -201,11 +233,11 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
     }
 
     const saveUrl = currentRole === 'tenant' 
-      ? `/api/tenants/${tenant.id}/integrations` 
+      ? '/api/current-tenant/settings'
       : '/api/integrations';
 
     try {
-      const res = await fetch(saveUrl, {
+      const res = await apiFetch(saveUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -220,6 +252,54 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
       console.warn('Could not save to backend. Settings saved locally.', err);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    }
+  };
+
+  const handleChannelDraftChange = (type: string, key: string, value: string) => {
+    setChannelDrafts(prev => ({
+      ...prev,
+      [type]: {
+        ...(prev[type] || {}),
+        [key]: value
+      }
+    }));
+  };
+
+  const handleConnectChannel = async (type: ManagedChannelType) => {
+    setChannelSaving(type);
+    const draft = channelDrafts[type] || {};
+    try {
+      const res = await apiFetch(`/api/current-tenant/channels/${type}/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatwootUrl: config.chatwootUrl,
+          chatwootAccountId: config.chatwootAccountId,
+          chatwootApiAccessToken: config.chatwootApiAccessToken,
+          chatwootInboxId: draft.chatwootInboxId,
+          autoCreateInbox: !draft.chatwootInboxId,
+          autoProvisionAccount: true,
+          config: {
+            websiteUrl: draft.websiteUrl || tenant.domain,
+            email: draft.email,
+            phoneNumber: draft.phoneNumber,
+            botToken: draft.botToken,
+            pageId: draft.pageId,
+            instagramAccountId: draft.instagramAccountId
+          }
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChannels(prev => {
+          const next = prev.filter(channel => channel.type !== data.channel.type);
+          return [...next, data.channel].sort((a, b) => a.displayName.localeCompare(b.displayName));
+        });
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2500);
+      }
+    } finally {
+      setChannelSaving(null);
     }
   };
 
@@ -657,6 +737,26 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
 
               <div className="grid-cols-12" style={{ gap: '14px' }}>
                 <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Account ID</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="123"
+                    value={config.chatwootAccountId}
+                    onChange={(e) => setConfig({ ...config, chatwootAccountId: e.target.value })}
+                  />
+                </div>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot API Access Token</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="User API token for this Chatwoot account"
+                    value={config.chatwootApiAccessToken}
+                    onChange={(e) => setConfig({ ...config, chatwootApiAccessToken: e.target.value })}
+                  />
+                </div>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
                   <label className="form-label" style={{ fontSize: '0.7rem' }}>WhatsApp Business Token</label>
                   <input 
                     type="password" 
@@ -698,6 +798,82 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                   />
                 </div>
               </div>
+
+              {currentRole === 'tenant' && (
+                <div className="grid-cols-12" style={{ gap: '12px' }}>
+                  {channels.map((channel) => {
+                    const draft = channelDrafts[channel.type] || {};
+                    return (
+                      <div key={channel.id} className="col-span-6" style={{ border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{channel.displayName}</span>
+                          <span className={`badge ${channel.status === 'connected' ? 'badge-success' : channel.status === 'needs_attention' ? 'badge-danger' : 'badge-warning'}`} style={{ fontSize: '0.62rem' }}>
+                            {channel.status.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                        <input
+                          className="form-input"
+                          placeholder="Existing Chatwoot inbox ID (optional)"
+                          value={draft.chatwootInboxId || channel.chatwootInboxId || ''}
+                          onChange={(event) => handleChannelDraftChange(channel.type, 'chatwootInboxId', event.target.value)}
+                          style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                        />
+                        {channel.type === 'website' && (
+                          <input
+                            className="form-input"
+                            placeholder="Website URL"
+                            value={draft.websiteUrl || channel.config.websiteUrl || tenant.domain}
+                            onChange={(event) => handleChannelDraftChange(channel.type, 'websiteUrl', event.target.value)}
+                            style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                          />
+                        )}
+                        {['gmail', 'outlook', 'smtp'].includes(channel.type) && (
+                          <input
+                            className="form-input"
+                            placeholder="Support email address"
+                            value={draft.email || channel.config.email || ''}
+                            onChange={(event) => handleChannelDraftChange(channel.type, 'email', event.target.value)}
+                            style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                          />
+                        )}
+                        {channel.type === 'telegram' && (
+                          <input
+                            className="form-input"
+                            placeholder="Telegram bot token"
+                            value={draft.botToken || channel.config.botToken || ''}
+                            onChange={(event) => handleChannelDraftChange(channel.type, 'botToken', event.target.value)}
+                            style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                          />
+                        )}
+                        {['facebook', 'instagram'].includes(channel.type) && (
+                          <input
+                            className="form-input"
+                            placeholder={channel.type === 'facebook' ? 'Facebook page ID' : 'Instagram business account ID'}
+                            value={draft.pageId || draft.instagramAccountId || channel.config.pageId || channel.config.instagramAccountId || ''}
+                            onChange={(event) => handleChannelDraftChange(channel.type, channel.type === 'facebook' ? 'pageId' : 'instagramAccountId', event.target.value)}
+                            style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                          />
+                        )}
+                        {!!channel.config.lastError && (
+                          <span style={{ fontSize: '0.65rem', color: 'var(--danger-color)' }}>{channel.config.lastError}</span>
+                        )}
+                        {!!channel.config.setupMessage && (
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{channel.config.setupMessage}</span>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          disabled={channelSaving === channel.type}
+                          onClick={() => handleConnectChannel(channel.type)}
+                          style={{ fontSize: '0.7rem', padding: '7px 10px', justifyContent: 'center' }}
+                        >
+                          {channelSaving === channel.type ? 'Connecting...' : 'Connect Channel'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 

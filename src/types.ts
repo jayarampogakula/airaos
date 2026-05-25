@@ -1,5 +1,6 @@
 export interface Tenant {
   id: string;
+  slug?: string;
   name: string;
   domain: string;
   plan: 'Growth' | 'Enterprise' | 'Scale';
@@ -20,10 +21,30 @@ export interface Tenant {
     amount: number;
     status: string;
   }>;
+  settings?: Record<string, any>;
+  membershipRole?: RoleName;
+}
+
+export type RoleName = 'Owner' | 'Admin' | 'Manager' | 'Agent';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt?: string;
+}
+
+export interface Membership {
+  id: string;
+  userId: string;
+  tenantId: string;
+  role: RoleName;
+  status: 'active' | 'pending' | 'disabled';
 }
 
 export interface Agent {
   id: string;
+  tenantId?: string;
   name: string;
   avatar: string;
   voice: string;
@@ -43,6 +64,7 @@ export interface Agent {
 
 export interface Contact {
   id: string;
+  tenantId?: string;
   name: string;
   email: string;
   phone: string;
@@ -57,6 +79,7 @@ export interface Contact {
 
 export interface Deal {
   id: string;
+  tenantId?: string;
   contactId: string;
   name: string;
   value: number;
@@ -64,18 +87,22 @@ export interface Deal {
   createdAt: string;
 }
 
-export type Channel = 'web' | 'whatsapp' | 'sms' | 'email' | 'instagram' | 'voice';
+export type Channel = 'web' | 'website' | 'whatsapp' | 'sms' | 'email' | 'gmail' | 'outlook' | 'smtp' | 'telegram' | 'instagram' | 'facebook' | 'voice';
 
 export interface ChatMessage {
   id: string;
-  sender: 'customer' | 'ai' | 'human';
+  tenantId?: string;
+  conversationId?: string;
+  sender: 'customer' | 'ai' | 'human' | 'note';
   text: string;
   timestamp: string;
   slots?: string[];
+  private?: boolean;
 }
 
 export interface Conversation {
   id: string;
+  tenantId?: string;
   contactId: string;
   status: 'ai_active' | 'human_escalated' | 'closed';
   channel: Channel;
@@ -84,10 +111,33 @@ export interface Conversation {
   lastMessageTime: string;
   assignedAgentId?: string;
   unreadCount?: number;
+  labels?: string[];
+  notes?: string[];
+  chatwootConversationId?: string;
+  chatwootInboxId?: string;
+  contact?: Partial<Contact>;
+}
+
+export type ManagedChannelType = 'website' | 'whatsapp' | 'gmail' | 'outlook' | 'smtp' | 'telegram' | 'instagram' | 'facebook';
+
+export interface ChannelConfig {
+  id: string;
+  tenantId: string;
+  type: ManagedChannelType;
+  provider: string;
+  displayName: string;
+  status: 'not_connected' | 'connected' | 'pending_provider_setup' | 'needs_attention';
+  config: Record<string, any>;
+  chatwootAccountId?: string;
+  chatwootInboxId?: string;
+  chatwootChannelId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Appointment {
   id: string;
+  tenantId?: string;
   contactId: string;
   agentId: string;
   dateTime: string; // ISO format or YYYY-MM-DD HH:MM
@@ -128,6 +178,7 @@ export interface WorkflowEdge {
 
 export interface Workflow {
   id: string;
+  tenantId?: string;
   name: string;
   description: string;
   active: boolean;
@@ -175,9 +226,10 @@ export interface SystemMetrics {
 
 export interface TeamMember {
   id: string;
+  tenantId?: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Support Staff' | 'Sales Agent' | 'Billing Manager';
+  role: RoleName | 'Support Staff' | 'Sales Agent' | 'Billing Manager';
   permissions: {
     viewCRM: boolean;
     editEmployees: boolean;
@@ -185,4 +237,14 @@ export interface TeamMember {
     deployWebsites: boolean;
   };
   status: 'active' | 'pending';
+}
+
+export interface Notification {
+  id: string;
+  tenantId: string;
+  type: string;
+  title: string;
+  body: string;
+  readAt?: string;
+  createdAt: string;
 }

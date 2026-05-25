@@ -5,6 +5,30 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { readDb, writeDb } from './db.js';
 import { runCrew } from './crewEngine.js';
+import {
+  CHANNEL_TYPES,
+  chatwootRequest,
+  conversationChannel,
+  createChatwootInbox,
+  displayChannelName,
+  ensureChatwootAccount,
+  getChatwootAccountId,
+  localConversationToChatwoot,
+  normalizeChannelType,
+  normalizeChatwootConversation
+} from './chatwoot.js';
+import {
+  authMiddleware,
+  createSession,
+  createTenantRecord,
+  getUserTenants,
+  hashPassword,
+  optionalTenantId,
+  publicUser,
+  saveDb,
+  tenantMiddleware,
+  verifyPassword
+} from './auth.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,17 +65,712 @@ function searchKnowledgeChunks(query, chunks) {
     .map(item => item.chunk.content);
 }
 
+function sessionPayload(db, session, user) {
+  const tenants = getUserTenants(db, user.id);
+  const activeTenant = tenants.find((tenant) => tenant.id === session.activeTenantId) || tenants[0] || null;
+  return {
+    token: session.token,
+    user: publicUser(user),
+    tenants,
+    activeTenantId: activeTenant?.id || null,
+    activeTenant
+  };
+}
+
+function tenantScoped(list, tenantId) {
+  return (list || []).filter((item) => item.tenantId === tenantId);
+}
+
+function requireTenantRecord(db, listName, id, tenantId) {
+  const list = db[listName] || [];
+  const index = list.findIndex((item) => item.id === id && item.tenantId === tenantId);
+  return { list, index, item: index === -1 ? null : list[index] };
+}
+
+function tenantFromPublicRequest(req) {
+  return optionalTenantId(req);
+}
+
+function currentTenantIndex(db, tenantId) {
+  return (db.tenants || []).findIndex((tenant) => tenant.id === tenantId);
+}
+
+function getTenantFromDb(db, tenantId) {
+  return (db.tenants || []).find((tenant) => tenant.id === tenantId);
+}
+
+function tenantChannelConfigs(db, tenantId) {
+  return CHANNEL_TYPES.map((type) => {
+    const existing = (db.channelConfigs || []).find((channel) => channel.tenantId === tenantId && normalizeChannelType(channel.type) === type);
+    return existing || {
+      id: `channel-${tenantId}-${type}`,
+      tenantId,
+      type,
+      provider: type === 'website' ? 'chatwoot_web_widget' : `chatwoot_${type}`,
+      displayName: displayChannelName(type),
+      status: 'not_connected',
+      config: {},
+      chatwootAccountId: getChatwootAccountId(getTenantFromDb(db, tenantId)),
+      chatwootInboxId: '',
+      chatwootChannelId: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  });
+}
+
+function upsertChannelConfig(db, tenantId, payload) {
+  const type = normalizeChannelType(payload.type);
+  const existingIndex = (db.channelConfigs || []).findIndex((channel) => channel.tenantId === tenantId && normalizeChannelType(channel.type) === type);
+  const existing = existingIndex === -1 ? {} : db.channelConfigs[existingIndex];
+  const channel = {
+    id: existing.id || `channel-${tenantId}-${type}`,
+    tenantId,
+    type,
+    provider: payload.provider || existing.provider || `chatwoot_${type}`,
+    displayName: payload.displayName || existing.displayName || displayChannelName(type),
+    status: payload.status || existing.status || 'not_connected',
+    config: {
+      ...(existing.config || {}),
+      ...(payload.config || {})
+    },
+    chatwootAccountId: payload.chatwootAccountId || existing.chatwootAccountId || getChatwootAccountId(getTenantFromDb(db, tenantId)),
+    chatwootInboxId: payload.chatwootInboxId || existing.chatwootInboxId || '',
+    chatwootChannelId: payload.chatwootChannelId || existing.chatwootChannelId || '',
+    createdAt: existing.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (existingIndex === -1) {
+    db.channelConfigs.push(channel);
+  } else {
+    db.channelConfigs[existingIndex] = channel;
+  }
+  return channel;
+}
+
+function localInboxResponse(db, tenantId, query = {}) {
+  const search = String(query.q || '').trim().toLowerCase();
+  const requestedChannel = query.channel ? conversationChannel(query.channel) : '';
+  let items = tenantScoped(db.conversations, tenantId);
+  if (requestedChannel) {
+    items = items.filter((conversation) => conversation.channel === requestedChannel);
+  }
+  if (search) {
+    items = items.filter((conversation) => {
+      const contact = db.contacts.find((item) => item.id === conversation.contactId && item.tenantId === tenantId);
+      const haystack = [
+        contact?.name,
+        contact?.email,
+        contact?.phone,
+        conversation.lastMessageText,
+        ...(conversation.messages || []).map((message) => message.text)
+      ].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(search);
+    });
+  }
+
+  const payload = items.map((conversation) => localConversationToChatwoot(conversation, db));
+  return {
+    data: {
+      meta: {
+        mine_count: payload.filter((conversation) => conversation.meta?.assignee?.id).length,
+        unassigned_count: payload.filter((conversation) => !conversation.meta?.assignee?.id).length,
+        assigned_count: payload.filter((conversation) => conversation.meta?.assignee?.id).length,
+        all_count: payload.length,
+        unread_count: payload.reduce((total, conversation) => total + (conversation.unread_count || 0), 0)
+      },
+      payload
+    },
+    source: 'local'
+  };
+}
+
+// ----------------------------------------
+// SaaS Auth & Session Endpoints
+// ----------------------------------------
+app.post('/api/auth/signup', (req, res) => {
+  const { companyName, ownerName, email, password } = req.body;
+  if (!companyName || !ownerName || !email || !password) {
+    return res.status(400).json({ error: 'companyName, ownerName, email and password are required.' });
+  }
+
+  const db = readDb();
+  const normalizedEmail = String(email).trim().toLowerCase();
+  if ((db.users || []).some((u) => u.email.toLowerCase() === normalizedEmail)) {
+    return res.status(409).json({ error: 'A user with this email already exists.' });
+  }
+
+  const user = {
+    id: `u-${Date.now()}`,
+    name: ownerName.trim(),
+    email: normalizedEmail,
+    passwordHash: hashPassword(password),
+    createdAt: new Date().toISOString()
+  };
+  const tenant = createTenantRecord({ companyName: companyName.trim() });
+  const membership = {
+    id: `m-${Date.now()}`,
+    userId: user.id,
+    tenantId: tenant.id,
+    role: 'Owner',
+    status: 'active',
+    createdAt: new Date().toISOString()
+  };
+
+  db.users.push(user);
+  db.tenants.push(tenant);
+  db.memberships.push(membership);
+  db.working_shifts[tenant.id] = {
+    monday: { enabled: true, start: '09:00', end: '18:00' },
+    tuesday: { enabled: true, start: '09:00', end: '18:00' },
+    wednesday: { enabled: true, start: '09:00', end: '18:00' },
+    thursday: { enabled: true, start: '09:00', end: '18:00' },
+    friday: { enabled: true, start: '09:00', end: '18:00' },
+    saturday: { enabled: false, start: '09:00', end: '14:00' },
+    sunday: { enabled: false, start: '09:00', end: '12:00' }
+  };
+
+  const session = createSession(db, user.id, tenant.id);
+  writeDb(db);
+  res.status(201).json(sessionPayload(db, session, user));
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  const db = readDb();
+  const user = (db.users || []).find((u) => u.email.toLowerCase() === String(email || '').trim().toLowerCase());
+  if (!user || !verifyPassword(password || '', user.passwordHash)) {
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+
+  const tenants = getUserTenants(db, user.id);
+  if (tenants.length === 0) {
+    return res.status(403).json({ error: 'User does not belong to any workspace.' });
+  }
+
+  const session = createSession(db, user.id, tenants[0].id);
+  writeDb(db);
+  res.json(sessionPayload(db, session, user));
+});
+
+app.get('/api/auth/session', authMiddleware, (req, res) => {
+  res.json(sessionPayload(req.db, req.session, req.user));
+});
+
+app.put('/api/auth/session/tenant', authMiddleware, (req, res) => {
+  const { tenantId } = req.body;
+  const membership = (req.db.memberships || []).find((m) => m.userId === req.user.id && m.tenantId === tenantId && m.status === 'active');
+  if (!membership) {
+    return res.status(403).json({ error: 'You do not have access to that workspace.' });
+  }
+  req.session.activeTenantId = tenantId;
+  saveDb(req);
+  res.json(sessionPayload(req.db, req.session, req.user));
+});
+
+app.post('/api/auth/logout', authMiddleware, (req, res) => {
+  req.db.sessions = (req.db.sessions || []).filter((session) => session.token !== req.session.token);
+  saveDb(req);
+  res.json({ success: true });
+});
+
+// ----------------------------------------
+// Tenant-scoped SaaS API
+// ----------------------------------------
+app.get('/api/current-tenant/bootstrap', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json({
+    tenant: req.tenant,
+    membership: req.membership,
+    contacts: tenantScoped(req.db.contacts, req.tenantId),
+    deals: tenantScoped(req.db.deals, req.tenantId),
+    conversations: tenantScoped(req.db.conversations, req.tenantId),
+    appointments: tenantScoped(req.db.appointments, req.tenantId),
+    agents: tenantScoped(req.db.agents, req.tenantId),
+    workflows: tenantScoped(req.db.workflows, req.tenantId),
+    teamMembers: tenantScoped(req.db.teamMembers, req.tenantId),
+    notifications: tenantScoped(req.db.notifications, req.tenantId),
+    settings: req.tenant.settings || {}
+  });
+});
+
+app.get('/api/current-tenant/contacts', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(tenantScoped(req.db.contacts, req.tenantId));
+});
+
+app.post('/api/current-tenant/contacts', authMiddleware, tenantMiddleware, (req, res) => {
+  const newContact = {
+    id: req.body.id || `c-${Date.now()}`,
+    tenantId: req.tenantId,
+    createdAt: req.body.createdAt || new Date().toISOString(),
+    tags: req.body.tags || ['New Lead'],
+    notes: req.body.notes || [],
+    name: req.body.name,
+    email: req.body.email,
+    phone: req.body.phone,
+    company: req.body.company || 'Individual',
+    city: req.body.city || '',
+    project: req.body.project,
+    assignedAgentId: req.body.assignedAgentId || tenantScoped(req.db.agents, req.tenantId)[0]?.id
+  };
+  req.db.contacts.push(newContact);
+  saveDb(req);
+  res.status(201).json(newContact);
+});
+
+app.put('/api/current-tenant/contacts/:id', authMiddleware, tenantMiddleware, (req, res) => {
+  const { index } = requireTenantRecord(req.db, 'contacts', req.params.id, req.tenantId);
+  if (index === -1) return res.status(404).json({ error: 'Contact not found.' });
+  req.db.contacts[index] = { ...req.db.contacts[index], ...req.body, tenantId: req.tenantId };
+  saveDb(req);
+  res.json(req.db.contacts[index]);
+});
+
+app.get('/api/current-tenant/deals', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(tenantScoped(req.db.deals, req.tenantId));
+});
+
+app.post('/api/current-tenant/deals', authMiddleware, tenantMiddleware, (req, res) => {
+  const newDeal = {
+    id: req.body.id || `d-${Date.now()}`,
+    tenantId: req.tenantId,
+    createdAt: req.body.createdAt || new Date().toISOString(),
+    contactId: req.body.contactId,
+    name: req.body.name,
+    value: parseFloat(req.body.value) || 0,
+    stage: req.body.stage || 'lead'
+  };
+  req.db.deals.push(newDeal);
+  saveDb(req);
+  res.status(201).json(newDeal);
+});
+
+app.put('/api/current-tenant/deals/:id', authMiddleware, tenantMiddleware, (req, res) => {
+  const { index } = requireTenantRecord(req.db, 'deals', req.params.id, req.tenantId);
+  if (index === -1) return res.status(404).json({ error: 'Deal not found.' });
+  req.db.deals[index] = { ...req.db.deals[index], ...req.body, tenantId: req.tenantId };
+  saveDb(req);
+  res.json(req.db.deals[index]);
+});
+
+app.get('/api/current-tenant/conversations', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(tenantScoped(req.db.conversations, req.tenantId));
+});
+
+app.post('/api/current-tenant/conversations', authMiddleware, tenantMiddleware, (req, res) => {
+  const existingIndex = req.db.conversations.findIndex((c) => c.id === req.body.id && c.tenantId === req.tenantId);
+  const payload = {
+    ...req.body,
+    tenantId: req.tenantId,
+    messages: (req.body.messages || []).map((message) => ({
+      ...message,
+      tenantId: req.tenantId,
+      conversationId: req.body.id
+    }))
+  };
+  if (existingIndex !== -1) {
+    req.db.conversations[existingIndex] = { ...req.db.conversations[existingIndex], ...payload };
+    saveDb(req);
+    return res.json(req.db.conversations[existingIndex]);
+  }
+
+  const newConv = {
+    id: req.body.id || `conv-${Date.now()}`,
+    tenantId: req.tenantId,
+    contactId: req.body.contactId,
+    status: req.body.status || 'ai_active',
+    channel: req.body.channel || 'web',
+    messages: payload.messages || [],
+    lastMessageText: req.body.lastMessageText || '',
+    lastMessageTime: req.body.lastMessageTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    assignedAgentId: req.body.assignedAgentId || tenantScoped(req.db.agents, req.tenantId)[0]?.id,
+    unreadCount: req.body.unreadCount || 0
+  };
+  req.db.conversations.push(newConv);
+  saveDb(req);
+  res.status(201).json(newConv);
+});
+
+app.get('/api/current-tenant/appointments', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(tenantScoped(req.db.appointments, req.tenantId));
+});
+
+app.post('/api/current-tenant/appointments', authMiddleware, tenantMiddleware, (req, res) => {
+  const newApp = {
+    id: req.body.id || `app-${Date.now()}`,
+    tenantId: req.tenantId,
+    contactId: req.body.contactId,
+    agentId: req.body.agentId || tenantScoped(req.db.agents, req.tenantId)[0]?.id,
+    dateTime: req.body.dateTime,
+    duration: parseInt(req.body.duration) || 30,
+    location: req.body.location || 'Default Office',
+    type: req.body.type || 'Consultation',
+    status: 'scheduled'
+  };
+  req.db.appointments.push(newApp);
+  const contact = req.db.contacts.find((c) => c.id === newApp.contactId && c.tenantId === req.tenantId);
+  if (contact) {
+    const timeStr = new Date(newApp.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    contact.notes = [...(contact.notes || []), `Calendar Scheduler Slot Booked: ${newApp.type} on ${new Date(newApp.dateTime).toLocaleDateString()} at ${timeStr}`];
+  }
+  saveDb(req);
+  res.status(201).json(newApp);
+});
+
+app.delete('/api/current-tenant/appointments/:id', authMiddleware, tenantMiddleware, (req, res) => {
+  const { index } = requireTenantRecord(req.db, 'appointments', req.params.id, req.tenantId);
+  if (index === -1) return res.status(404).json({ error: 'Appointment not found.' });
+  req.db.appointments[index].status = 'cancelled';
+  saveDb(req);
+  res.json(req.db.appointments[index]);
+});
+
+app.get('/api/current-tenant/agents', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(tenantScoped(req.db.agents, req.tenantId));
+});
+
+app.post('/api/current-tenant/agents', authMiddleware, tenantMiddleware, (req, res) => {
+  const newAgent = { ...req.body, id: req.body.id || `a-${Date.now()}`, tenantId: req.tenantId };
+  req.db.agents.push(newAgent);
+  saveDb(req);
+  res.status(201).json(newAgent);
+});
+
+app.put('/api/current-tenant/agents/:id', authMiddleware, tenantMiddleware, (req, res) => {
+  const { index } = requireTenantRecord(req.db, 'agents', req.params.id, req.tenantId);
+  if (index === -1) return res.status(404).json({ error: 'Agent not found.' });
+  req.db.agents[index] = { ...req.db.agents[index], ...req.body, tenantId: req.tenantId };
+  saveDb(req);
+  res.json(req.db.agents[index]);
+});
+
+app.get('/api/current-tenant/workflows', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(tenantScoped(req.db.workflows, req.tenantId));
+});
+
+app.post('/api/current-tenant/workflows', authMiddleware, tenantMiddleware, (req, res) => {
+  const newWorkflow = { ...req.body, id: req.body.id || `wf-${Date.now()}`, tenantId: req.tenantId };
+  req.db.workflows.push(newWorkflow);
+  saveDb(req);
+  res.status(201).json(newWorkflow);
+});
+
+app.get('/api/current-tenant/team-members', authMiddleware, tenantMiddleware, (req, res) => {
+  const members = (req.db.memberships || [])
+    .filter((membership) => membership.tenantId === req.tenantId && membership.status === 'active')
+    .map((membership) => {
+      const user = req.db.users.find((u) => u.id === membership.userId);
+      return user ? {
+        id: membership.id,
+        tenantId: req.tenantId,
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: membership.role,
+        status: membership.status
+      } : null;
+    })
+    .filter(Boolean);
+  res.json([...members, ...tenantScoped(req.db.teamMembers, req.tenantId)]);
+});
+
+app.post('/api/current-tenant/team-members', authMiddleware, tenantMiddleware, (req, res) => {
+  const member = {
+    id: `tm-${Date.now()}`,
+    tenantId: req.tenantId,
+    name: req.body.name,
+    email: req.body.email,
+    role: req.body.role || 'Agent',
+    permissions: req.body.permissions || {},
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+  req.db.teamMembers.push(member);
+  saveDb(req);
+  res.status(201).json(member);
+});
+
+app.delete('/api/current-tenant/team-members/:id', authMiddleware, tenantMiddleware, (req, res) => {
+  const before = req.db.teamMembers.length;
+  req.db.teamMembers = (req.db.teamMembers || []).filter((member) => !(member.id === req.params.id && member.tenantId === req.tenantId));
+  const membershipIndex = (req.db.memberships || []).findIndex((membership) => membership.id === req.params.id && membership.tenantId === req.tenantId);
+  if (membershipIndex !== -1) {
+    req.db.memberships[membershipIndex].status = 'disabled';
+  }
+  saveDb(req);
+  res.json({ success: before !== req.db.teamMembers.length || membershipIndex !== -1 });
+});
+
+app.get('/api/current-tenant/notifications', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(tenantScoped(req.db.notifications, req.tenantId));
+});
+
+app.get('/api/current-tenant/settings', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(req.tenant.settings || {});
+});
+
+app.put('/api/current-tenant/settings', authMiddleware, tenantMiddleware, (req, res) => {
+  const tenantIndex = req.db.tenants.findIndex((t) => t.id === req.tenantId);
+  req.db.tenants[tenantIndex].settings = {
+    ...(req.db.tenants[tenantIndex].settings || {}),
+    ...req.body
+  };
+  saveDb(req);
+  res.json(req.db.tenants[tenantIndex].settings);
+});
+
+// ----------------------------------------
+// Tenant Chatwoot Channel Management
+// ----------------------------------------
+app.get('/api/current-tenant/channels', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json({
+    chatwoot: req.tenant.chatwootMapping || {},
+    channels: tenantChannelConfigs(req.db, req.tenantId),
+    inboxes: tenantScoped(req.db.chatwootInboxes, req.tenantId)
+  });
+});
+
+app.post('/api/current-tenant/chatwoot/provision', authMiddleware, tenantMiddleware, async (req, res) => {
+  try {
+    const mapping = await ensureChatwootAccount(req.db, req.tenant);
+    saveDb(req);
+    res.status(201).json({ mapping });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/current-tenant/channels/:type/connect', authMiddleware, tenantMiddleware, async (req, res) => {
+  const type = normalizeChannelType(req.params.type);
+  const tenantIndex = currentTenantIndex(req.db, req.tenantId);
+  if (tenantIndex === -1) return res.status(404).json({ error: 'Tenant not found.' });
+
+  req.db.tenants[tenantIndex].settings = {
+    ...(req.db.tenants[tenantIndex].settings || {}),
+    ...(req.body.chatwootUrl ? { chatwootUrl: req.body.chatwootUrl } : {}),
+    ...(req.body.chatwootAccountId ? { chatwootAccountId: String(req.body.chatwootAccountId) } : {}),
+    ...(req.body.chatwootApiAccessToken ? { chatwootApiAccessToken: req.body.chatwootApiAccessToken } : {})
+  };
+  req.db.tenants[tenantIndex].chatwootMapping = {
+    ...(req.db.tenants[tenantIndex].chatwootMapping || {}),
+    accountId: req.db.tenants[tenantIndex].settings.chatwootAccountId || req.db.tenants[tenantIndex].chatwootMapping?.accountId || '',
+    accountName: req.tenant.name,
+    status: req.db.tenants[tenantIndex].settings.chatwootAccountId ? 'connected' : req.db.tenants[tenantIndex].chatwootMapping?.status || 'not_provisioned'
+  };
+
+  let channel = upsertChannelConfig(req.db, req.tenantId, {
+    type,
+    displayName: req.body.displayName,
+    status: req.body.status || 'connected',
+    config: req.body.config || {},
+    chatwootAccountId: req.db.tenants[tenantIndex].settings.chatwootAccountId || ''
+  });
+
+  if (req.body.chatwootInboxId) {
+    channel = upsertChannelConfig(req.db, req.tenantId, {
+      ...channel,
+      status: 'connected',
+      chatwootInboxId: String(req.body.chatwootInboxId),
+      chatwootChannelId: req.body.chatwootChannelId ? String(req.body.chatwootChannelId) : channel.chatwootChannelId
+    });
+  } else if (req.body.autoCreateInbox) {
+    try {
+      if (!getChatwootAccountId(req.db.tenants[tenantIndex]) && req.body.autoProvisionAccount) {
+        await ensureChatwootAccount(req.db, req.db.tenants[tenantIndex]);
+      }
+      const inbox = await createChatwootInbox(req.db, req.db.tenants[tenantIndex], channel);
+      channel = upsertChannelConfig(req.db, req.tenantId, {
+        ...channel,
+        status: inbox.status === 'requires_chatwoot_setup' ? 'pending_provider_setup' : 'connected',
+        chatwootInboxId: inbox.chatwootInboxId || '',
+        chatwootChannelId: inbox.chatwootChannelId || '',
+        config: {
+          ...(channel.config || {}),
+          websiteToken: inbox.websiteToken || channel.config?.websiteToken,
+          webWidgetScript: inbox.webWidgetScript || channel.config?.webWidgetScript,
+          setupMessage: inbox.message || ''
+        }
+      });
+    } catch (err) {
+      channel = upsertChannelConfig(req.db, req.tenantId, {
+        ...channel,
+        status: 'needs_attention',
+        config: {
+          ...(channel.config || {}),
+          lastError: err.message
+        }
+      });
+    }
+  }
+
+  saveDb(req);
+  res.status(201).json({
+    channel,
+    chatwoot: req.db.tenants[tenantIndex].chatwootMapping,
+    inboxes: tenantScoped(req.db.chatwootInboxes, req.tenantId)
+  });
+});
+
+app.get('/api/current-tenant/chatwoot/inbox', authMiddleware, tenantMiddleware, async (req, res) => {
+  const accountId = getChatwootAccountId(req.tenant);
+  if (!accountId) {
+    return res.json(localInboxResponse(req.db, req.tenantId, req.query));
+  }
+
+  const params = new URLSearchParams();
+  params.set('status', req.query.status || 'all');
+  params.set('assignee_type', req.query.assignee_type || 'all');
+  params.set('page', req.query.page || '1');
+  if (req.query.q) params.set('q', req.query.q);
+  if (req.query.inbox_id) params.set('inbox_id', req.query.inbox_id);
+  if (req.query.labels) params.set('labels', req.query.labels);
+
+  try {
+    const payload = await chatwootRequest({
+      tenant: req.tenant,
+      path: `/api/v1/accounts/${accountId}/conversations?${params.toString()}`
+    });
+    const normalizedPayload = (payload?.data?.payload || payload?.payload || []).map((conversation) => normalizeChatwootConversation(conversation, req.db, req.tenantId));
+    res.json({
+      ...payload,
+      data: {
+        ...(payload.data || {}),
+        payload: normalizedPayload
+      },
+      source: 'chatwoot'
+    });
+  } catch (err) {
+    res.json({
+      ...localInboxResponse(req.db, req.tenantId, req.query),
+      warning: err.message
+    });
+  }
+});
+
+app.get('/api/current-tenant/chatwoot/conversations/:id', authMiddleware, tenantMiddleware, async (req, res) => {
+  const accountId = getChatwootAccountId(req.tenant);
+  if (accountId) {
+    try {
+      const payload = await chatwootRequest({
+        tenant: req.tenant,
+        path: `/api/v1/accounts/${accountId}/conversations/${req.params.id}`
+      });
+      return res.json({ conversation: normalizeChatwootConversation(payload, req.db, req.tenantId), source: 'chatwoot' });
+    } catch (err) {
+      // Continue to local fallback.
+    }
+  }
+
+  const conversation = tenantScoped(req.db.conversations, req.tenantId).find((item) => item.id === req.params.id || item.chatwootConversationId === req.params.id);
+  if (!conversation) return res.status(404).json({ error: 'Conversation not found.' });
+  res.json({ conversation: normalizeChatwootConversation(localConversationToChatwoot(conversation, req.db), req.db, req.tenantId), source: 'local' });
+});
+
+app.post('/api/current-tenant/chatwoot/conversations/:id/messages', authMiddleware, tenantMiddleware, async (req, res) => {
+  const accountId = getChatwootAccountId(req.tenant);
+  if (accountId) {
+    try {
+      const payload = await chatwootRequest({
+        tenant: req.tenant,
+        method: 'POST',
+        path: `/api/v1/accounts/${accountId}/conversations/${req.params.id}/messages`,
+        body: {
+          content: req.body.content,
+          message_type: req.body.messageType || 'outgoing',
+          private: !!req.body.private,
+          content_type: 'text',
+          content_attributes: req.body.contentAttributes || {}
+        }
+      });
+      return res.status(201).json({ message: payload, source: 'chatwoot' });
+    } catch (err) {
+      if (!req.body.allowLocalFallback) return res.status(400).json({ error: err.message });
+    }
+  }
+
+  const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && (item.id === req.params.id || item.chatwootConversationId === req.params.id));
+  if (conversationIndex === -1) return res.status(404).json({ error: 'Conversation not found.' });
+  const message = {
+    id: `m-${Date.now()}`,
+    tenantId: req.tenantId,
+    conversationId: req.db.conversations[conversationIndex].id,
+    sender: req.body.private ? 'note' : req.body.sender || 'human',
+    private: !!req.body.private,
+    text: req.body.content,
+    timestamp: new Date().toISOString()
+  };
+  req.db.conversations[conversationIndex].messages.push(message);
+  if (!message.private) {
+    req.db.conversations[conversationIndex].lastMessageText = message.text;
+    req.db.conversations[conversationIndex].lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    req.db.conversations[conversationIndex].unreadCount = message.sender === 'customer' ? (req.db.conversations[conversationIndex].unreadCount || 0) + 1 : 0;
+  }
+  saveDb(req);
+  res.status(201).json({ message, source: 'local' });
+});
+
+app.post('/api/current-tenant/chatwoot/conversations/:id/assignments', authMiddleware, tenantMiddleware, async (req, res) => {
+  const accountId = getChatwootAccountId(req.tenant);
+  if (accountId) {
+    try {
+      const payload = await chatwootRequest({
+        tenant: req.tenant,
+        method: 'POST',
+        path: `/api/v1/accounts/${accountId}/conversations/${req.params.id}/assignments`,
+        body: {
+          assignee_id: req.body.assigneeId ? Number(req.body.assigneeId) : undefined,
+          team_id: req.body.teamId ? Number(req.body.teamId) : undefined
+        }
+      });
+      return res.json({ assignment: payload, source: 'chatwoot' });
+    } catch (err) {
+      if (!req.body.allowLocalFallback) return res.status(400).json({ error: err.message });
+    }
+  }
+
+  const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && item.id === req.params.id);
+  if (conversationIndex === -1) return res.status(404).json({ error: 'Conversation not found.' });
+  req.db.conversations[conversationIndex].assignedAgentId = req.body.assigneeId || '';
+  req.db.conversations[conversationIndex].status = 'human_escalated';
+  saveDb(req);
+  res.json({ conversation: req.db.conversations[conversationIndex], source: 'local' });
+});
+
+app.post('/api/current-tenant/chatwoot/conversations/:id/labels', authMiddleware, tenantMiddleware, async (req, res) => {
+  const labels = Array.isArray(req.body.labels) ? req.body.labels : [];
+  const accountId = getChatwootAccountId(req.tenant);
+  if (accountId) {
+    try {
+      const payload = await chatwootRequest({
+        tenant: req.tenant,
+        method: 'POST',
+        path: `/api/v1/accounts/${accountId}/conversations/${req.params.id}/labels`,
+        body: { labels }
+      });
+      return res.json({ labels: payload, source: 'chatwoot' });
+    } catch (err) {
+      if (!req.body.allowLocalFallback) return res.status(400).json({ error: err.message });
+    }
+  }
+
+  const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && item.id === req.params.id);
+  if (conversationIndex === -1) return res.status(404).json({ error: 'Conversation not found.' });
+  req.db.conversations[conversationIndex].labels = labels;
+  saveDb(req);
+  res.json({ labels, source: 'local' });
+});
+
 // ----------------------------------------
 // Agents & Tenants Endpoints
 // ----------------------------------------
 app.get('/api/agents', (req, res) => {
   const db = readDb();
-  res.json(db.agents || []);
+  const tenantId = tenantFromPublicRequest(req);
+  res.json(tenantScoped(db.agents, tenantId));
 });
 
-app.get('/api/tenants', (req, res) => {
-  const db = readDb();
-  res.json(db.tenants || []);
+app.get('/api/tenants', authMiddleware, (req, res) => {
+  res.json(getUserTenants(req.db, req.user.id));
 });
 
 // ----------------------------------------
@@ -59,13 +778,15 @@ app.get('/api/tenants', (req, res) => {
 // ----------------------------------------
 app.get('/api/contacts', (req, res) => {
   const db = readDb();
-  res.json(db.contacts || []);
+  const tenantId = tenantFromPublicRequest(req);
+  res.json(tenantScoped(db.contacts, tenantId));
 });
 
 app.post('/api/contacts', (req, res) => {
   const db = readDb();
   const newContact = {
     id: `c-${Date.now()}`,
+    tenantId: tenantFromPublicRequest(req),
     createdAt: new Date().toISOString(),
     tags: req.body.tags || ['New Lead'],
     notes: req.body.notes || [],
@@ -84,7 +805,8 @@ app.post('/api/contacts', (req, res) => {
 
 app.put('/api/contacts/:id', (req, res) => {
   const db = readDb();
-  const contactIndex = db.contacts.findIndex(c => c.id === req.params.id);
+  const tenantId = tenantFromPublicRequest(req);
+  const contactIndex = db.contacts.findIndex(c => c.id === req.params.id && c.tenantId === tenantId);
   if (contactIndex === -1) {
     return res.status(404).json({ error: 'Contact not found' });
   }
@@ -99,13 +821,15 @@ app.put('/api/contacts/:id', (req, res) => {
 
 app.get('/api/deals', (req, res) => {
   const db = readDb();
-  res.json(db.deals || []);
+  const tenantId = tenantFromPublicRequest(req);
+  res.json(tenantScoped(db.deals, tenantId));
 });
 
 app.post('/api/deals', (req, res) => {
   const db = readDb();
   const newDeal = {
     id: `d-${Date.now()}`,
+    tenantId: tenantFromPublicRequest(req),
     createdAt: new Date().toISOString(),
     contactId: req.body.contactId,
     name: req.body.name,
@@ -120,7 +844,8 @@ app.post('/api/deals', (req, res) => {
 
 app.put('/api/deals/:id', (req, res) => {
   const db = readDb();
-  const dealIndex = db.deals.findIndex(d => d.id === req.params.id);
+  const tenantId = tenantFromPublicRequest(req);
+  const dealIndex = db.deals.findIndex(d => d.id === req.params.id && d.tenantId === tenantId);
   if (dealIndex === -1) {
     return res.status(404).json({ error: 'Deal not found' });
   }
@@ -135,12 +860,14 @@ app.put('/api/deals/:id', (req, res) => {
 
 app.get('/api/conversations', (req, res) => {
   const db = readDb();
-  res.json(db.conversations || []);
+  const tenantId = tenantFromPublicRequest(req);
+  res.json(tenantScoped(db.conversations, tenantId));
 });
 
 app.post('/api/conversations', (req, res) => {
   const db = readDb();
-  const existingIndex = db.conversations.findIndex(c => c.id === req.body.id);
+  const tenantId = tenantFromPublicRequest(req);
+  const existingIndex = db.conversations.findIndex(c => c.id === req.body.id && c.tenantId === tenantId);
   if (existingIndex !== -1) {
     db.conversations[existingIndex] = {
       ...db.conversations[existingIndex],
@@ -152,10 +879,11 @@ app.post('/api/conversations', (req, res) => {
 
   const newConv = {
     id: req.body.id || `conv-${Date.now()}`,
+    tenantId,
     contactId: req.body.contactId,
     status: req.body.status || 'ai_active',
     channel: req.body.channel || 'web',
-    messages: req.body.messages || [],
+    messages: (req.body.messages || []).map(message => ({ ...message, tenantId, conversationId: req.body.id })),
     lastMessageText: req.body.lastMessageText || '',
     lastMessageTime: req.body.lastMessageTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     assignedAgentId: req.body.assignedAgentId || 'a-1',
@@ -172,13 +900,15 @@ app.post('/api/conversations', (req, res) => {
 // ----------------------------------------
 app.get('/api/appointments', (req, res) => {
   const db = readDb();
-  res.json(db.appointments || []);
+  const tenantId = tenantFromPublicRequest(req);
+  res.json(tenantScoped(db.appointments, tenantId));
 });
 
 app.post('/api/appointments', (req, res) => {
   const db = readDb();
   const newApp = {
     id: req.body.id || `app-${Date.now()}`,
+    tenantId: tenantFromPublicRequest(req),
     contactId: req.body.contactId,
     agentId: req.body.agentId || 'a-1',
     dateTime: req.body.dateTime, // Format: YYYY-MM-DDTHH:MM
@@ -191,7 +921,7 @@ app.post('/api/appointments', (req, res) => {
   db.appointments.push(newApp);
 
   // Sync to contact profile notes
-  const contact = db.contacts.find(c => c.id === newApp.contactId);
+  const contact = db.contacts.find(c => c.id === newApp.contactId && c.tenantId === newApp.tenantId);
   if (contact) {
     const timeStr = new Date(newApp.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     contact.notes.push(`Calendar Scheduler Slot Booked: ${newApp.type} on ${new Date(newApp.dateTime).toLocaleDateString()} at ${timeStr}`);
@@ -203,7 +933,8 @@ app.post('/api/appointments', (req, res) => {
 
 app.delete('/api/appointments/:id', (req, res) => {
   const db = readDb();
-  const appIndex = db.appointments.findIndex(a => a.id === req.params.id);
+  const tenantId = tenantFromPublicRequest(req);
+  const appIndex = db.appointments.findIndex(a => a.id === req.params.id && a.tenantId === tenantId);
   if (appIndex === -1) {
     return res.status(404).json({ error: 'Appointment not found' });
   }
@@ -245,6 +976,7 @@ app.get('/api/availability', (req, res) => {
     // Check if slot is already booked
     const slotIsoString = current.toISOString().substring(0, 16); // YYYY-MM-DDTHH:MM
     const isBooked = db.appointments.some(app => 
+      app.tenantId === tenantId &&
       app.status === 'scheduled' && 
       app.dateTime.substring(0, 16) === slotIsoString
     );
@@ -312,8 +1044,10 @@ app.put('/api/platform-support-bot', (req, res) => {
 });
 
 // Tenant-Specific Integrations
-app.get('/api/tenants/:id/integrations', (req, res) => {
-  const db = readDb();
+app.get('/api/tenants/:id/integrations', authMiddleware, (req, res) => {
+  const db = req.db;
+  const hasAccess = db.memberships.some((m) => m.userId === req.user.id && m.tenantId === req.params.id && m.status === 'active');
+  if (!hasAccess) return res.status(403).json({ error: 'You do not have access to this tenant.' });
   const tenant = db.tenants.find(t => t.id === req.params.id);
   if (!tenant) {
     return res.status(404).json({ error: 'Tenant not found' });
@@ -321,8 +1055,10 @@ app.get('/api/tenants/:id/integrations', (req, res) => {
   res.json(tenant.integrations || {});
 });
 
-app.put('/api/tenants/:id/integrations', (req, res) => {
-  const db = readDb();
+app.put('/api/tenants/:id/integrations', authMiddleware, (req, res) => {
+  const db = req.db;
+  const hasAccess = db.memberships.some((m) => m.userId === req.user.id && m.tenantId === req.params.id && m.status === 'active');
+  if (!hasAccess) return res.status(403).json({ error: 'You do not have access to this tenant.' });
   const tenantIndex = db.tenants.findIndex(t => t.id === req.params.id);
   if (tenantIndex === -1) {
     return res.status(404).json({ error: 'Tenant not found' });
@@ -350,7 +1086,7 @@ app.post('/api/chat', async (req, res) => {
       prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).'
     };
   } else {
-    agent = db.agents.find(a => a.id === agentId) || db.agents[0];
+    agent = db.agents.find(a => a.id === agentId && a.tenantId === tenantId) || tenantScoped(db.agents, tenantId)[0] || db.agents[0];
   }
   const tenant = db.tenants.find(t => t.id === tenantId);
   const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
@@ -462,7 +1198,8 @@ app.post('/api/crew/run', async (req, res) => {
       tasks,
       inputs,
       db,
-      apiKey
+      apiKey,
+      tenantId
     });
     res.json(result);
   } catch (err) {
@@ -618,10 +1355,11 @@ app.post('/api/voice/inbound', (req, res) => {
   const called = req.body.To || 'Attendant';
 
   // Find or create contact
-  let contact = db.contacts.find(c => c.phone === caller);
+  let contact = db.contacts.find(c => c.phone === caller && c.tenantId === tenantId);
   if (!contact) {
     contact = {
       id: `c-voice-${Date.now()}`,
+      tenantId,
       name: `Call Customer (${caller.substring(caller.length - 4)})`,
       email: '',
       phone: caller,
@@ -641,6 +1379,7 @@ app.post('/api/voice/inbound', (req, res) => {
   
   const newConv = {
     id: convId,
+    tenantId,
     contactId: contact.id,
     status: 'ai_active',
     channel: 'voice',
@@ -683,8 +1422,8 @@ app.post('/api/voice/gather', async (req, res) => {
     `);
   }
 
-  const convIndex = db.conversations.findIndex(c => c.id === convId);
-  const contactIndex = db.contacts.findIndex(c => c.id === contactId);
+  const convIndex = db.conversations.findIndex(c => c.id === convId && c.tenantId === tenantId);
+  const contactIndex = db.contacts.findIndex(c => c.id === contactId && c.tenantId === tenantId);
 
   // Log user utterance
   if (convIndex !== -1) {
@@ -766,6 +1505,7 @@ app.post('/api/voice/gather', async (req, res) => {
     // Create actual appointment slot in database
     const newApp = {
       id: `app-voice-${Date.now()}`,
+      tenantId,
       contactId,
       agentId: 'a-1',
       dateTime: dateTimeStr,
@@ -825,15 +1565,16 @@ app.post('/api/voice/gather', async (req, res) => {
 app.post('/api/voice/outbound-connect', (req, res) => {
   const { tenantId = 't-1', agentId = 'a-1', goal = 'Follow up' } = req.query;
   const db = readDb();
-  const agent = db.agents.find(a => a.id === agentId) || db.agents[0];
+  const agent = db.agents.find(a => a.id === agentId && a.tenantId === tenantId) || tenantScoped(db.agents, tenantId)[0] || db.agents[0];
 
   const welcomeText = `Hello! This is ${agent.name} calling from ${db.tenants.find(t => t.id === tenantId)?.name || 'Smile Dental'}. I am calling to discuss: ${goal}. How are you doing today?`;
 
   const contactPhone = req.body.To || 'Unknown';
-  let contact = db.contacts.find(c => c.phone === contactPhone);
+  let contact = db.contacts.find(c => c.phone === contactPhone && c.tenantId === tenantId);
   if (!contact) {
     contact = {
       id: `c-voice-${Date.now()}`,
+      tenantId,
       name: `Campaign Call (${contactPhone.substring(contactPhone.length - 4)})`,
       email: '',
       phone: contactPhone,
@@ -850,6 +1591,7 @@ app.post('/api/voice/outbound-connect', (req, res) => {
   const convId = `conv-voice-ob-${Date.now()}`;
   const newConv = {
     id: convId,
+    tenantId,
     contactId: contact.id,
     status: 'ai_active',
     channel: 'voice',

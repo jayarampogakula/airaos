@@ -71,6 +71,7 @@ export const NativeBookingCalendar: React.FC<NativeBookingCalendarProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          tenantId,
           name,
           email,
           phone,
@@ -98,6 +99,7 @@ export const NativeBookingCalendar: React.FC<NativeBookingCalendarProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          tenantId,
           contactId: contactData.id,
           agentId: assignedAgentId,
           dateTime: dateTimeStr,

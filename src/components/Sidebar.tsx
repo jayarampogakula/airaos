@@ -150,6 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {currentRole === 'tenant' ? (
           <button
             className="btn btn-secondary"
+            onClick={() => setDropdownOpen(prev => !prev)}
             style={{
               width: '100%',
               display: 'flex',
@@ -158,7 +159,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               padding: '10px 14px',
               backgroundColor: 'rgba(255, 255, 255, 0.02)',
               borderColor: 'var(--border-glass)',
-              cursor: 'default'
+              cursor: 'pointer'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left' }}>
@@ -172,7 +173,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </div>
             </div>
+            {dropdownOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
+          {dropdownOpen && (
+            <div
+              className="glass-card"
+              style={{
+                position: 'absolute',
+                left: '16px',
+                right: '16px',
+                top: '72px',
+                zIndex: 50,
+                padding: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                backgroundColor: '#0a0d16',
+                border: '1px solid var(--border-glass)'
+              }}
+            >
+              {tenants.map((tenant) => (
+                <button
+                  key={tenant.id}
+                  className="btn"
+                  onClick={() => {
+                    onSelectTenant(tenant.id);
+                    setDropdownOpen(false);
+                    if (onClose) onClose();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    backgroundColor: tenant.id === selectedTenant.id ? 'var(--primary-glow)' : 'transparent',
+                    color: 'var(--text-primary)',
+                    justifyContent: 'flex-start',
+                    fontSize: '0.78rem'
+                  }}
+                >
+                  <span>{tenant.logo}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tenant.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         ) : (
           <div
             className="glass-card"

@@ -12,6 +12,7 @@ interface SchedulerViewProps {
   agents: Agent[];
   onAddAppointment: (newApp: Appointment) => void;
   onCancelAppointment: (appId: string) => void;
+  tenantId: string;
 }
 
 export const SchedulerView: React.FC<SchedulerViewProps> = ({
@@ -19,7 +20,8 @@ export const SchedulerView: React.FC<SchedulerViewProps> = ({
   contacts,
   agents,
   onAddAppointment,
-  onCancelAppointment
+  onCancelAppointment,
+  tenantId
 }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [contactId, setContactId] = useState(contacts[0]?.id || '');
@@ -255,6 +257,7 @@ export const SchedulerView: React.FC<SchedulerViewProps> = ({
                 />
               ) : (
                 <NativeBookingCalendar
+                  tenantId={tenantId}
                   agents={agents}
                   contacts={contacts}
                   onAddAppointment={onAddAppointment}

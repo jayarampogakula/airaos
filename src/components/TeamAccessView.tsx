@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Trash2, Shield, Mail, Key, Search, Check, AlertCircle, Users, CheckSquare, Square } from 'lucide-react';
 import { Tenant, TeamMember } from '../types';
+import { useAuth } from '../auth/AuthProvider';
 
 interface TeamAccessViewProps {
   tenant: Tenant;
 }
 
 export const TeamAccessView: React.FC<TeamAccessViewProps> = ({ tenant }) => {
+  const { apiFetch } = useAuth();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('All');
@@ -82,27 +84,44 @@ export const TeamAccessView: React.FC<TeamAccessViewProps> = ({ tenant }) => {
     }
   };
 
-  // Load team members from local storage
+  const normalizeMember = (member: any): TeamMember => ({
+    ...member,
+    role: member.role || 'Agent',
+    permissions: member.permissions || {
+      viewCRM: true,
+      editEmployees: member.role === 'Owner' || member.role === 'Admin',
+      viewBilling: member.role === 'Owner' || member.role === 'Admin',
+      deployWebsites: member.role === 'Owner' || member.role === 'Admin' || member.role === 'Manager'
+    },
+    status: member.status === 'disabled' ? 'pending' : (member.status || 'pending')
+  });
+
+  // Load team members from tenant-scoped backend with local fallback.
   useEffect(() => {
-    const key = `team_members_${tenant.id}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      try {
-        setTeamMembers(JSON.parse(stored));
-      } catch (e) {
-        setTeamMembers(getInitialMockMembers(tenant.id));
-      }
-    } else {
-      const initial = getInitialMockMembers(tenant.id);
-      setTeamMembers(initial);
-      localStorage.setItem(key, JSON.stringify(initial));
-    }
+    apiFetch('/api/current-tenant/team-members')
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(data => setTeamMembers((data.length ? data : getInitialMockMembers(tenant.id)).map(normalizeMember)))
+      .catch(() => {
+        const key = `team_members_${tenant.id}`;
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          try {
+            setTeamMembers(JSON.parse(stored));
+          } catch (e) {
+            setTeamMembers(getInitialMockMembers(tenant.id));
+          }
+        } else {
+          const initial = getInitialMockMembers(tenant.id);
+          setTeamMembers(initial);
+          localStorage.setItem(key, JSON.stringify(initial));
+        }
+      });
     
     // Clear alerts and hide form on tenant switch
     setShowInviteForm(false);
     setErrorMessage('');
     setSuccessMessage('');
-  }, [tenant.id]);
+  }, [apiFetch, tenant.id]);
 
   const saveTeam = (updatedList: TeamMember[]) => {
     setTeamMembers(updatedList);
@@ -161,6 +180,11 @@ export const TeamAccessView: React.FC<TeamAccessViewProps> = ({ tenant }) => {
 
     const newList = [...teamMembers, newMember];
     saveTeam(newList);
+    apiFetch('/api/current-tenant/team-members', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newMember)
+    }).catch(err => console.warn('Could not persist team member invite.', err));
     
     // Reset form
     setName('');
@@ -178,6 +202,8 @@ export const TeamAccessView: React.FC<TeamAccessViewProps> = ({ tenant }) => {
     if (window.confirm('Are you sure you want to remove this team member?')) {
       const newList = teamMembers.filter(tm => tm.id !== id);
       saveTeam(newList);
+      apiFetch(`/api/current-tenant/team-members/${id}`, { method: 'DELETE' })
+        .catch(err => console.warn('Could not delete team member on backend.', err));
       setSuccessMessage('Team member has been removed.');
       setTimeout(() => setSuccessMessage(''), 3000);
     }

@@ -3,8 +3,8 @@ import { writeDb } from './db.js';
 const initialTenants = [
   {
     id: 't-1',
-    name: 'Smile Dental Clinic',
-    domain: 'smile-dental.airaos.com',
+    name: 'Smile Dentals',
+    domain: 'smile-dentals.airaos.com',
     plan: 'Growth',
     status: 'active',
     logo: '🦷',
@@ -19,8 +19,8 @@ const initialTenants = [
   },
   {
     id: 't-2',
-    name: 'Apex Heights Real Estate',
-    domain: 'apexheights.co',
+    name: 'KP Real Estates',
+    domain: 'kp-real-estates.airaos.com',
     plan: 'Enterprise',
     status: 'active',
     logo: '🏢',
@@ -35,8 +35,8 @@ const initialTenants = [
   },
   {
     id: 't-3',
-    name: 'ByteTech Software Solutions',
-    domain: 'support.bytetech.io',
+    name: 'ABC Coaching',
+    domain: 'abc-coaching.airaos.com',
     plan: 'Scale',
     status: 'active',
     logo: '💻',

@@ -794,6 +794,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              tenantId: tenantId,
               name: capturedName,
               email: capturedEmail,
               phone: capturedPhone,
@@ -959,6 +960,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            tenantId: tenantId,
             name,
             email,
             phone,
@@ -975,6 +977,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            tenantId: tenantId,
             contactId: contact.id,
             agentId: activeAgent ? activeAgent.id : 'a-1',
             dateTime: dateTimeStr,

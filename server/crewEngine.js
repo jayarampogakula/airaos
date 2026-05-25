@@ -25,7 +25,7 @@ function searchKnowledgeChunks(query, chunks) {
 }
 
 // Tool executor
-async function executeTool(action, input, db, logCallback) {
+async function executeTool(action, input, db, logCallback, tenantId = 't-1') {
   logCallback(`Calling tool [${action}] with parameters: ${JSON.stringify(input)}`);
   
   switch (action) {
@@ -34,9 +34,12 @@ async function executeTool(action, input, db, logCallback) {
       if (!query) return { error: "Missing query parameter." };
       
       const results = db.contacts.filter(c => 
-        (c.name || '').toLowerCase().includes(query) ||
-        (c.email || '').toLowerCase().includes(query) ||
-        (c.phone || '').includes(query)
+        c.tenantId === tenantId &&
+        (
+          (c.name || '').toLowerCase().includes(query) ||
+          (c.email || '').toLowerCase().includes(query) ||
+          (c.phone || '').includes(query)
+        )
       );
       
       return { success: true, count: results.length, contacts: results };
@@ -48,6 +51,7 @@ async function executeTool(action, input, db, logCallback) {
       
       const newContact = {
         id: `c-crew-${Date.now()}`,
+        tenantId,
         name,
         email: email || '',
         phone: phone || '',
@@ -68,7 +72,7 @@ async function executeTool(action, input, db, logCallback) {
       const { contactId, note } = input;
       if (!contactId || !note) return { error: "Missing contactId or note parameter." };
       
-      const contact = db.contacts.find(c => c.id === contactId);
+      const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
       if (!contact) return { error: `Contact with ID ${contactId} not found.` };
       
       contact.notes = contact.notes || [];
@@ -81,11 +85,12 @@ async function executeTool(action, input, db, logCallback) {
       const { contactId, name, value, stage } = input;
       if (!contactId || !name) return { error: "Missing contactId or name parameter." };
       
-      const contact = db.contacts.find(c => c.id === contactId);
+      const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
       if (!contact) return { error: `Contact with ID ${contactId} not found.` };
       
       const newDeal = {
         id: `d-crew-${Date.now()}`,
+        tenantId,
         contactId,
         name,
         value: parseFloat(value) || 0,
@@ -102,7 +107,6 @@ async function executeTool(action, input, db, logCallback) {
       const { date } = input; // YYYY-MM-DD
       if (!date) return { error: "Missing date parameter (format YYYY-MM-DD)." };
       
-      const tenantId = 't-1'; // default tenant
       const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
       const shifts = db.working_shifts[tenantId] || {};
       const dayShift = shifts[dayOfWeek] || { enabled: false, start: "09:00", end: "18:00" };
@@ -119,6 +123,7 @@ async function executeTool(action, input, db, logCallback) {
         const timeString = current.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         const slotIsoString = current.toISOString().substring(0, 16);
         const isBooked = db.appointments.some(app => 
+          app.tenantId === tenantId &&
           app.status === 'scheduled' && 
           app.dateTime.substring(0, 16) === slotIsoString
         );
@@ -136,11 +141,12 @@ async function executeTool(action, input, db, logCallback) {
       const { contactId, dateTime, type } = input; // dateTime format: YYYY-MM-DDTHH:MM
       if (!contactId || !dateTime) return { error: "Missing contactId or dateTime parameter." };
       
-      const contact = db.contacts.find(c => c.id === contactId);
+      const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
       if (!contact) return { error: `Contact with ID ${contactId} not found.` };
       
       const newApp = {
         id: `app-crew-${Date.now()}`,
+        tenantId,
         contactId,
         agentId: 'a-1',
         dateTime,
@@ -174,7 +180,7 @@ async function executeTool(action, input, db, logCallback) {
 }
 
 // Run a single agent task
-export async function runCrewTask(agent, task, previousOutputsContext, db, apiKey, logCallback) {
+export async function runCrewTask(agent, task, previousOutputsContext, db, apiKey, logCallback, tenantId = 't-1') {
   let step = 0;
   const maxSteps = 5;
   
@@ -273,7 +279,7 @@ Do not combine a tool call JSON with "FINAL RESPONSE:". Choose one.`
         
         if (action && input) {
           // Execute tool
-          const toolResult = await executeTool(action, input, db, logCallback);
+          const toolResult = await executeTool(action, input, db, logCallback, tenantId);
           
           // Push assistant message and tool user response
           messages.push({ role: 'assistant', content: reply });
@@ -306,7 +312,7 @@ Do not combine a tool call JSON with "FINAL RESPONSE:". Choose one.`
 }
 
 // Orchestrate the whole crew sequential run
-export async function runCrew({ crewAgentIds, tasks, inputs = {}, db, apiKey }) {
+export async function runCrew({ crewAgentIds, tasks, inputs = {}, db, apiKey, tenantId = 't-1' }) {
   const logs = [];
   const addLog = (msg) => {
     const timeStr = new Date().toLocaleTimeString();
@@ -322,7 +328,7 @@ export async function runCrew({ crewAgentIds, tasks, inputs = {}, db, apiKey }) 
 
   for (let i = 0; i < tasks.length; i++) {
     const task = tasks[i];
-    const agent = db.agents.find(a => a.id === task.assignedAgentId) || db.agents[0];
+    const agent = db.agents.find(a => a.id === task.assignedAgentId && a.tenantId === tenantId) || db.agents.find(a => a.tenantId === tenantId) || db.agents[0];
     
     // Substitutes inputs variables in description (e.g. {{inquiry}} or {inquiry})
     let finalDesc = task.description;
@@ -341,7 +347,8 @@ export async function runCrew({ crewAgentIds, tasks, inputs = {}, db, apiKey }) 
       previousOutput,
       db,
       apiKey,
-      addLog
+      addLog,
+      tenantId
     );
 
     outputs[task.id] = taskOutput;

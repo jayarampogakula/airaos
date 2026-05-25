@@ -4,12 +4,14 @@ import {
   ArrowRight, CheckCircle2, Lock, UserPlus, Info, HelpCircle, Server, Globe, Cpu,
   ChevronDown
 } from 'lucide-react';
+import { useAuth } from '../auth/AuthProvider';
 
 interface LandingPageViewProps {
   onLoginSuccess: (role: 'tenant' | 'superadmin', tenantId?: string) => void;
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess }) => {
+  const { login, signup } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
   const [showCredsDrawer, setShowCredsDrawer] = useState(false);
   
@@ -43,13 +45,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
 
   const testProfiles = [
     {
-      role: 'superadmin' as const,
-      name: 'Super Admin Console',
-      desc: 'Access global infrastructure nodes, manage billing tiers, configure VPS integrations, and view system health metrics.',
-      email: 'admin@airaos.com',
-      password: 'admin123',
+      role: 'tenant' as const,
+      name: 'Jairam Multi-Workspace',
+      desc: 'Access Smile Dentals, KP Real Estates, and ABC Coaching from one account.',
+      email: 'jairam@airaos.com',
+      password: 'password123',
       color: '#ef4444',
-      badge: 'Global Admin',
+      badge: 'Owner',
       tenantId: undefined
     },
     {
@@ -130,15 +132,15 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
     }
   ];
 
-  const handleSignInSubmit = (e: React.FormEvent) => {
+  const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
-    const foundProfile = testProfiles.find(p => p.email === email && p.password === password);
-    if (foundProfile) {
-      onLoginSuccess(foundProfile.role, foundProfile.tenantId);
-    } else {
-      setLoginError('Invalid email or password. Open the Reviewer Credentials drawer below to auto-fill.');
+    try {
+      const session = await login(email, password);
+      onLoginSuccess('tenant', session.activeTenantId || undefined);
+    } catch (err: any) {
+      setLoginError(err.message || 'Invalid email or password. Open the Reviewer Credentials drawer below to auto-fill.');
     }
   };
 
@@ -162,12 +164,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
     } else {
       // Step 4 Submit: complete onboarding registration
       setIsSubmitting(true);
-      setTimeout(() => {
+      signup({
+        companyName: onboardingCompany.trim(),
+        ownerName: onboardingName,
+        email: onboardingEmail.trim(),
+        password: onboardingPassword
+      }).then((session) => {
         setIsSubmitting(false);
         setAuthMode(null);
-        // Direct mock login as a growth tier tenant
-        onLoginSuccess('tenant', 't-1');
-      }, 2000);
+        onLoginSuccess('tenant', session.activeTenantId || undefined);
+      }).catch((err: any) => {
+        setIsSubmitting(false);
+        setOnboardingError(err.message || 'Could not create workspace.');
+      });
     }
   };
 

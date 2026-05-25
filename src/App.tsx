@@ -18,6 +18,8 @@ import { IntegrationsView } from './components/IntegrationsView';
 import { CrewAIView } from './components/CrewAIView';
 import { BillingUpgradeView } from './components/BillingUpgradeView';
 import { PhonePeSimulator } from './components/PhonePeSimulator';
+import { useAuth } from './auth/AuthProvider';
+import { ProtectedRoute } from './auth/ProtectedRoute';
 
 
 import { 
@@ -28,6 +30,15 @@ import {
 import { Tenant, Agent, Contact, Deal, Conversation, Appointment, Workflow, KnowledgeSource, KbChunk, SystemMetrics, ChatMessage } from './types';
 
 function App() {
+  const {
+    activeTenant,
+    activeTenantId,
+    apiFetch,
+    isAuthenticated,
+    logout,
+    switchTenant,
+    tenants: authTenants
+  } = useAuth();
   // Global Roles / Selection State
   const [currentRole, setCurrentRole] = useState<'tenant' | 'superadmin'>(() => {
     return (localStorage.getItem('agentstack_currentRole') as 'tenant' | 'superadmin') || 'tenant';
@@ -68,6 +79,20 @@ function App() {
     localStorage.setItem('agentstack_isImpersonating', String(isImpersonating));
   }, [isImpersonating]);
 
+  useEffect(() => {
+    if (activeTenantId) {
+      setSelectedTenantId(activeTenantId);
+      setCurrentRole('tenant');
+      setViewMode('app');
+    }
+  }, [activeTenantId]);
+
+  useEffect(() => {
+    if (authTenants.length > 0) {
+      setTenants(authTenants);
+    }
+  }, [authTenants]);
+
   // Core Ledgers
   const [tenants, setTenants] = useState<Tenant[]>(mockTenants);
   const [agents, setAgents] = useState<Agent[]>(mockAgents);
@@ -75,7 +100,7 @@ function App() {
   const [deals, setDeals] = useState<Deal[]>(mockDeals);
   const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
-  const [workflows, setWorkflows] = useState<Workflow[]>(mockWorkflows);
+  const [workflows, setWorkflows] = useState<Workflow[]>(mockWorkflows.map(w => ({ ...w, tenantId: 't-1' })));
   const [sources, setSources] = useState<KnowledgeSource[]>(mockKnowledgeSources);
   const [chunks, setChunks] = useState<KbChunk[]>(mockKbChunks);
   const [platformSupportBot, setPlatformSupportBot] = useState({
@@ -99,36 +124,22 @@ function App() {
   }, [websiteRefreshesCount]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     const loadBackendData = async () => {
       try {
-        const [contactsRes, dealsRes, appRes, convRes, tenantsRes, botRes] = await Promise.all([
-          fetch('/api/contacts'),
-          fetch('/api/deals'),
-          fetch('/api/appointments'),
-          fetch('/api/conversations'),
-          fetch('/api/tenants'),
-          fetch('/api/platform-support-bot')
+        const [bootstrapRes, botRes] = await Promise.all([
+          apiFetch('/api/current-tenant/bootstrap'),
+          apiFetch('/api/platform-support-bot')
         ]);
 
-        if (contactsRes.ok) {
-          const data = await contactsRes.json();
-          if (data && data.length > 0) setContacts(data);
-        }
-        if (dealsRes.ok) {
-          const data = await dealsRes.json();
-          if (data && data.length > 0) setDeals(data);
-        }
-        if (appRes.ok) {
-          const data = await appRes.json();
-          if (data && data.length > 0) setAppointments(data);
-        }
-        if (convRes.ok) {
-          const data = await convRes.json();
-          if (data && data.length > 0) setConversations(data);
-        }
-        if (tenantsRes.ok) {
-          const data = await tenantsRes.json();
-          if (data && data.length > 0) setTenants(data);
+        if (bootstrapRes.ok) {
+          const data = await bootstrapRes.json();
+          setContacts(data.contacts || []);
+          setDeals(data.deals || []);
+          setAppointments(data.appointments || []);
+          setConversations(data.conversations || []);
+          setAgents(data.agents?.length ? data.agents : getFilteredAgents());
+          if (data.workflows?.length) setWorkflows(data.workflows);
         }
         if (botRes.ok) {
           const data = await botRes.json();
@@ -140,9 +151,9 @@ function App() {
     };
 
     loadBackendData();
-  }, []);
+  }, [apiFetch, isAuthenticated, activeTenantId]);
 
-  const selectedTenant = tenants.find(t => t.id === selectedTenantId) || tenants[0];
+  const selectedTenant = activeTenant || tenants.find(t => t.id === selectedTenantId) || tenants[0];
 
   // Dynamic White Label Branding Application
   useEffect(() => {
@@ -238,22 +249,30 @@ function App() {
   // In a real multi-tenant app, items are partitioned by tenantId. 
   // We simulate this by showing/filtering records depending on active Tenant.
   const getFilteredAgents = () => {
+    const scoped = agents.filter(a => !a.tenantId || a.tenantId === selectedTenantId);
+    if (scoped.length) return scoped;
     if (selectedTenantId === 't-1') return agents.filter(a => a.department === 'Reception' || a.department === 'Billing');
     if (selectedTenantId === 't-2') return agents.filter(a => a.department === 'Sales' || a.department === 'Reception');
     return agents.filter(a => a.department === 'Support' || a.department === 'Billing');
   };
 
   const getFilteredConversations = () => {
+    const scoped = conversations.filter(c => !c.tenantId || c.tenantId === selectedTenantId);
+    if (scoped.length) return scoped;
     const tenantAgents = getFilteredAgents().map(a => a.id);
     return conversations.filter(c => tenantAgents.includes(c.assignedAgentId || ''));
   };
 
   const getFilteredAppointments = () => {
+    const scoped = appointments.filter(app => !app.tenantId || app.tenantId === selectedTenantId);
+    if (scoped.length) return scoped;
     const tenantAgents = getFilteredAgents().map(a => a.id);
     return appointments.filter(app => tenantAgents.includes(app.agentId));
   };
 
   const getFilteredDeals = () => {
+    const scoped = deals.filter(d => !d.tenantId || d.tenantId === selectedTenantId);
+    if (scoped.length) return scoped;
     // In our seed, John Doe is for Dental, Sarah Jenkins for Real Estate, Michael Chen for TechSupport
     if (selectedTenantId === 't-1') return deals.filter(d => d.contactId === 'c-101' || d.contactId === 'c-104');
     if (selectedTenantId === 't-2') return deals.filter(d => d.contactId === 'c-102');
@@ -261,6 +280,8 @@ function App() {
   };
 
   const getFilteredContacts = () => {
+    const scoped = contacts.filter(c => !c.tenantId || c.tenantId === selectedTenantId);
+    if (scoped.length) return scoped;
     const dealContactIds = getFilteredDeals().map(d => d.contactId);
     return contacts.filter(c => dealContactIds.includes(c.id) || c.id === 'c-101');
   };
@@ -281,6 +302,8 @@ function App() {
   const handleAddMessage = (convId: string, text: string, sender: 'customer' | 'ai' | 'human', slots?: string[]) => {
     const newMessage: ChatMessage = {
       id: `m-${Date.now()}`,
+      tenantId: selectedTenantId,
+      conversationId: convId,
       sender,
       text,
       timestamp: new Date().toISOString(),
@@ -344,7 +367,7 @@ function App() {
       return d;
     }));
 
-    fetch(`/api/deals/${dealId}`, {
+    apiFetch(`/api/current-tenant/deals/${dealId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stage })
@@ -355,6 +378,7 @@ function App() {
     const newContact: Contact = {
       ...newContactData,
       id: `c-${Date.now()}`,
+      tenantId: selectedTenantId,
       createdAt: new Date().toISOString(),
       tags: ['Manual Inbound'],
       notes: []
@@ -365,6 +389,7 @@ function App() {
     // Create a corresponding deal
     const newDeal: Deal = {
       id: `d-${Date.now()}`,
+      tenantId: selectedTenantId,
       contactId: newContact.id,
       name: `${newContact.name} - Custom Inquire`,
       value: 500,
@@ -374,12 +399,12 @@ function App() {
     setDeals(prev => [...prev, newDeal]);
 
     try {
-      await fetch('/api/contacts', {
+      await apiFetch('/api/current-tenant/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newContact)
       });
-      await fetch('/api/deals', {
+      await apiFetch('/api/current-tenant/deals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newDeal)
@@ -390,15 +415,16 @@ function App() {
   };
 
   const handleAddAppointment = (newApp: Appointment) => {
+    const scopedApp = { ...newApp, tenantId: newApp.tenantId || selectedTenantId };
     setAppointments(prev => {
-      if (prev.some(a => a.id === newApp.id)) return prev;
-      return [newApp, ...prev];
+      if (prev.some(a => a.id === scopedApp.id)) return prev;
+      return [scopedApp, ...prev];
     });
 
     setContacts(prev => prev.map(c => {
-      if (c.id === newApp.contactId) {
-        const timeStr = new Date(newApp.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const note = `Calendar Scheduler Slot Booked: ${newApp.type} on ${new Date(newApp.dateTime).toLocaleDateString()} at ${timeStr}`;
+      if (c.id === scopedApp.contactId) {
+        const timeStr = new Date(scopedApp.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const note = `Calendar Scheduler Slot Booked: ${scopedApp.type} on ${new Date(scopedApp.dateTime).toLocaleDateString()} at ${timeStr}`;
         if (c.notes.includes(note)) return c;
         return {
           ...c,
@@ -408,10 +434,10 @@ function App() {
       return c;
     }));
 
-    fetch('/api/appointments', {
+    apiFetch('/api/current-tenant/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newApp)
+      body: JSON.stringify(scopedApp)
     }).catch(err => console.warn('Could not sync appointment to backend.', err));
 
     triggerWorkflowPulse('wf-2');
@@ -425,7 +451,7 @@ function App() {
       return a;
     }));
 
-    fetch(`/api/appointments/${appId}`, {
+    apiFetch(`/api/current-tenant/appointments/${appId}`, {
       method: 'DELETE'
     }).catch(err => console.warn('Could not sync cancel to backend.', err));
   };
@@ -438,6 +464,7 @@ function App() {
     if (!contact) {
       finalContact = {
         id: `c-voice-${Date.now()}`,
+        tenantId: selectedTenantId,
         name: contactName,
         email: email || `${contactName.toLowerCase().replace(/\s/g, '')}@example.com`,
         phone: phone,
@@ -472,6 +499,7 @@ function App() {
     const convId = `conv-voice-${Date.now()}`;
     const newConv: Conversation = {
       id: convId,
+      tenantId: selectedTenantId,
       contactId: finalContact.id,
       status: 'closed',
       channel: 'voice',
@@ -488,6 +516,7 @@ function App() {
     if (!hasDeal) {
       const newDeal: Deal = {
         id: `d-voice-${Date.now()}`,
+        tenantId: selectedTenantId,
         contactId: finalContact.id,
         name: `${contactName} - Voice AI Inbound`,
         value: 150,
@@ -522,11 +551,22 @@ function App() {
   };
 
   const handleAddWorkflow = (newWf: Workflow) => {
-    setWorkflows(prev => [...prev, newWf]);
+    const scopedWorkflow = { ...newWf, tenantId: newWf.tenantId || selectedTenantId };
+    setWorkflows(prev => [...prev, scopedWorkflow]);
+    apiFetch('/api/current-tenant/workflows', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(scopedWorkflow)
+    }).catch(err => console.warn('Could not sync workflow to backend.', err));
+  };
+
+  const getFilteredWorkflows = () => {
+    return workflows.filter(w => w.tenantId === selectedTenantId);
   };
 
   const handleUpdateWorkflow = (updatedWf: Workflow) => {
-    setWorkflows(prev => prev.map(w => w.id === updatedWf.id ? updatedWf : w));
+    const scopedWorkflow = { ...updatedWf, tenantId: updatedWf.tenantId || selectedTenantId };
+    setWorkflows(prev => prev.map(w => w.id === scopedWorkflow.id ? scopedWorkflow : w));
   };
 
   const triggerWorkflowPulse = (wfId: string) => {
@@ -570,11 +610,23 @@ function App() {
   };
 
   const handleHireAgent = (newAgent: Agent) => {
-    setAgents(prev => [newAgent, ...prev]);
+    const scopedAgent = { ...newAgent, tenantId: newAgent.tenantId || selectedTenantId };
+    setAgents(prev => [scopedAgent, ...prev]);
+    apiFetch('/api/current-tenant/agents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(scopedAgent)
+    }).catch(err => console.warn('Could not sync agent to backend.', err));
   };
 
   const handleUpdateAgent = (updatedAgent: Agent) => {
-    setAgents(prev => prev.map(a => a.id === updatedAgent.id ? updatedAgent : a));
+    const scopedAgent = { ...updatedAgent, tenantId: updatedAgent.tenantId || selectedTenantId };
+    setAgents(prev => prev.map(a => a.id === scopedAgent.id ? scopedAgent : a));
+    apiFetch(`/api/current-tenant/agents/${scopedAgent.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(scopedAgent)
+    }).catch(err => console.warn('Could not sync agent update to backend.', err));
   };
 
   // Super Admin: Toggle Client Account Status
@@ -673,18 +725,15 @@ function App() {
     setIsImpersonating(true);
   };
 
-  const handleLoginSuccess = (role: 'tenant' | 'superadmin', tenantId?: string) => {
-    setCurrentRole(role);
-    if (role === 'superadmin') {
-      setActiveTab('tenants');
-    } else {
-      setSelectedTenantId(tenantId || 't-1');
-      setActiveTab('dashboard');
-    }
+  const handleLoginSuccess = (_role: 'tenant' | 'superadmin', tenantId?: string) => {
+    setCurrentRole('tenant');
+    setSelectedTenantId(tenantId || activeTenantId || 't-1');
+    setActiveTab('dashboard');
     setViewMode('app');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     setViewMode('marketing');
     setCurrentRole('tenant');
     setSelectedTenantId('t-1');
@@ -755,7 +804,7 @@ function App() {
     };
   };
 
-  if (viewMode === 'marketing') {
+  if (!isAuthenticated || viewMode === 'marketing') {
     return <LandingPageView onLoginSuccess={handleLoginSuccess} />;
   }
 
@@ -770,7 +819,14 @@ function App() {
         currentRole={currentRole}
         selectedTenant={selectedTenant}
         tenants={tenants}
-        onSelectTenant={setSelectedTenantId}
+        onSelectTenant={(tenantId) => {
+          switchTenant(tenantId)
+            .then(() => {
+              setSelectedTenantId(tenantId);
+              setActiveTab('dashboard');
+            })
+            .catch((err) => console.warn('Could not switch workspace.', err));
+        }}
         onSelectRole={setCurrentRole}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -907,11 +963,12 @@ function App() {
                   agents={getFilteredAgents()}
                   onAddAppointment={handleAddAppointment}
                   onCancelAppointment={handleCancelAppointment}
+                  tenantId={selectedTenantId}
                 />
               )}
               {activeTab === 'workflow' && (
                 <WorkflowView
-                  workflows={workflows}
+                  workflows={getFilteredWorkflows()}
                   onToggleWorkflow={handleToggleWorkflow}
                   onIncrementRuns={handleIncrementRuns}
                   onAddWorkflow={handleAddWorkflow}
@@ -1011,7 +1068,7 @@ function App() {
               platformSupportBot={platformSupportBot}
               onUpdatePlatformSupportBot={(data: any) => {
                 setPlatformSupportBot(data);
-                fetch('/api/platform-support-bot', {
+                apiFetch('/api/platform-support-bot', {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(data)
