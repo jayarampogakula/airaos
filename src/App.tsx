@@ -15,6 +15,7 @@ import { LandingPageView } from './components/LandingPageView';
 import { SuperAdminView } from './components/SuperAdminView';
 import { TeamAccessView } from './components/TeamAccessView';
 import { IntegrationsView } from './components/IntegrationsView';
+import { CrewAIView } from './components/CrewAIView';
 
 import { 
   mockTenants, mockAgents, mockContacts, mockDeals, 
@@ -168,7 +169,7 @@ function App() {
     const superadminTabs = ['tenants', 'plans', 'infrastructure', 'marketplace'];
     const tenantTabs = [
       'dashboard', 'brain', 'employees', 'inbox', 'crm', 
-      'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations'
+      'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations', 'crew'
     ];
 
     if (currentRole === 'superadmin') {
@@ -926,6 +927,12 @@ function App() {
               )}
               {activeTab === 'integrations' && (
                 <IntegrationsView tenant={selectedTenant} />
+              )}
+              {activeTab === 'crew' && (
+                <CrewAIView
+                  agents={getFilteredAgents()}
+                  contacts={getFilteredContacts()}
+                />
               )}
             </>
           ) : (

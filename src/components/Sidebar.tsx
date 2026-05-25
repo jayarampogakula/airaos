@@ -52,7 +52,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       tabs: [
         { id: 'employees', label: 'AI Employees', icon: UserCheck },
         { id: 'knowledge', label: 'Knowledge Base', icon: Database },
-        { id: 'widget', label: 'Chatbot Widget Builder', icon: Code }
+        { id: 'widget', label: 'Chatbot Widget Builder', icon: Code },
+        { id: 'crew', label: 'CrewAI Orchestrator', icon: Brain }
       ]
     },
     {
