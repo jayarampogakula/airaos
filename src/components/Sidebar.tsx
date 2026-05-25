@@ -48,8 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       tabs: [
         { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
         { id: 'inbox', label: 'Unified Inbox', icon: MessageSquare },
-        { id: 'crm', label: 'CRM Pipeline', icon: Users },
-        { id: 'billing', label: 'Billing & Credits', icon: CreditCard }
+        { id: 'crm', label: 'CRM Pipeline', icon: Users }
       ]
     },
     {
@@ -79,6 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: "Administration",
       tabs: [
         { id: 'brain', label: 'AI Brain', icon: Brain },
+        { id: 'billing', label: 'Billing & Credits', icon: CreditCard },
         { id: 'whitelabel', label: 'White Label', icon: Settings },
         { id: 'team', label: 'Team Access', icon: Users },
         { id: 'integrations', label: 'Integrations', icon: Link }

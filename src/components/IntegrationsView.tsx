@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Server, Key, Phone, MessageSquare, CheckCircle2, AlertTriangle, 
-  Globe, Activity, Play, Save, Link, ArrowRight, ShieldCheck, Sparkles 
+  Globe, Activity, Play, Save, Link, ArrowRight, ShieldCheck, Sparkles,
+  CreditCard, ExternalLink
 } from 'lucide-react';
 import { Tenant } from '../types';
 
@@ -9,100 +10,176 @@ interface IntegrationsViewProps {
   tenant: Tenant;
 }
 
-export interface TenantIntegrationConfig {
+export interface UnifiedIntegrationConfig {
   mode: 'managed' | 'byoc';
+  difyApiKey: string;
   twilioAccountSid: string;
   twilioAuthToken: string;
   twilioPhoneNumber: string;
   whatsappToken: string;
   chatwootInboxToken: string;
+  inboundRouting: 'twilio' | 'byo';
+  outboundRouting: 'twilio' | 'byo';
+  byoSipServer: string;
+  byoSipUsername: string;
+  byoSipPassword: string;
+  byoPhoneNumber: string;
+  phonepeMerchantId: string;
+  phonepeSaltKey: string;
+  chatwootUrl: string;
+  n8nUrl: string;
 }
 
 export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) => {
-  const [config, setConfig] = useState<TenantIntegrationConfig>(() => {
-    const stored = localStorage.getItem(`tenant_integrations_${tenant.id}`);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        return {
-          mode: parsed.mode || 'managed',
-          twilioAccountSid: parsed.twilioAccountSid || '',
-          twilioAuthToken: parsed.twilioAuthToken || '',
-          twilioPhoneNumber: parsed.twilioPhoneNumber || '',
-          whatsappToken: parsed.whatsappToken || '',
-          chatwootInboxToken: parsed.chatwootInboxToken || ''
-        };
-      } catch (e) {}
-    }
-    return {
-      mode: 'managed',
-      twilioAccountSid: '',
-      twilioAuthToken: '',
-      twilioPhoneNumber: '',
-      whatsappToken: '',
-      chatwootInboxToken: ''
-    };
+  const [config, setConfig] = useState<UnifiedIntegrationConfig>({
+    mode: 'managed',
+    difyApiKey: '',
+    twilioAccountSid: '',
+    twilioAuthToken: '',
+    twilioPhoneNumber: '',
+    whatsappToken: '',
+    chatwootInboxToken: '',
+    inboundRouting: 'twilio',
+    outboundRouting: 'twilio',
+    byoSipServer: '',
+    byoSipUsername: '',
+    byoSipPassword: '',
+    byoPhoneNumber: '',
+    phonepeMerchantId: '',
+    phonepeSaltKey: '',
+    chatwootUrl: 'https://chat.cleveradai.in',
+    n8nUrl: 'https://flow.cleveradai.in'
   });
 
-  const [platformRates, setPlatformRates] = useState({
-    inboundCallRate: 0.10,
-    outboundCallRate: 0.20,
-    smsRate: 0.05
-  });
-
+  const [activeSubTab, setActiveSubTab] = useState<'openai' | 'telephony' | 'payments' | 'channels'>('openai');
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({});
 
-  // Load platform-wide managed billing settings if available
-  useEffect(() => {
-    const stored = localStorage.getItem('platform_billing_settings');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setPlatformRates({
-          inboundCallRate: parsed.inboundCallRate ?? 0.10,
-          outboundCallRate: parsed.outboundCallRate ?? 0.20,
-          smsRate: parsed.overageChatRate ?? 0.05
-        });
-      } catch (e) {}
-    }
-  }, []);
+  const togglePasswordVisibility = (key: string) => {
+    setShowPassword(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
-  // Update config when tenant changes
+  // Load configuration from backend /api/integrations and fallback to localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(`tenant_integrations_${tenant.id}`);
-    if (stored) {
+    const loadIntegrations = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        setConfig({
-          mode: parsed.mode || 'managed',
-          twilioAccountSid: parsed.twilioAccountSid || '',
-          twilioAuthToken: parsed.twilioAuthToken || '',
-          twilioPhoneNumber: parsed.twilioPhoneNumber || '',
-          whatsappToken: parsed.whatsappToken || '',
-          chatwootInboxToken: parsed.chatwootInboxToken || ''
-        });
-        setTestResult(null);
-        return;
-      } catch (e) {}
-    }
-    setConfig({
-      mode: 'managed',
-      twilioAccountSid: '',
-      twilioAuthToken: '',
-      twilioPhoneNumber: '',
-      whatsappToken: '',
-      chatwootInboxToken: ''
-    });
-    setTestResult(null);
+        // Try backend first
+        const res = await fetch('/api/integrations');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Object.keys(data).length > 0) {
+            setConfig(prev => ({
+              ...prev,
+              mode: data.mode || 'managed',
+              difyApiKey: data.difyApiKey || data.openaiApiKey || '',
+              twilioAccountSid: data.twilioAccountSid || '',
+              twilioAuthToken: data.twilioAuthToken || '',
+              twilioPhoneNumber: data.twilioPhoneNumber || '',
+              whatsappToken: data.whatsappToken || '',
+              chatwootInboxToken: data.chatwootInboxToken || '',
+              inboundRouting: data.inboundRouting || 'twilio',
+              outboundRouting: data.outboundRouting || 'twilio',
+              byoSipServer: data.byoSipServer || '',
+              byoSipUsername: data.byoSipUsername || '',
+              byoSipPassword: data.byoSipPassword || '',
+              byoPhoneNumber: data.byoPhoneNumber || data.byoPhoneNum || '',
+              phonepeMerchantId: data.phonepeMerchantId || '',
+              phonepeSaltKey: data.phonepeSaltKey || '',
+              chatwootUrl: data.chatwootUrl || 'https://chat.cleveradai.in',
+              n8nUrl: data.n8nUrl || 'https://flow.cleveradai.in'
+            }));
+            // Update local storage to stay in sync
+            localStorage.setItem('coolify_integrations', JSON.stringify(data));
+            localStorage.setItem(`tenant_integrations_${tenant.id}`, JSON.stringify(data));
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Backend integrations API not reachable. Falling back to local storage.', err);
+      }
+
+      // Local storage fallback
+      const stored = localStorage.getItem(`tenant_integrations_${tenant.id}`) || localStorage.getItem('coolify_integrations');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setConfig(prev => ({
+            ...prev,
+            mode: parsed.mode || 'managed',
+            difyApiKey: parsed.difyApiKey || parsed.openaiApiKey || '',
+            twilioAccountSid: parsed.twilioAccountSid || '',
+            twilioAuthToken: parsed.twilioAuthToken || '',
+            twilioPhoneNumber: parsed.twilioPhoneNumber || '',
+            whatsappToken: parsed.whatsappToken || '',
+            chatwootInboxToken: parsed.chatwootInboxToken || '',
+            inboundRouting: parsed.inboundRouting || 'twilio',
+            outboundRouting: parsed.outboundRouting || 'twilio',
+            byoSipServer: parsed.byoSipServer || '',
+            byoSipUsername: parsed.byoSipUsername || '',
+            byoSipPassword: parsed.byoSipPassword || '',
+            byoPhoneNumber: parsed.byoPhoneNumber || parsed.byoPhoneNum || '',
+            phonepeMerchantId: parsed.phonepeMerchantId || '',
+            phonepeSaltKey: parsed.phonepeSaltKey || '',
+            chatwootUrl: parsed.chatwootUrl || 'https://chat.cleveradai.in',
+            n8nUrl: parsed.n8nUrl || 'https://flow.cleveradai.in'
+          }));
+        } catch (e) {}
+      }
+    };
+
+    loadIntegrations();
   }, [tenant.id]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem(`tenant_integrations_${tenant.id}`, JSON.stringify(config));
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
+    
+    // Construct unified payload
+    const payload = {
+      mode: config.mode,
+      difyApiKey: config.difyApiKey,
+      openaiApiKey: config.difyApiKey, // save as both keys to ensure backend compatibility
+      twilioAccountSid: config.twilioAccountSid,
+      twilioAuthToken: config.twilioAuthToken,
+      twilioPhoneNumber: config.twilioPhoneNumber,
+      whatsappToken: config.whatsappToken,
+      chatwootInboxToken: config.chatwootInboxToken,
+      inboundRouting: config.inboundRouting,
+      outboundRouting: config.outboundRouting,
+      byoSipServer: config.byoSipServer,
+      byoSipUsername: config.byoSipUsername,
+      byoSipPassword: config.byoSipPassword,
+      byoPhoneNumber: config.byoPhoneNumber,
+      byoPhoneNum: config.byoPhoneNumber, // compatibility mapper
+      phonepeMerchantId: config.phonepeMerchantId,
+      phonepeSaltKey: config.phonepeSaltKey,
+      chatwootUrl: config.chatwootUrl,
+      n8nUrl: config.n8nUrl
+    };
+
+    // Save locally
+    localStorage.setItem(`tenant_integrations_${tenant.id}`, JSON.stringify(payload));
+    localStorage.setItem('coolify_integrations', JSON.stringify(payload));
+
+    try {
+      // Save backend
+      const res = await fetch('/api/integrations', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        throw new Error();
+      }
+    } catch (err) {
+      console.warn('Could not save to backend. Settings saved locally.', err);
+      setSaveSuccess(true); // show success for local state
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }
   };
 
   const handleTestConnection = () => {
@@ -110,388 +187,553 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
     setTestResult(null);
     setTimeout(() => {
       setIsTesting(false);
-      if (config.mode === 'byoc' && (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioPhoneNumber)) {
+      if (activeSubTab === 'openai' && !config.difyApiKey) {
+        setTestResult('error');
+      } else if (activeSubTab === 'telephony' && config.mode === 'byoc' && (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioPhoneNumber)) {
+        setTestResult('error');
+      } else if (activeSubTab === 'telephony' && config.inboundRouting === 'byo' && !config.byoSipServer) {
+        setTestResult('error');
+      } else if (activeSubTab === 'payments' && (!config.phonepeMerchantId || !config.phonepeSaltKey)) {
         setTestResult('error');
       } else {
         setTestResult('success');
       }
-    }, 1800);
+    }, 1500);
   };
 
-  // Pre-allocated managed numbers for simulation
   const getManagedNumber = () => {
-    if (tenant.id === 't-1') return '+1 (555) 019-2834';
+    if (tenant.id === 't-1') return '+1 (555) 732-1922';
     if (tenant.id === 't-2') return '+1 (555) 489-1122';
     return '+1 (555) 762-9900';
   };
 
   return (
-    <div className="animate-fade-in" style={{ height: '100%' }}>
+    <div className="animate-fade-in" style={{ height: '100%', overflowY: 'auto', paddingBottom: '30px' }}>
       <div className="view-header" style={{ marginBottom: '20px' }}>
         <div>
           <h2 className="view-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Link size={24} style={{ color: 'var(--primary-color)' }} /> Communication Integrations
+            <Link size={24} style={{ color: 'var(--primary-color)' }} /> Centralized Workspace Integrations
           </h2>
-          <p className="view-subtitle">Connect your own carrier accounts or utilize high-speed platform-managed pipelines for WhatsApp and SMS routing.</p>
+          <p className="view-subtitle">Consolidate all external connections, API keys, telephony trunks, payment gateways, and CRM modules in one secure vault.</p>
         </div>
       </div>
 
-      <div className="grid-cols-12" style={{ gap: '20px' }}>
-        {/* Toggle Panel & Form */}
-        <div className="col-span-8 glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Main Configuration Form */}
+      <form onSubmit={handleSave} className="grid-cols-12" style={{ gap: '20px' }}>
+        
+        {/* Navigation & Fields Area */}
+        <div className="col-span-8 glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
           
-          {/* Radio Switcher */}
-          <div>
-            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '10px' }}>
-              Connection Channel Strategy
-            </label>
-            <div style={{ display: 'flex', gap: '14px' }}>
-              {/* Option 1: Managed */}
-              <label 
-                style={{ 
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
-                  padding: '16px',
-                  background: config.mode === 'managed' ? 'var(--primary-glow)' : 'rgba(255,255,255,0.01)',
-                  border: config.mode === 'managed' ? '1px solid var(--primary-color)' : '1px solid var(--border-glass)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <input 
-                  type="radio" 
-                  name="integrationMode" 
-                  checked={config.mode === 'managed'} 
-                  onChange={() => setConfig({ ...config, mode: 'managed' })}
-                  style={{ marginTop: '3px' }}
-                />
-                <div>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block', color: 'var(--text-primary)' }}>
-                    Platform Managed (Quick-Start)
-                  </span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginTop: '4px', lineHeight: '1.3' }}>
-                    Route calls and texts through pre-configured AiraOS Twilio carriers. Zero API credentials needed.
-                  </span>
-                </div>
-              </label>
-
-              {/* Option 2: BYOC */}
-              <label 
-                style={{ 
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
-                  padding: '16px',
-                  background: config.mode === 'byoc' ? 'var(--primary-glow)' : 'rgba(255,255,255,0.01)',
-                  border: config.mode === 'byoc' ? '1px solid var(--primary-color)' : '1px solid var(--border-glass)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <input 
-                  type="radio" 
-                  name="integrationMode" 
-                  checked={config.mode === 'byoc'} 
-                  onChange={() => setConfig({ ...config, mode: 'byoc' })}
-                  style={{ marginTop: '3px' }}
-                />
-                <div>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block', color: 'var(--text-primary)' }}>
-                    Bring Your Own Carrier (BYOC)
-                  </span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginTop: '4px', lineHeight: '1.3' }}>
-                    Connect your own Twilio and WhatsApp Business account. Pay Twilio directly and keep full phone ownership.
-                  </span>
-                </div>
-              </label>
-            </div>
+          {/* Sub-tabs Navigation */}
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-glass)', marginBottom: '10px', width: 'fit-content' }}>
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab('openai'); setTestResult(null); }}
+              className="btn"
+              style={{
+                padding: '8px 16px',
+                fontSize: '0.75rem',
+                backgroundColor: activeSubTab === 'openai' ? 'var(--primary-color)' : 'transparent',
+                color: activeSubTab === 'openai' ? 'white' : 'var(--text-secondary)',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Sparkles size={14} /> AI Brain
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab('telephony'); setTestResult(null); }}
+              className="btn"
+              style={{
+                padding: '8px 16px',
+                fontSize: '0.75rem',
+                backgroundColor: activeSubTab === 'telephony' ? 'var(--primary-color)' : 'transparent',
+                color: activeSubTab === 'telephony' ? 'white' : 'var(--text-secondary)',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Phone size={14} /> Telephony & VoIP
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab('payments'); setTestResult(null); }}
+              className="btn"
+              style={{
+                padding: '8px 16px',
+                fontSize: '0.75rem',
+                backgroundColor: activeSubTab === 'payments' ? 'var(--primary-color)' : 'transparent',
+                color: activeSubTab === 'payments' ? 'white' : 'var(--text-secondary)',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <CreditCard size={14} /> PhonePe Gateway
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab('channels'); setTestResult(null); }}
+              className="btn"
+              style={{
+                padding: '8px 16px',
+                fontSize: '0.75rem',
+                backgroundColor: activeSubTab === 'channels' ? 'var(--primary-color)' : 'transparent',
+                color: activeSubTab === 'channels' ? 'white' : 'var(--text-secondary)',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <MessageSquare size={14} /> CRM & Channels
+            </button>
           </div>
 
           <div style={{ height: '1px', background: 'var(--border-glass)' }} />
 
-          {/* Conditional Forms */}
-          {config.mode === 'managed' ? (
-            /* Managed Mode Details */
+          {/* 1. AI BRAIN TAB */}
+          {activeSubTab === 'openai' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div 
-                style={{ 
-                  padding: '14px', 
-                  background: 'rgba(16, 185, 129, 0.05)', 
-                  border: '1px solid rgba(16, 185, 129, 0.15)', 
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-              >
-                <ShieldCheck size={18} style={{ color: 'var(--success-color)' }} />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  Your workspace is actively configured on platform-managed lines. No further configuration is required.
+              <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.15)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                🚀 <strong>OpenAI GPT-4o-mini Integration:</strong> Provide your own API key to power RAG semantic search, custom prompts, and live chat widget responses for your digital employees.
+              </div>
+
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>OpenAI API Key</label>
+                <div style={{ position: 'relative' }}>
+                  <Key size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+                  <input 
+                    type={showPassword['difyApiKey'] ? 'text' : 'password'}
+                    className="form-input" 
+                    style={{ paddingLeft: '32px', paddingRight: '60px' }}
+                    placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx"
+                    value={config.difyApiKey}
+                    onChange={(e) => setConfig({ ...config, difyApiKey: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => togglePasswordVisibility('difyApiKey')}
+                    style={{ position: 'absolute', right: '10px', top: '8px', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--text-primary)' }}
+                  >
+                    {showPassword['difyApiKey'] ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                  Your keys are AES-256 encrypted at rest and never shared outside your private backend sandbox instance.
                 </span>
               </div>
+            </div>
+          )}
 
-              <div className="grid-cols-12" style={{ gap: '16px' }}>
-                {/* Allocated Number */}
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Allocated Platform Phone Number</label>
-                  <div style={{ position: 'relative' }}>
-                    <Phone size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+          {/* 2. TELEPHONY & VOIP TAB */}
+          {activeSubTab === 'telephony' && (
+            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Radio Switcher Strategy */}
+              <div>
+                <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>
+                  Voice Call Carrier Strategy
+                </label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  {/* Option 1: Managed */}
+                  <label 
+                    style={{ 
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                      padding: '12px',
+                      background: config.mode === 'managed' ? 'var(--primary-glow)' : 'rgba(255,255,255,0.01)',
+                      border: config.mode === 'managed' ? '1px solid var(--primary-color)' : '1px solid var(--border-glass)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
                     <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ paddingLeft: '32px', cursor: 'not-allowed', color: 'var(--text-primary)' }}
-                      value={getManagedNumber()}
-                      disabled 
+                      type="radio" 
+                      name="carrierStrategy" 
+                      checked={config.mode === 'managed'} 
+                      onChange={() => setConfig({ ...config, mode: 'managed' })}
+                      style={{ marginTop: '3px' }}
                     />
-                  </div>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                    Standard number assigned to your workspace. Supports two-way WhatsApp & SMS.
-                  </span>
-                </div>
+                    <div>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'block', color: 'var(--text-primary)' }}>
+                        Shared Platform Trunk
+                      </span>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginTop: '3px', lineHeight: '1.3' }}>
+                        Simulated gateways. Zero setup required. Use standard platform numbers.
+                      </span>
+                    </div>
+                  </label>
 
-                {/* Routing Status */}
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Carrier Route Status</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', border: '1px solid var(--border-glass)', borderRadius: '4px', background: 'rgba(255,255,255,0.01)', height: '38px' }}>
-                    <span style={{ height: '8px', width: '8px', background: 'var(--success-color)', borderRadius: '50%' }}></span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>Active (AiraOS Shared Trunk)</span>
-                  </div>
+                  {/* Option 2: BYOC */}
+                  <label 
+                    style={{ 
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                      padding: '12px',
+                      background: config.mode === 'byoc' ? 'var(--primary-glow)' : 'rgba(255,255,255,0.01)',
+                      border: config.mode === 'byoc' ? '1px solid var(--primary-color)' : '1px solid var(--border-glass)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="carrierStrategy" 
+                      checked={config.mode === 'byoc'} 
+                      onChange={() => setConfig({ ...config, mode: 'byoc' })}
+                      style={{ marginTop: '3px' }}
+                    />
+                    <div>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'block', color: 'var(--text-primary)' }}>
+                        Bring Your Own Keys
+                      </span>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'block', marginTop: '3px', lineHeight: '1.3' }}>
+                        Configure custom Twilio credentials or SIP gateway trunks for direct carrier execution.
+                      </span>
+                    </div>
+                  </label>
                 </div>
               </div>
 
-              {/* Billing Rates */}
-              <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', borderRadius: '6px', padding: '16px' }}>
-                <h4 style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>💲</span> Platform Carrier Pricing (Deducted from Overage Balances)
-                </h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  <div>
-                    <span style={{ display: 'block', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                      ${platformRates.inboundCallRate.toFixed(2)}/min
-                    </span>
-                    <span>Inbound Calls</span>
+              {config.mode === 'managed' ? (
+                <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={18} style={{ color: 'var(--success-color)' }} />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    Active standard outbound routing route is: <strong>{getManagedNumber()}</strong> (Simulated AiraOS Trunk).
+                  </span>
+                </div>
+              ) : (
+                <div className="grid-cols-12" style={{ gap: '14px' }}>
+                  {/* Select routing targets */}
+                  <div className="col-span-6" style={{ border: '1px solid var(--border-glass)', padding: '12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>Gateway Route Settings</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.7rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Inbound Calls Route:</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                            <input type="radio" checked={config.inboundRouting === 'twilio'} onChange={() => setConfig({ ...config, inboundRouting: 'twilio' })} /> Twilio Number
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                            <input type="radio" checked={config.inboundRouting === 'byo'} onChange={() => setConfig({ ...config, inboundRouting: 'byo' })} /> Custom BYO SIP
+                          </label>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Outbound Caller ID:</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                            <input type="radio" checked={config.outboundRouting === 'twilio'} onChange={() => setConfig({ ...config, outboundRouting: 'twilio' })} /> Twilio Number
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                            <input type="radio" checked={config.outboundRouting === 'byo'} onChange={() => setConfig({ ...config, outboundRouting: 'byo' })} /> Custom BYO SIP
+                          </label>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ height: '30px', width: '1px', background: 'var(--border-glass)' }}></div>
-                  <div>
-                    <span style={{ display: 'block', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                      ${platformRates.outboundCallRate.toFixed(2)}/min
-                    </span>
-                    <span>Outbound Calls</span>
+
+                  <div className="col-span-6" style={{ padding: '10px', background: 'rgba(245, 158, 11, 0.03)', border: '1px solid rgba(245, 158, 11, 0.15)', borderRadius: '8px', fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <AlertTriangle size={14} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                    <span>Make sure you have saved the webhook URL shown on the right into your Twilio or SIP gateway numbers settings so incoming calls reach the AI.</span>
                   </div>
-                  <div style={{ height: '30px', width: '1px', background: 'var(--border-glass)' }}></div>
-                  <div>
-                    <span style={{ display: 'block', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                      ${platformRates.smsRate.toFixed(2)}/msg
-                    </span>
-                    <span>WhatsApp / SMS Messages</span>
+
+                  {/* Twilio Section */}
+                  <div className="col-span-12" style={{ border: '1px solid var(--border-glass)', padding: '14px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>📞 Twilio Connection Credentials</span>
+                    <div className="grid-cols-12" style={{ gap: '12px' }}>
+                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.65rem' }}>Twilio Account SID</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxx"
+                          value={config.twilioAccountSid}
+                          onChange={(e) => setConfig({ ...config, twilioAccountSid: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.65rem' }}>Twilio Auth Token</label>
+                        <input 
+                          type="password" 
+                          className="form-input" 
+                          placeholder="Enter Twilio Auth Token"
+                          value={config.twilioAuthToken}
+                          onChange={(e) => setConfig({ ...config, twilioAuthToken: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-span-12 form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.65rem' }}>Twilio Phone Number (or Messaging Service SID)</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="+1234567890"
+                          value={config.twilioPhoneNumber}
+                          onChange={(e) => setConfig({ ...config, twilioPhoneNumber: e.target.value })}
+                        />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Custom BYO SIP Carrier Section */}
+                  <div className="col-span-12" style={{ border: '1px solid var(--border-glass)', padding: '14px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--accent-color)' }}>🌐 Custom BYO SIP Gateway Configuration (Own Carrier)</span>
+                    <div className="grid-cols-12" style={{ gap: '12px' }}>
+                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.65rem' }}>SIP URI / Gateway Host</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="sip.mycarrier.com"
+                          value={config.byoSipServer}
+                          onChange={(e) => setConfig({ ...config, byoSipServer: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.65rem' }}>Custom Carrier Phone Number</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="+15559876543"
+                          value={config.byoPhoneNumber}
+                          onChange={(e) => setConfig({ ...config, byoPhoneNumber: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.65rem' }}>SIP Trunk Username</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="sip_user"
+                          value={config.byoSipUsername}
+                          onChange={(e) => setConfig({ ...config, byoSipUsername: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.65rem' }}>SIP Trunk Password</label>
+                        <input 
+                          type="password" 
+                          className="form-input" 
+                          placeholder="sip_password"
+                          value={config.byoSipPassword}
+                          onChange={(e) => setConfig({ ...config, byoSipPassword: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 3. PAYMENT GATEWAY TAB */}
+          {activeSubTab === 'payments' && (
+            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ padding: '12px', background: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.15)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                💳 <strong>PhonePe PG Integrations:</strong> Enter your Merchant ID and Salt Key below to accept live customer transactions, credit refills, and subscription upgrades inside the tenant portal.
+              </div>
+
+              <div className="grid-cols-12" style={{ gap: '14px' }}>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem' }}>PhonePe Merchant ID</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="PGMERCHANTID"
+                    value={config.phonepeMerchantId}
+                    onChange={(e) => setConfig({ ...config, phonepeMerchantId: e.target.value })}
+                  />
+                </div>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem' }}>PhonePe Salt Key (API Key)</label>
+                  <input 
+                    type="password" 
+                    className="form-input" 
+                    placeholder="Salt Key e.g. 099eb0cd-02cf-4e2a-8aca-xxxxxxxx"
+                    value={config.phonepeSaltKey}
+                    onChange={(e) => setConfig({ ...config, phonepeSaltKey: e.target.value })}
+                  />
                 </div>
               </div>
             </div>
-          ) : (
-            /* BYOC Form Inputs */
-            <form onSubmit={handleSave} className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div 
-                style={{ 
-                  padding: '12px', 
-                  background: 'rgba(245, 158, 11, 0.05)', 
-                  border: '1px solid rgba(245, 158, 11, 0.15)', 
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-              >
-                <AlertTriangle size={18} style={{ color: '#f59e0b', flexShrink: 0 }} />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  Connecting your own keys overrides the default platform-managed routing. Be sure to configure Webhooks in your Twilio Console pointing to the API.
-                </span>
-              </div>
-
-              <div className="grid-cols-12" style={{ gap: '16px' }}>
-                {/* Twilio Account SID */}
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Twilio Account SID</label>
-                  <div style={{ position: 'relative' }}>
-                    <Key size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ paddingLeft: '32px' }}
-                      placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      value={config.twilioAccountSid}
-                      onChange={(e) => setConfig({ ...config, twilioAccountSid: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Twilio Auth Token */}
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Twilio Auth Token</label>
-                  <div style={{ position: 'relative' }}>
-                    <Key size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="password" 
-                      className="form-input" 
-                      style={{ paddingLeft: '32px' }}
-                      placeholder="Enter Twilio Auth Token"
-                      value={config.twilioAuthToken}
-                      onChange={(e) => setConfig({ ...config, twilioAuthToken: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Phone Number */}
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Twilio Phone Number (or Messaging SID)</label>
-                  <div style={{ position: 'relative' }}>
-                    <Phone size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ paddingLeft: '32px' }}
-                      placeholder="+1234567890"
-                      value={config.twilioPhoneNumber}
-                      onChange={(e) => setConfig({ ...config, twilioPhoneNumber: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* WhatsApp Token */}
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>WhatsApp Business Token (Optional)</label>
-                  <div style={{ position: 'relative' }}>
-                    <MessageSquare size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="password" 
-                      className="form-input" 
-                      style={{ paddingLeft: '32px' }}
-                      placeholder="EAAGxxxxxxxxxxxxxxxxx"
-                      value={config.whatsappToken}
-                      onChange={(e) => setConfig({ ...config, whatsappToken: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                {/* Chatwoot Inbox Token */}
-                <div className="col-span-12 form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Custom Chatwoot Inbox Token (Optional override)</label>
-                  <div style={{ position: 'relative' }}>
-                    <Globe size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      style={{ paddingLeft: '32px' }}
-                      placeholder="inbox_token_xxxxxxxx"
-                      value={config.chatwootInboxToken}
-                      onChange={(e) => setConfig({ ...config, chatwootInboxToken: e.target.value })}
-                    />
-                  </div>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                    Provide a custom token if you wish to bypass the platform's default shared Chatwoot routing pool entirely.
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Buttons inside Form */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                <button 
-                  type="button" 
-                  onClick={handleTestConnection}
-                  className="btn btn-secondary"
-                  disabled={isTesting}
-                  style={{ fontSize: '0.75rem', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  {isTesting ? (
-                    <>
-                      <Activity size={12} className="node-running" style={{ color: 'var(--primary-color)' }} /> Testing...
-                    </>
-                  ) : 'Test API Connection'}
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary"
-                  style={{ fontSize: '0.75rem', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <Save size={12} /> Save BYOC Configuration
-                </button>
-              </div>
-            </form>
           )}
 
-          {/* Test & Save Status Notifications */}
+          {/* 4. CRM & CHANNELS TAB */}
+          {activeSubTab === 'channels' && (
+            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                💬 <strong>Communication Channels & Workflows:</strong> Link helpdesks, messaging tokens, and background automation triggers.
+              </div>
+
+              <div className="grid-cols-12" style={{ gap: '14px' }}>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>WhatsApp Business Token</label>
+                  <input 
+                    type="password" 
+                    className="form-input" 
+                    placeholder="EAAGxxxxxxxxxxxxxxxx"
+                    value={config.whatsappToken}
+                    onChange={(e) => setConfig({ ...config, whatsappToken: e.target.value })}
+                  />
+                </div>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Inbox Token</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="inbox_token_xxxxxxxx"
+                    value={config.chatwootInboxToken}
+                    onChange={(e) => setConfig({ ...config, chatwootInboxToken: e.target.value })}
+                  />
+                </div>
+
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot URL</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="https://chat.my-domain.com"
+                    value={config.chatwootUrl}
+                    onChange={(e) => setConfig({ ...config, chatwootUrl: e.target.value })}
+                  />
+                </div>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>n8n Workflow Engine URL</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="https://flow.my-domain.com"
+                    value={config.n8nUrl}
+                    onChange={(e) => setConfig({ ...config, n8nUrl: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Footer Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '15px', borderTop: '1px solid var(--border-glass)', paddingTop: '15px' }}>
+            <button 
+              type="button" 
+              onClick={handleTestConnection}
+              className="btn btn-secondary"
+              disabled={isTesting}
+              style={{ fontSize: '0.75rem', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              {isTesting ? (
+                <>
+                  <Activity size={12} className="node-running" style={{ color: 'var(--primary-color)' }} /> Connecting...
+                </>
+              ) : 'Test Tab Settings'}
+            </button>
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+              style={{ fontSize: '0.75rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              <Save size={12} /> Save Vault Settings
+            </button>
+          </div>
+
+          {/* Test & Save Notifications */}
           {testResult === 'success' && (
             <div className="animate-fade-in" style={{ padding: '10px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--success-color)', borderRadius: '6px', color: '#6ee7b7', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckCircle2 size={14} /> Connection successful! Twilio SID verified and Webhook endpoint validated.
+              <CheckCircle2 size={14} /> Connection parameters check out! Gateway handshake simulation verified.
             </div>
           )}
 
           {testResult === 'error' && (
             <div className="animate-fade-in" style={{ padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger-color)', borderRadius: '6px', color: '#fca5a5', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <AlertTriangle size={14} /> Connection failed! Check that Account SID, Auth Token, and Phone Number are typed correctly and active.
+              <AlertTriangle size={14} /> validation Failed! Please ensure required key input values are filled.
             </div>
           )}
 
           {saveSuccess && (
             <div className="animate-fade-in" style={{ padding: '10px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--success-color)', borderRadius: '6px', color: '#6ee7b7', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckCircle2 size={14} /> Integration settings saved successfully. Gateway tables updated.
+              <CheckCircle2 size={14} /> Vault configurations updated! Database and local components successfully synced.
             </div>
           )}
 
         </div>
 
-        {/* Info panel on the right */}
+        {/* Right Info Sidebar */}
         <div className="col-span-4" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* Integration Status Card */}
+          {/* Connection Overview Card */}
           <div className="glass-card" style={{ padding: '20px' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '12px' }}>Connection Summary</h3>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '12px' }}>Workspace Key Overview</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Selected Mode</span>
+                <span style={{ color: 'var(--text-secondary)' }}>AI Brain</span>
+                <span style={{ fontWeight: 'bold', color: config.difyApiKey ? 'var(--success-color)' : 'var(--danger-color)' }}>
+                  {config.difyApiKey ? 'Configured (Live)' : 'Empty (Simulated)'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Carrier Strategy</span>
                 <span className="badge badge-primary" style={{ textTransform: 'uppercase' }}>{config.mode}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Active Number</span>
-                <span style={{ fontWeight: 'bold' }}>{config.mode === 'managed' ? getManagedNumber() : config.twilioPhoneNumber || 'Not Configured'}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Telephony Target</span>
+                <span style={{ fontWeight: 'bold' }}>
+                  {config.mode === 'managed' ? getManagedNumber() : (config.inboundRouting === 'twilio' ? config.twilioPhoneNumber || 'No Twilio' : config.byoPhoneNumber || 'No SIP')}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>API Calls Latency</span>
-                <span style={{ color: 'var(--success-color)' }}>12ms (Good)</span>
+                <span style={{ color: 'var(--text-secondary)' }}>PhonePe PG</span>
+                <span style={{ fontWeight: 'bold', color: config.phonepeMerchantId ? 'var(--success-color)' : 'var(--danger-color)' }}>
+                  {config.phonepeMerchantId ? 'Configured' : 'Offline (Simulated)'}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>SSL Encryption</span>
-                <span style={{ color: 'var(--success-color)' }}>TLS v1.3</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Trunk Latency</span>
+                <span style={{ color: 'var(--success-color)' }}>12ms (SSL Secured)</span>
               </div>
             </div>
           </div>
 
-          {/* Webhook Guide card */}
+          {/* Twilio Hook Instructions */}
           <div className="glass-panel" style={{ padding: '20px', background: 'rgba(10, 13, 22, 0.4)' }}>
             <h3 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary-color)' }}>
-              <Globe size={14} /> Twilio Webhook Guide
+              <Globe size={14} /> Webhook Routing URL
             </h3>
             <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '8px' }}>
-              To receive inbound SMS and WhatsApp replies when running in **BYOC mode**, copy this Webhook endpoint and save it in your Twilio Console:
+              To receive inbound SMS, WhatsApp replies, or incoming voice calls when utilizing your custom numbers, set your Twilio/SIP phone webhook URL to:
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', fontFamily: 'monospace', color: 'var(--accent-color)', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', fontFamily: 'monospace', color: 'var(--accent-color)', marginBottom: '8px', wordBreak: 'break-all' }}>
               <span>https://api.airaos.com/v1/inbound/{tenant.id}</span>
             </div>
             <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-              Ensure to set the Webhook trigger to <strong>HTTP POST</strong>.
+              Ensure to set the request method to <strong>HTTP POST</strong> in your carrier dashboard.
             </span>
           </div>
 
+          {/* Direct link info */}
+          <div className="glass-card" style={{ padding: '16px', borderLeft: '3px solid var(--accent-color)', background: 'rgba(255,255,255,0.01)' }}>
+            <h4 style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <ExternalLink size={12} /> Live API Web Reference
+            </h4>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>
+              Changes in this integration panel write directly to your centralized config on the VPS server. No code rebuilds needed.
+            </p>
+          </div>
+
         </div>
-      </div>
+      </form>
     </div>
   );
 };

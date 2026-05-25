@@ -1171,6 +1171,10 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
               Connect your communication gateways to allow the digital employee to answer inbound calls and execute outbound campaign dials.
             </p>
 
+            <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.15)', borderRadius: '8px', fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+              💡 <strong>Centralized vault:</strong> Phone carrier settings, Twilio credentials, BYO Carrier SIP credentials, payment keys (PhonePe), and AI engine keys can be managed centrally in the <strong>Integrations</strong> tab under Administration.
+            </div>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255, 255, 255, 0.02)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
               <input 
                 type="checkbox" 
