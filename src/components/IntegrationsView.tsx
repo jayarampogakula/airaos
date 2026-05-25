@@ -8,6 +8,7 @@ import { Tenant } from '../types';
 
 interface IntegrationsViewProps {
   tenant: Tenant;
+  currentRole?: 'tenant' | 'superadmin';
 }
 
 export interface UnifiedIntegrationConfig {
@@ -30,7 +31,7 @@ export interface UnifiedIntegrationConfig {
   n8nUrl: string;
 }
 
-export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) => {
+export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, currentRole = 'tenant' }) => {
   const [config, setConfig] = useState<UnifiedIntegrationConfig>({
     mode: 'managed',
     difyApiKey: '',
@@ -56,20 +57,42 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({});
+  
+  // Track if admin has loaded a global openai api key
+  const [globalHasApiKey, setGlobalHasApiKey] = useState(false);
+  // Track if tenant wants to override with their own key
+  const [overrideOpenAI, setOverrideOpenAI] = useState(false);
 
   const togglePasswordVisibility = (key: string) => {
     setShowPassword(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Load configuration from backend /api/integrations and fallback to localStorage
+  // Load configuration from backend and fallback to localStorage
   useEffect(() => {
     const loadIntegrations = async () => {
+      // 1. Fetch global integrations to check if platform key is active
       try {
-        // Try backend first
-        const res = await fetch('/api/integrations');
+        const globalRes = await fetch('/api/integrations');
+        if (globalRes.ok) {
+          const globalData = await globalRes.json();
+          if (globalData && (globalData.difyApiKey || globalData.openaiApiKey)) {
+            setGlobalHasApiKey(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not check global integrations settings.', err);
+      }
+
+      // 2. Fetch tenant or global integrations based on currentRole
+      const fetchUrl = currentRole === 'tenant' 
+        ? `/api/tenants/${tenant.id}/integrations` 
+        : '/api/integrations';
+
+      try {
+        const res = await fetch(fetchUrl);
         if (res.ok) {
           const data = await res.json();
-          if (data && Object.keys(data).length > 0) {
+          if (data) {
             setConfig(prev => ({
               ...prev,
               mode: data.mode || 'managed',
@@ -90,9 +113,14 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
               chatwootUrl: data.chatwootUrl || 'https://chat.cleveradai.in',
               n8nUrl: data.n8nUrl || 'https://flow.cleveradai.in'
             }));
-            // Update local storage to stay in sync
-            localStorage.setItem('coolify_integrations', JSON.stringify(data));
-            localStorage.setItem(`tenant_integrations_${tenant.id}`, JSON.stringify(data));
+
+            // If we are a tenant and loaded a custom key, enable override status
+            if (currentRole === 'tenant' && (data.difyApiKey || data.openaiApiKey)) {
+              setOverrideOpenAI(true);
+            }
+
+            // Sync local storage
+            localStorage.setItem(currentRole === 'tenant' ? `tenant_integrations_${tenant.id}` : 'coolify_integrations', JSON.stringify(data));
             return;
           }
         }
@@ -101,7 +129,8 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
       }
 
       // Local storage fallback
-      const stored = localStorage.getItem(`tenant_integrations_${tenant.id}`) || localStorage.getItem('coolify_integrations');
+      const storageKey = currentRole === 'tenant' ? `tenant_integrations_${tenant.id}` : 'coolify_integrations';
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
@@ -125,21 +154,26 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
             chatwootUrl: parsed.chatwootUrl || 'https://chat.cleveradai.in',
             n8nUrl: parsed.n8nUrl || 'https://flow.cleveradai.in'
           }));
+          if (currentRole === 'tenant' && (parsed.difyApiKey || parsed.openaiApiKey)) {
+            setOverrideOpenAI(true);
+          }
         } catch (e) {}
       }
     };
 
     loadIntegrations();
-  }, [tenant.id]);
+  }, [tenant.id, currentRole]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Construct unified payload
+    // If tenant is saving and hasn't checked "override", clear the API key to fall back to global platform key
+    const customApiKey = (currentRole === 'tenant' && !overrideOpenAI) ? '' : config.difyApiKey;
+
     const payload = {
       mode: config.mode,
-      difyApiKey: config.difyApiKey,
-      openaiApiKey: config.difyApiKey, // save as both keys to ensure backend compatibility
+      difyApiKey: customApiKey,
+      openaiApiKey: customApiKey,
       twilioAccountSid: config.twilioAccountSid,
       twilioAuthToken: config.twilioAuthToken,
       twilioPhoneNumber: config.twilioPhoneNumber,
@@ -151,20 +185,27 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
       byoSipUsername: config.byoSipUsername,
       byoSipPassword: config.byoSipPassword,
       byoPhoneNumber: config.byoPhoneNumber,
-      byoPhoneNum: config.byoPhoneNumber, // compatibility mapper
+      byoPhoneNum: config.byoPhoneNumber,
       phonepeMerchantId: config.phonepeMerchantId,
       phonepeSaltKey: config.phonepeSaltKey,
       chatwootUrl: config.chatwootUrl,
       n8nUrl: config.n8nUrl
     };
 
-    // Save locally
-    localStorage.setItem(`tenant_integrations_${tenant.id}`, JSON.stringify(payload));
-    localStorage.setItem('coolify_integrations', JSON.stringify(payload));
+    const storageKey = currentRole === 'tenant' ? `tenant_integrations_${tenant.id}` : 'coolify_integrations';
+    localStorage.setItem(storageKey, JSON.stringify(payload));
+    
+    // Save to coolify_integrations locally for VoiceAIView to read the active numbers
+    if (currentRole === 'tenant') {
+      localStorage.setItem('coolify_integrations', JSON.stringify(payload));
+    }
+
+    const saveUrl = currentRole === 'tenant' 
+      ? `/api/tenants/${tenant.id}/integrations` 
+      : '/api/integrations';
 
     try {
-      // Save backend
-      const res = await fetch('/api/integrations', {
+      const res = await fetch(saveUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -177,7 +218,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
       }
     } catch (err) {
       console.warn('Could not save to backend. Settings saved locally.', err);
-      setSaveSuccess(true); // show success for local state
+      setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     }
   };
@@ -187,13 +228,13 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
     setTestResult(null);
     setTimeout(() => {
       setIsTesting(false);
-      if (activeSubTab === 'openai' && !config.difyApiKey) {
+      if (activeSubTab === 'openai' && (currentRole !== 'tenant' || overrideOpenAI) && !config.difyApiKey) {
         setTestResult('error');
       } else if (activeSubTab === 'telephony' && config.mode === 'byoc' && (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioPhoneNumber)) {
         setTestResult('error');
       } else if (activeSubTab === 'telephony' && config.inboundRouting === 'byo' && !config.byoSipServer) {
         setTestResult('error');
-      } else if (activeSubTab === 'payments' && (!config.phonepeMerchantId || !config.phonepeSaltKey)) {
+      } else if (activeSubTab === 'payments' && currentRole !== 'tenant' && (!config.phonepeMerchantId || !config.phonepeSaltKey)) {
         setTestResult('error');
       } else {
         setTestResult('success');
@@ -260,23 +301,25 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
             >
               <Phone size={14} /> Telephony & VoIP
             </button>
-            <button
-              type="button"
-              onClick={() => { setActiveSubTab('payments'); setTestResult(null); }}
-              className="btn"
-              style={{
-                padding: '8px 16px',
-                fontSize: '0.75rem',
-                backgroundColor: activeSubTab === 'payments' ? 'var(--primary-color)' : 'transparent',
-                color: activeSubTab === 'payments' ? 'white' : 'var(--text-secondary)',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <CreditCard size={14} /> PhonePe Gateway
-            </button>
+            {currentRole !== 'tenant' && (
+              <button
+                type="button"
+                onClick={() => { setActiveSubTab('payments'); setTestResult(null); }}
+                className="btn"
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '0.75rem',
+                  backgroundColor: activeSubTab === 'payments' ? 'var(--primary-color)' : 'transparent',
+                  color: activeSubTab === 'payments' ? 'white' : 'var(--text-secondary)',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <CreditCard size={14} /> PhonePe Gateway
+              </button>
+            )}
             <button
               type="button"
               onClick={() => { setActiveSubTab('channels'); setTestResult(null); }}
@@ -302,33 +345,66 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
           {activeSubTab === 'openai' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.15)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                🚀 <strong>OpenAI GPT-4o-mini Integration:</strong> Provide your own API key to power RAG semantic search, custom prompts, and live chat widget responses for your digital employees.
+                🚀 <strong>OpenAI GPT-4o-mini Integration:</strong> Provide an API key to power RAG semantic search, custom prompts, and live chat widget responses for your digital employees.
               </div>
 
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.75rem' }}>OpenAI API Key</label>
-                <div style={{ position: 'relative' }}>
-                  <Key size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                  <input 
-                    type={showPassword['difyApiKey'] ? 'text' : 'password'}
-                    className="form-input" 
-                    style={{ paddingLeft: '32px', paddingRight: '60px' }}
-                    placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx"
-                    value={config.difyApiKey}
-                    onChange={(e) => setConfig({ ...config, difyApiKey: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('difyApiKey')}
-                    style={{ position: 'absolute', right: '10px', top: '8px', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--text-primary)' }}
-                  >
-                    {showPassword['difyApiKey'] ? 'Hide' : 'Show'}
-                  </button>
+              {currentRole === 'tenant' && globalHasApiKey && (
+                <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ShieldCheck size={16} style={{ color: 'var(--success-color)' }} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--success-color)' }}>
+                      Platform-Managed Key Active
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
+                    The agency administrator has configured a shared OpenAI connection for this workspace. You are currently using this shared connection, and the raw key is hidden for security.
+                  </p>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={overrideOpenAI} 
+                      onChange={(e) => {
+                        setOverrideOpenAI(e.target.checked);
+                        if (!e.target.checked) {
+                          setConfig(prev => ({ ...prev, difyApiKey: '' }));
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    Override platform default and use my own custom OpenAI API Key
+                  </label>
                 </div>
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                  Your keys are AES-256 encrypted at rest and never shared outside your private backend sandbox instance.
-                </span>
-              </div>
+              )}
+
+              {(currentRole !== 'tenant' || !globalHasApiKey || overrideOpenAI) && (
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem' }}>
+                    {currentRole === 'tenant' ? 'Custom OpenAI API Key (Override)' : 'Global Platform OpenAI API Key'}
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <Key size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+                    <input 
+                      type={showPassword['difyApiKey'] ? 'text' : 'password'}
+                      className="form-input" 
+                      style={{ paddingLeft: '32px', paddingRight: '60px' }}
+                      placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx"
+                      value={config.difyApiKey}
+                      onChange={(e) => setConfig({ ...config, difyApiKey: e.target.value })}
+                      required={currentRole === 'tenant' ? overrideOpenAI : false}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('difyApiKey')}
+                      style={{ position: 'absolute', right: '10px', top: '8px', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--text-primary)' }}
+                    >
+                      {showPassword['difyApiKey'] ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                    Your keys are AES-256 encrypted at rest and never shared outside your private backend sandbox instance.
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
@@ -541,7 +617,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
           )}
 
           {/* 3. PAYMENT GATEWAY TAB */}
-          {activeSubTab === 'payments' && (
+          {activeSubTab === 'payments' && currentRole !== 'tenant' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ padding: '12px', background: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.15)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                 💳 <strong>PhonePe PG Integrations:</strong> Enter your Merchant ID and Salt Key below to accept live customer transactions, credit refills, and subscription upgrades inside the tenant portal.
@@ -658,7 +734,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
 
           {testResult === 'error' && (
             <div className="animate-fade-in" style={{ padding: '10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger-color)', borderRadius: '6px', color: '#fca5a5', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <AlertTriangle size={14} /> validation Failed! Please ensure required key input values are filled.
+              <AlertTriangle size={14} /> Validation Failed! Please ensure required key input values are filled.
             </div>
           )}
 
@@ -679,8 +755,8 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>AI Brain</span>
-                <span style={{ fontWeight: 'bold', color: config.difyApiKey ? 'var(--success-color)' : 'var(--danger-color)' }}>
-                  {config.difyApiKey ? 'Configured (Live)' : 'Empty (Simulated)'}
+                <span style={{ fontWeight: 'bold', color: (config.difyApiKey || globalHasApiKey) ? 'var(--success-color)' : 'var(--danger-color)' }}>
+                  {(config.difyApiKey || globalHasApiKey) ? 'Configured (Active)' : 'Empty (Simulated)'}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
@@ -693,12 +769,14 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant }) =>
                   {config.mode === 'managed' ? getManagedNumber() : (config.inboundRouting === 'twilio' ? config.twilioPhoneNumber || 'No Twilio' : config.byoPhoneNumber || 'No SIP')}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>PhonePe PG</span>
-                <span style={{ fontWeight: 'bold', color: config.phonepeMerchantId ? 'var(--success-color)' : 'var(--danger-color)' }}>
-                  {config.phonepeMerchantId ? 'Configured' : 'Offline (Simulated)'}
-                </span>
-              </div>
+              {currentRole !== 'tenant' && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>PhonePe PG</span>
+                  <span style={{ fontWeight: 'bold', color: config.phonepeMerchantId ? 'var(--success-color)' : 'var(--danger-color)' }}>
+                    {config.phonepeMerchantId ? 'Configured' : 'Offline (Simulated)'}
+                  </span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Trunk Latency</span>
                 <span style={{ color: 'var(--success-color)' }}>12ms (SSL Secured)</span>

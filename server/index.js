@@ -289,6 +289,30 @@ app.put('/api/integrations', (req, res) => {
   res.json(db.integrations);
 });
 
+// Tenant-Specific Integrations
+app.get('/api/tenants/:id/integrations', (req, res) => {
+  const db = readDb();
+  const tenant = db.tenants.find(t => t.id === req.params.id);
+  if (!tenant) {
+    return res.status(404).json({ error: 'Tenant not found' });
+  }
+  res.json(tenant.integrations || {});
+});
+
+app.put('/api/tenants/:id/integrations', (req, res) => {
+  const db = readDb();
+  const tenantIndex = db.tenants.findIndex(t => t.id === req.params.id);
+  if (tenantIndex === -1) {
+    return res.status(404).json({ error: 'Tenant not found' });
+  }
+  db.tenants[tenantIndex].integrations = {
+    ...(db.tenants[tenantIndex].integrations || {}),
+    ...req.body
+  };
+  writeDb(db);
+  res.json(db.tenants[tenantIndex].integrations);
+});
+
 // ----------------------------------------
 // AI Brain chat endpoint
 // ----------------------------------------
@@ -297,7 +321,8 @@ app.post('/api/chat', async (req, res) => {
   const { message, history = [], tenantId = 't-1', agentId = 'a-1' } = req.body;
 
   const agent = db.agents.find(a => a.id === agentId) || db.agents[0];
-  const integrations = db.integrations || {};
+  const tenant = db.tenants.find(t => t.id === tenantId);
+  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
 
   // Retrieve relevant knowledge grounding chunks (RAG)
   const groundingContext = searchKnowledgeChunks(message, db.knowledge_chunks || []);
@@ -371,13 +396,15 @@ app.post('/api/chat', async (req, res) => {
 // ----------------------------------------
 app.post('/api/crew/run', async (req, res) => {
   const db = readDb();
-  const { crewAgents, tasks, inputs = {} } = req.body;
+  const { crewAgents, tasks, inputs = {}, tenantId = 't-1' } = req.body;
 
   if (!crewAgents || !tasks || !Array.isArray(crewAgents) || !Array.isArray(tasks)) {
     return res.status(400).json({ error: 'Parameters crewAgents and tasks are required and must be arrays.' });
   }
 
-  const apiKey = db.integrations?.difyApiKey || process.env.OPENAI_API_KEY;
+  const tenant = db.tenants.find(t => t.id === tenantId);
+  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
+  const apiKey = integrations.difyApiKey || process.env.OPENAI_API_KEY;
 
   try {
     const result = await runCrew({
@@ -536,6 +563,7 @@ app.post('/api/phonepe/webhook', (req, res) => {
 // Inbound Voice webhook
 app.post('/api/voice/inbound', (req, res) => {
   const db = readDb();
+  const tenantId = req.query.tenantId || req.body.tenantId || 't-1';
   const caller = req.body.From || 'Unknown Phone';
   const called = req.body.To || 'Attendant';
 
@@ -582,7 +610,7 @@ app.post('/api/voice/inbound', (req, res) => {
   res.send(`
     <Response>
       <Say voice="Polly.Kimberly">${welcomeText}</Say>
-      <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contact.id}" timeout="3" speechModel="phone_call" />
+      <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contact.id}&amp;tenantId=${tenantId}" timeout="3" speechModel="phone_call" />
     </Response>
   `);
 });
@@ -592,6 +620,7 @@ app.post('/api/voice/gather', async (req, res) => {
   const db = readDb();
   const convId = req.query.convId;
   const contactId = req.query.contactId;
+  const tenantId = req.query.tenantId || 't-1';
   const speechInput = req.body.SpeechResult;
 
   if (!speechInput) {
@@ -599,7 +628,7 @@ app.post('/api/voice/gather', async (req, res) => {
     return res.send(`
       <Response>
         <Say voice="Polly.Kimberly">I didn't catch that. Could you please repeat?</Say>
-        <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contactId}" timeout="3" speechModel="phone_call" />
+        <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contactId}&amp;tenantId=${tenantId}" timeout="3" speechModel="phone_call" />
       </Response>
     `);
   }
@@ -623,7 +652,10 @@ app.post('/api/voice/gather', async (req, res) => {
   
   let replyText = "I am processing your request. Please hold on.";
   const groundingContext = searchKnowledgeChunks(speechInput, db.knowledge_chunks || []);
-  const apiKey = db.integrations?.difyApiKey || process.env.OPENAI_API_KEY;
+  
+  const tenant = db.tenants.find(t => t.id === tenantId);
+  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
+  const apiKey = integrations.difyApiKey || process.env.OPENAI_API_KEY;
 
   if (apiKey) {
     try {
@@ -734,7 +766,7 @@ app.post('/api/voice/gather', async (req, res) => {
   res.send(`
     <Response>
       <Say voice="Polly.Kimberly">${replyText}</Say>
-      <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contactId}" timeout="3" speechModel="phone_call" />
+      <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contactId}&amp;tenantId=${tenantId}" timeout="3" speechModel="phone_call" />
     </Response>
   `);
 });
@@ -786,7 +818,7 @@ app.post('/api/voice/outbound-connect', (req, res) => {
   res.send(`
     <Response>
       <Say voice="Polly.Kimberly">${welcomeText}</Say>
-      <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contact.id}" timeout="3" speechModel="phone_call" />
+      <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contact.id}&amp;tenantId=${tenantId}" timeout="3" speechModel="phone_call" />
     </Response>
   `);
 });
@@ -800,9 +832,12 @@ app.post('/api/voice/outbound', async (req, res) => {
     return res.status(400).json({ error: 'Phone parameter is required' });
   }
 
-  const twilioSid = db.integrations?.twilioAccountSid;
-  const twilioToken = db.integrations?.twilioAuthToken;
-  const twilioNumber = db.integrations?.twilioPhoneNumber;
+  const tenant = db.tenants.find(t => t.id === tenantId);
+  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
+
+  const twilioSid = integrations.twilioAccountSid;
+  const twilioToken = integrations.twilioAuthToken;
+  const twilioNumber = integrations.twilioPhoneNumber;
 
   if (!twilioSid || !twilioToken || !twilioNumber) {
     return res.status(400).json({ error: 'Twilio configurations are not set in Integration settings.' });

@@ -971,12 +971,13 @@ function App() {
                 <TeamAccessView tenant={selectedTenant} />
               )}
               {activeTab === 'integrations' && (
-                <IntegrationsView tenant={selectedTenant} />
+                <IntegrationsView tenant={selectedTenant} currentRole={currentRole} />
               )}
               {activeTab === 'crew' && (
                 <CrewAIView
                   agents={getFilteredAgents()}
                   contacts={getFilteredContacts()}
+                  tenantId={selectedTenantId}
                 />
               )}
               {activeTab === 'billing' && (

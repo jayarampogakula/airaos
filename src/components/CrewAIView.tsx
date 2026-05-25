@@ -17,9 +17,10 @@ interface CrewTask {
 interface CrewAIViewProps {
   agents: Agent[];
   contacts: Contact[];
+  tenantId?: string;
 }
 
-export const CrewAIView: React.FC<CrewAIViewProps> = ({ agents, contacts }) => {
+export const CrewAIView: React.FC<CrewAIViewProps> = ({ agents, contacts, tenantId }) => {
   const [crewAgents, setCrewAgents] = useState<string[]>([agents[0]?.id || '', agents[1]?.id || ''].filter(Boolean));
   const [tasks, setTasks] = useState<CrewTask[]>([
     {
@@ -99,7 +100,8 @@ export const CrewAIView: React.FC<CrewAIViewProps> = ({ agents, contacts }) => {
         body: JSON.stringify({
           crewAgents,
           tasks,
-          inputs: {}
+          inputs: {},
+          tenantId
         })
       });
 
