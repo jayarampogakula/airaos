@@ -73,7 +73,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return null;
     }
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (err) {
+      localStorage.removeItem(TOKEN_KEY);
+      setSession(null);
+      setLoading(false);
+      return null;
+    }
     setLoading(false);
     return applySession(data);
   }, [applySession]);
@@ -92,7 +101,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const data = await res.json();
+    
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (err) {
+      throw new Error('Server returned an invalid response.');
+    }
+
     if (!res.ok) throw new Error(data.error || 'Unable to sign in.');
     return applySession(data);
   }, [applySession]);
@@ -103,7 +120,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input)
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (err) {
+      throw new Error('Server returned an invalid response.');
+    }
     if (!res.ok) throw new Error(data.error || 'Unable to create workspace.');
     return applySession(data);
   }, [applySession]);
@@ -114,7 +137,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tenantId })
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (err) {
+      throw new Error('Server returned an invalid response.');
+    }
     if (!res.ok) throw new Error(data.error || 'Unable to switch workspace.');
     return applySession(data);
   }, [apiFetch, applySession]);
