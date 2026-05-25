@@ -391,6 +391,13 @@ app.post('/api/chat', async (req, res) => {
   }, 1000);
 });
 
+// Email chat transcript endpoint
+app.post('/api/chat/email', (req, res) => {
+  const { email, transcript } = req.body;
+  console.log(`[Email Dispatch Simulation] Sending chat transcript to ${email}:`, transcript);
+  res.json({ success: true, message: `Transcript sent to ${email}` });
+});
+
 // ----------------------------------------
 // CrewAI Native Execution Route
 // ----------------------------------------

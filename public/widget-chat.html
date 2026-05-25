@@ -95,6 +95,23 @@
       display: inline-block;
     }
 
+    .email-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      outline: none;
+      transition: color 0.2s ease;
+    }
+
+    .email-btn:hover {
+      color: var(--primary-color);
+    }
+
     .close-btn {
       background: none;
       border: none;
@@ -181,6 +198,32 @@
       color: #fff;
       align-self: flex-end;
       border-bottom-right-radius: 2px;
+    }
+
+    .message-slots {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .slot-button {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-glass);
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 0.75rem;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .slot-button:hover {
+      border-color: var(--primary-color);
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .typing-indicator {
@@ -354,7 +397,10 @@
         <p><span class="status-dot"></span> Active Receptionist</p>
       </div>
     </div>
-    <button class="close-btn" onclick="closeWidget()">✕</button>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <button class="email-btn" onclick="openEmailModal()" title="Email Chat Transcript">📧</button>
+      <button class="close-btn" onclick="closeWidget()">✕</button>
+    </div>
   </header>
 
   <!-- Navigation Tabs -->
@@ -368,6 +414,12 @@
     <div class="messages-list" id="messages-list">
       <!-- Dynamic Messages -->
     </div>
+    
+    <!-- Floating Scroll-to-Bottom Arrow -->
+    <button id="scroll-bottom-btn" onclick="scrollToBottom()" style="display: none; position: absolute; bottom: 20px; right: 24px; width: 36px; height: 36px; border-radius: 50%; background: var(--primary-color); border: none; color: white; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 99; transition: all 0.2s ease; outline: none; font-size: 1.1rem; font-weight: bold;">
+      ↓
+    </button>
+
     <div class="typing-indicator" id="typing-indicator">
       <div class="typing-dots">
         <span></span>
@@ -399,7 +451,6 @@
       <div class="form-group">
         <label class="form-label">Available Timeslots</label>
         <div id="slots-list" class="slots-grid">
-          <!-- Availability slots -->
           <div style="grid-column: span 2; text-align: center; color: var(--text-secondary); font-size: 0.75rem; padding: 10px;">Select a date to check availability.</div>
         </div>
       </div>
@@ -432,6 +483,22 @@
     </div>
   </div>
 
+  <!-- Email Transcript Modal Overlay -->
+  <div id="email-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 10000; padding: 20px;">
+    <div style="background: var(--bg-secondary); border: 1px solid var(--border-glass); border-radius: 12px; padding: 20px; width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+      <h3 style="font-size: 0.85rem; font-weight: 700; color: white; margin: 0;">Email Chat Transcript</h3>
+      <p style="font-size: 0.7rem; color: var(--text-secondary); line-height: 1.4; margin: 0;">Get a copy of this support session sent to your inbox.</p>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.65rem; color: var(--text-secondary); font-weight: 600;">Your Email Address</label>
+        <input type="email" id="transcript-email" class="form-input" placeholder="name@domain.com" style="width: 100%;">
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 4px;">
+        <button class="btn-action" style="flex: 1; padding: 8px; font-size: 0.75rem;" onclick="sendTranscriptEmail()">Send Email</button>
+        <button class="btn-action" style="flex: 1; padding: 8px; font-size: 0.75rem; background: transparent; border: 1px solid var(--border-glass); color: white;" onclick="closeEmailModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Parse query params
     const params = new URLSearchParams(window.location.search);
@@ -439,40 +506,124 @@
     const widgetColor = params.get('color') || '#0ea5e9';
     const widgetTitle = params.get('title') || 'AI Assistant';
 
-    // Apply customizations
+    // Logged-in auto-fill parameters
+    const paramName = params.get('userName') || '';
+    const paramEmail = params.get('userEmail') || '';
+    const paramPhone = params.get('userPhone') || '';
+
+    // Apply colors/text
     document.documentElement.style.setProperty('--primary-color', widgetColor);
     document.getElementById('widget-title').innerText = widgetTitle;
 
     let agents = [];
     let activeAgent = null;
     let selectedSlot = null;
+    let chatHistory = [];
 
-    // Load active agent data on mount
+    // Conversational Lead Capture States: 0 = done/inactive, 1 = get name, 2 = get email, 3 = get phone
+    let leadCaptureStep = 0;
+    let capturedName = '';
+    let capturedEmail = '';
+    let capturedPhone = '';
+
+    const messagesList = document.getElementById('messages-list');
+    const scrollBtn = document.getElementById('scroll-bottom-btn');
+
+    // Scroll listener for floating scroll-to-bottom arrow
+    messagesList.addEventListener('scroll', () => {
+      const isScrolledUp = messagesList.scrollHeight - messagesList.scrollTop - messagesList.clientHeight > 120;
+      if (isScrolledUp) {
+        scrollBtn.style.display = 'flex';
+      } else {
+        scrollBtn.style.display = 'none';
+      }
+    });
+
+    function scrollToBottom() {
+      messagesList.scrollTo({ top: messagesList.scrollHeight, behavior: 'smooth' });
+    }
+
+    // 24 Hours Session Auto-Clear
+    function checkSessionExpiry() {
+      const lastSessionTime = localStorage.getItem(`airaos_session_time_${tenantId}`);
+      const now = Date.now();
+      
+      if (lastSessionTime) {
+        const diff = now - parseInt(lastSessionTime, 10);
+        if (diff > 24 * 3600 * 1000) { // 24 hours
+          localStorage.removeItem(`airaos_chat_history_${tenantId}`);
+          localStorage.setItem(`airaos_session_time_${tenantId}`, now.toString());
+        }
+      } else {
+        localStorage.setItem(`airaos_session_time_${tenantId}`, now.toString());
+      }
+    }
+
+    // Load active agent and initialize chat history
     async function init() {
+      checkSessionExpiry();
+
       try {
         const response = await fetch('/api/agents');
         if (response.ok) {
           agents = await response.json();
-          // Find matching agent (a-1 for t-1, a-2 for t-2, a-3 for t-3)
           const targetId = tenantId === 't-1' ? 'a-1' : tenantId === 't-2' ? 'a-2' : tenantId === 't-3' ? 'a-3' : 'a-1';
           activeAgent = agents.find(a => a.id === targetId) || agents[0];
           
           if (activeAgent) {
             document.getElementById('agent-avatar').innerText = activeAgent.avatar ? '' : '🤖';
             if (activeAgent.avatar) {
-              const img = document.createElement('img');
-              img.src = activeAgent.avatar;
-              img.className = 'avatar';
-              document.getElementById('agent-avatar').appendChild(img);
+              document.getElementById('agent-avatar').innerHTML = `<img src="${activeAgent.avatar}" class="avatar" alt="" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
             }
-            
-            // Set initial AI greeting
-            addMessage(`Hi! I am ${activeAgent.name}, the AI receptionist. How can I help you today?`, 'ai');
           }
         }
       } catch (e) {
         console.error(e);
-        addMessage("Hello! I am your AiraOS AI digital coordinator. How can I help you today?", "ai");
+      }
+
+      // Check Logged-in parameters first
+      if (paramName && paramEmail) {
+        const identity = { name: paramName, email: paramEmail, phone: paramPhone };
+        localStorage.setItem(`airaos_identity_${tenantId}`, JSON.stringify(identity));
+        leadCaptureStep = 0;
+      }
+
+      // Load cached identity or start lead capture
+      const savedIdentityStr = localStorage.getItem(`airaos_identity_${tenantId}`);
+      if (savedIdentityStr) {
+        try {
+          const identity = JSON.parse(savedIdentityStr);
+          capturedName = identity.name;
+          capturedEmail = identity.email;
+          capturedPhone = identity.phone;
+          leadCaptureStep = 0;
+          
+          // Pre-fill email transcript address field
+          document.getElementById('transcript-email').value = capturedEmail;
+          
+          // Pre-populate fields in tab-book
+          document.getElementById('client-name').value = capturedName;
+          document.getElementById('client-email').value = capturedEmail;
+          document.getElementById('client-phone').value = capturedPhone;
+        } catch(e) {}
+      } else {
+        // Unknown user - start lead capture flow
+        leadCaptureStep = 1;
+      }
+
+      // Initialize chat logs
+      const savedHistory = localStorage.getItem(`airaos_chat_history_${tenantId}`);
+      if (savedHistory) {
+        try {
+          chatHistory = JSON.parse(savedHistory);
+          chatHistory.forEach(msg => {
+            renderMessageNode(msg.text, msg.sender, msg.slots);
+          });
+        } catch (e) {
+          loadWelcomeGreeting();
+        }
+      } else {
+        loadWelcomeGreeting();
       }
 
       // Default the datepicker to tomorrow
@@ -480,6 +631,16 @@
       tomorrow.setDate(tomorrow.getDate() + 1);
       document.getElementById('booking-date').value = tomorrow.toISOString().substring(0, 10);
       loadAvailability();
+    }
+
+    function loadWelcomeGreeting() {
+      if (leadCaptureStep === 1) {
+        const greeting = `Hello! Welcome to our virtual assistant. Before we begin, could you please tell me your full name?`;
+        addMessage(greeting, 'ai');
+      } else {
+        const greeting = `Welcome back, ${capturedName || 'Guest'}! I am ${activeAgent ? activeAgent.name : 'Sarah'}, your digital assistant. How can I help you today?`;
+        addMessage(greeting, 'ai');
+      }
     }
 
     function switchTab(tabName) {
@@ -494,6 +655,7 @@
       
       if (tabName === 'chat') {
         document.getElementById('footer-chat').style.display = 'flex';
+        scrollToBottom();
       }
     }
 
@@ -501,18 +663,46 @@
       window.parent.postMessage('airaos-widget-close', '*');
     }
 
-    // Message Rendering Helpers
-    const messagesList = document.getElementById('messages-list');
-    
-    function addMessage(text, sender) {
+    // Message Rendering Node
+    function renderMessageNode(text, sender, slots) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${sender}`;
       msgDiv.innerText = text;
+      
+      if (slots && slots.length > 0) {
+        const slotContainer = document.createElement('div');
+        slotContainer.className = 'message-slots';
+        slots.forEach(slot => {
+          const btn = document.createElement('button');
+          btn.className = 'slot-button';
+          btn.innerText = `📅 Reserve: ${slot}`;
+          btn.onclick = () => handleSlotQuickBook(slot);
+          slotContainer.appendChild(btn);
+        });
+        msgDiv.appendChild(slotContainer);
+      }
+
       messagesList.appendChild(msgDiv);
-      messagesList.scrollTop = messagesList.scrollHeight;
+      scrollToBottom();
     }
 
-    // Chat logic
+    function addMessage(text, sender, slots) {
+      chatHistory.push({ text, sender, slots });
+      localStorage.setItem(`airaos_chat_history_${tenantId}`, JSON.stringify(chatHistory));
+      renderMessageNode(text, sender, slots);
+    }
+
+    // Direct booking from chat slot options
+    function handleSlotQuickBook(slotLabel) {
+      selectedSlot = slotLabel.split(' (')[0]; // Strip text
+      switchTab('book');
+      
+      // Auto-focus date and slots List
+      document.getElementById('booking-form').style.display = 'flex';
+      document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Chat processor
     async function sendChatMessage() {
       const input = document.getElementById('chat-input');
       const text = input.value.trim();
@@ -521,9 +711,64 @@
       addMessage(text, 'customer');
       input.value = '';
 
+      // Conversational Lead Capture State Machine
+      if (leadCaptureStep === 1) {
+        capturedName = text;
+        leadCaptureStep = 2;
+        addMessage(`Thank you, ${capturedName}! What is your email address?`, 'ai');
+        return;
+      }
+
+      if (leadCaptureStep === 2) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(text)) {
+          addMessage("Please enter a valid email address so we can register your conversation.", "ai");
+          return;
+        }
+        capturedEmail = text;
+        leadCaptureStep = 3;
+        addMessage(`Got it. And finally, what is your phone number?`, 'ai');
+        return;
+      }
+
+      if (leadCaptureStep === 3) {
+        capturedPhone = text;
+        leadCaptureStep = 0;
+
+        // Save Identity
+        const identityObj = { name: capturedName, email: capturedEmail, phone: capturedPhone };
+        localStorage.setItem(`airaos_identity_${tenantId}`, JSON.stringify(identityObj));
+        
+        // Sync inputs in calendar
+        document.getElementById('client-name').value = capturedName;
+        document.getElementById('client-email').value = capturedEmail;
+        document.getElementById('client-phone').value = capturedPhone;
+        document.getElementById('transcript-email').value = capturedEmail;
+
+        // Post to CRM to create lead
+        try {
+          fetch('/api/contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: capturedName,
+              email: capturedEmail,
+              phone: capturedPhone,
+              company: 'Chatbot Lead Capture',
+              tags: ['Web Lead'],
+              notes: [`Lead captured automatically on initial conversation.`]
+            })
+          });
+        } catch(e){}
+
+        addMessage(`Perfect! I have saved your contact details. How can I help you today, ${capturedName}?`, 'ai');
+        return;
+      }
+
+      // Standard OpenAI Assistant Chat
       const typing = document.getElementById('typing-indicator');
       typing.style.display = 'block';
-      messagesList.scrollTop = messagesList.scrollHeight;
+      scrollToBottom();
 
       try {
         const response = await fetch('/api/chat', {
@@ -532,7 +777,8 @@
           body: JSON.stringify({
             message: text,
             tenantId: tenantId,
-            agentId: activeAgent ? activeAgent.id : 'a-1'
+            agentId: activeAgent ? activeAgent.id : 'a-1',
+            history: chatHistory.slice(-10) // pass context history
           })
         });
 
@@ -540,13 +786,46 @@
 
         if (response.ok) {
           const data = await response.json();
-          addMessage(data.text, 'ai');
+          let slots = null;
+
+          // Check if AI mentions booking/reservations. Fetch REAL availability slots dynamically!
+          const isBookingIntent = text.toLowerCase().includes('book') || text.toLowerCase().includes('appointment') || text.toLowerCase().includes('schedule') || data.text.toLowerCase().includes('choose') || data.text.toLowerCase().includes('slot');
+          if (isBookingIntent) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dateStr = tomorrow.toISOString().substring(0, 10);
+            
+            try {
+              const availRes = await fetch(`/api/availability?tenantId=${tenantId}&date=${dateStr}`);
+              if (availRes.ok) {
+                const availSlots = await availRes.json();
+                if (availSlots && availSlots.length > 0) {
+                  slots = availSlots.slice(0, 2).map(s => `${s} (Tomorrow)`);
+                }
+              }
+            } catch(e){}
+
+            // Fallback dynamic slots if offline/empty
+            if (!slots || slots.length === 0) {
+              const dStr = tomorrow.toLocaleDateString([], { month: 'short', day: 'numeric' });
+              slots = [`10:00 AM (${dStr})`, `3:30 PM (${dStr})`];
+            }
+          }
+
+          addMessage(data.text, 'ai', slots);
         } else {
           addMessage("I am having trouble connecting right now. Can I help you with something else?", 'ai');
         }
       } catch (err) {
         typing.style.display = 'none';
-        addMessage("I am currently operating in offline mode. Let me know if you would like to book an appointment slot instead!", 'ai');
+        
+        // Dynamic slots fallback on simulated offline flow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dStr = tomorrow.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        const fallbackSlots = [`10:30 AM (${dStr})`, `2:30 PM (${dStr})`];
+        
+        addMessage("I am operating in offline mode. Let me know if you would like to book a slot tomorrow!", 'ai', fallbackSlots);
       }
     }
 
@@ -556,7 +835,7 @@
       }
     }
 
-    // Scheduling/Booking availability loading
+    // Availability loader
     async function loadAvailability() {
       const dateVal = document.getElementById('booking-date').value;
       const slotsList = document.getElementById('slots-list');
@@ -593,12 +872,9 @@
 
     function selectSlot(slot, element) {
       selectedSlot = slot;
-      
-      // Deselect all
       document.querySelectorAll('.slot-card').forEach(c => c.classList.remove('selected'));
       element.classList.add('selected');
 
-      // Show booking form
       document.getElementById('booking-form').style.display = 'flex';
       document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth' });
     }
@@ -615,7 +891,7 @@
         return;
       }
 
-      // Convert standard time (e.g. "02:30 PM") to ISO structure "YYYY-MM-DDTHH:MM"
+      // Convert standard "02:30 PM" to "YYYY-MM-DDTHH:MM"
       let [time, modifier] = selectedSlot.split(' ');
       let [hours, minutes] = time.split(':');
       if (hours === '12') hours = '00';
@@ -624,7 +900,6 @@
       const dateTimeStr = `${dateVal}T${timeStr}`;
 
       try {
-        // Step 1: Create or fetch contact in CRM
         const contactResponse = await fetch('/api/contacts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -641,7 +916,6 @@
         if (!contactResponse.ok) throw new Error("Failed to sync CRM contact");
         const contact = await contactResponse.json();
 
-        // Step 2: Book appointment
         const appointmentResponse = await fetch('/api/appointments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -656,7 +930,6 @@
         });
 
         if (appointmentResponse.ok) {
-          // Display success state
           document.getElementById('booking-container').style.display = 'none';
           document.getElementById('booking-success').style.display = 'flex';
           document.getElementById('success-message').innerText = `Your session is reserved for ${new Date(dateTimeStr).toLocaleDateString()} at ${selectedSlot}. A notification note is sent to the CRM portal.`;
@@ -674,13 +947,57 @@
       document.getElementById('booking-success').style.display = 'none';
       document.getElementById('booking-form').style.display = 'none';
       
-      // Reset inputs
-      document.getElementById('client-name').value = '';
-      document.getElementById('client-email').value = '';
-      document.getElementById('client-phone').value = '';
+      document.getElementById('client-name').value = capturedName || '';
+      document.getElementById('client-email').value = capturedEmail || '';
+      document.getElementById('client-phone').value = capturedPhone || '';
       selectedSlot = null;
 
       loadAvailability();
+    }
+
+    // Modal UI Handlers for emailing chat logs
+    function openEmailModal() {
+      document.getElementById('email-modal').style.display = 'flex';
+    }
+
+    function closeEmailModal() {
+      document.getElementById('email-modal').style.display = 'none';
+    }
+
+    async function sendTranscriptEmail() {
+      const email = document.getElementById('transcript-email').value.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(email)) {
+        alert("Please enter a valid email address.");
+        return;
+      }
+
+      // Construct plain text log format of conversations
+      const formattedLog = chatHistory.map(h => {
+        const senderLabel = h.sender === 'ai' ? (activeAgent ? activeAgent.name : 'AI assistant') : (capturedName || 'Customer');
+        return `[${senderLabel}]: ${h.text}`;
+      }).join('\n\n');
+
+      try {
+        const response = await fetch('/api/chat/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email,
+            transcript: formattedLog
+          })
+        });
+
+        if (response.ok) {
+          alert(`Transcript successfully dispatched to: ${email}!`);
+          closeEmailModal();
+        } else {
+          throw new Error();
+        }
+      } catch(e) {
+        alert("Simulated transcript email sent. Please check your developer console logs.");
+        closeEmailModal();
+      }
     }
 
     // Run on startup

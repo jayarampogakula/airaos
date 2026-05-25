@@ -323,16 +323,20 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
       const lower = userText.toLowerCase();
       const isBookingKeyword = lower.includes('book') || lower.includes('appointment') || lower.includes('schedule') || lower.includes('reserve');
 
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const dateStr = tomorrow.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
       if (tenant.id === 't-1') {
         // Dental
         if (isBookingKeyword) {
           reply = 'I can help with that. Please choose an available Dentist checkup slot below:';
-          slots = ['2:30 PM (Teeth Cleaning)', '4:00 PM (Dentist Whitening)'];
+          slots = [`2:30 PM (Tomorrow, ${dateStr} - Teeth Cleaning)`, `4:00 PM (Tomorrow, ${dateStr} - Dentist Whitening)`];
         } else if (lower.includes('hour') || lower.includes('open')) {
           reply = 'Smile Dental is open Mon-Fri from 9AM to 6PM. We are closed on weekends!';
         } else if (lower.includes('cleaning') || lower.includes('cost')) {
           reply = 'Teeth cleaning is $120. Whitenings are $450. Can I book this for you?';
-          slots = ['2:30 PM (Teeth Cleaning)'];
+          slots = [`2:30 PM (Tomorrow, ${dateStr} - Teeth Cleaning)`];
         } else {
           reply = `Hi! I am ${activeAgent?.name || 'Sarah'}, the AI receptionist. I can help book dentist visits and answer FAQ. What would you like to schedule?`;
         }
@@ -340,20 +344,20 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
         // Real Estate
         if (isBookingKeyword) {
           reply = 'Our penthouse showings are available tomorrow. Select a tour window:';
-          slots = ['10:00 AM (Penthouse Tour)', '3:00 PM (Real Estate Consult)'];
+          slots = [`10:00 AM (Tomorrow, ${dateStr} - Penthouse Tour)`, `3:00 PM (Tomorrow, ${dateStr} - Real Estate Consult)`];
         } else if (lower.includes('price')) {
           reply = 'Our pricing starts at $850,000. Send me your email and I will email the pricing sheet!';
-          slots = ['3:00 PM (Real Estate Consult)'];
+          slots = [`3:00 PM (Tomorrow, ${dateStr} - Real Estate Consult)`];
         } else {
           reply = `Hi! ${activeAgent?.name || 'Marcus'} the AI coordinator here. I book penthouse model tours. What price budget are you shopping for?`;
         }
       } else {
         if (isBookingKeyword) {
           reply = 'Please select a technical developer support slot:';
-          slots = ['11:00 AM (Dev Support Sync)', '4:30 PM (Operational Sync)'];
+          slots = [`11:00 AM (Tomorrow, ${dateStr} - Dev Support Sync)`, `4:30 PM (Tomorrow, ${dateStr} - Operational Sync)`];
         } else {
           reply = `I am looking up the technical user guides to solve your error. What is your transaction ID?`;
-          slots = ['11:00 AM (Dev Support Sync)'];
+          slots = [`11:00 AM (Tomorrow, ${dateStr} - Dev Support Sync)`];
         }
       }
 
