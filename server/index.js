@@ -289,6 +289,28 @@ app.put('/api/integrations', (req, res) => {
   res.json(db.integrations);
 });
 
+// Platform Support Bot endpoints
+app.get('/api/platform-support-bot', (req, res) => {
+  const db = readDb();
+  res.json(db.platformSupportBot || {
+    enabled: true,
+    name: 'Platform Guide',
+    avatar: '🤖',
+    welcomeMessage: 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?',
+    prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).\n\nYour task is to clarify doubts regarding:\n1. Twilio Integration: Enter Twilio Account SID, Auth Token, and Twilio Phone Number in the Integrations panel.\n2. BYO (Bring Your Own) Carrier: Configure BYO SIP Server host, username, password, and the custom phone number.\n3. SIP Integration: Use the BYO SIP Server credentials to route inbound and outbound calls through custom PBX/carriers.\n4. Packages & Rates: Growth ($499/mo, 2000 chats, 500 voice mins, 2 web edits), Scale ($1200/mo, 5000 chats, 1000 voice mins, 5 web edits), and Enterprise ($2500/mo, 10000 chats, 2500 voice mins, unlimited web edits). Overage rates: $0.05 per chat, $0.15 per voice minute, $0.10/min inbound, $0.20/min outbound.\n\nBe professional, brief, and clear. Help users understand how to set these up in their Settings and Integrations sections.'
+  });
+});
+
+app.put('/api/platform-support-bot', (req, res) => {
+  const db = readDb();
+  db.platformSupportBot = {
+    ...(db.platformSupportBot || {}),
+    ...req.body
+  };
+  writeDb(db);
+  res.json(db.platformSupportBot);
+});
+
 // Tenant-Specific Integrations
 app.get('/api/tenants/:id/integrations', (req, res) => {
   const db = readDb();
@@ -320,7 +342,16 @@ app.post('/api/chat', async (req, res) => {
   const db = readDb();
   const { message, history = [], tenantId = 't-1', agentId = 'a-1' } = req.body;
 
-  const agent = db.agents.find(a => a.id === agentId) || db.agents[0];
+  let agent;
+  if (agentId === 'platform-support') {
+    agent = db.platformSupportBot || {
+      name: 'Platform Guide',
+      avatar: '🤖',
+      prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).'
+    };
+  } else {
+    agent = db.agents.find(a => a.id === agentId) || db.agents[0];
+  }
   const tenant = db.tenants.find(t => t.id === tenantId);
   const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
 
@@ -379,7 +410,19 @@ app.post('/api/chat', async (req, res) => {
     let reasoning = `Retrieved ${groundingContext.length} knowledge chunks.\nSimulated offline fallback.`;
 
     const textLower = message.toLowerCase();
-    if (textLower.includes('hour') || textLower.includes('open') || textLower.includes('time')) {
+    if (agentId === 'platform-support') {
+      if (textLower.includes('sip') || textLower.includes('byo') || textLower.includes('carrier') || textLower.includes('trunk')) {
+        reply = `To integrate SIP or Bring Your Own (BYO) carrier in AiraOS, go to **Settings > Integrations**. Under the **BYO Carrier Settings** section, input your custom SIP server host address, username, password, and the phone number. Click **Save Settings** to persist the details to the system.`;
+      } else if (textLower.includes('twilio')) {
+        reply = `To integrate Twilio, go to **Settings > Integrations** and expand **Twilio Settings**. Enter your Twilio Account SID, Auth Token, and Twilio Phone Number, then save the configuration. The platform routes outbound/inbound calls using these credentials.`;
+      } else if (textLower.includes('rate') || textLower.includes('price') || textLower.includes('pack') || textLower.includes('tier') || textLower.includes('cost') || textLower.includes('credit')) {
+        reply = `AiraOS has 3 subscription packages:\n- **Growth ($499/mo):** 2,000 chats, 500 voice minutes, 2 web edits.\n- **Scale ($1,200/mo):** 5,000 chats, 1,000 voice minutes, 5 web edits.\n- **Enterprise ($2,500/mo):** 10,000 chats, 2,500 voice minutes, unlimited web edits.\n\n**Overage fees:** $0.05 per extra chat, $0.15 per extra voice minute. Inbound calls are $0.10/min, and outbound calls are $0.20/min. Custom voice synthesis costs $0.02/min.`;
+      } else if (textLower.includes('hi') || textLower.includes('hello') || textLower.includes('help') || textLower.includes('hey')) {
+        reply = `Hello! I am the Platform Assistant. I am here to help you resolve doubts on integrating SIP trunking, connecting Twilio API keys, configuring BYO Carriers, or reviewing plan packages and rates. How can I help you today?`;
+      } else {
+        reply = `I understand your concern about "${message}". To set up integrations (like Twilio, BYO SIP Carrier, PhonePe API keys, or CRM sync channels), navigate to **Settings > Integrations**. You can configure billing limits under **Settings > Billing & Subscriptions**. Let me know if you need more details!`;
+      }
+    } else if (textLower.includes('hour') || textLower.includes('open') || textLower.includes('time')) {
       reply = `We are open Monday to Friday, 9:00 AM to 6:00 PM. Would you like to schedule a slot during these hours?`;
     } else if (textLower.includes('book') || textLower.includes('appointment') || textLower.includes('schedule')) {
       reply = `I can help you schedule that! We have open slots tomorrow morning at 10:00 AM or tomorrow afternoon at 2:30 PM. Which one works for you?`;

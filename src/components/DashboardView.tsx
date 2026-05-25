@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   TrendingUp, Users, CheckCircle2, PhoneCall, RefreshCw, 
-  ExternalLink, Calendar, GitBranch, ArrowUpRight
+  ExternalLink, Calendar, GitBranch, ArrowUpRight, Send, MessageSquare, Bot, Sparkles 
 } from 'lucide-react';
 import { Tenant, Contact, Appointment } from '../types';
 
@@ -11,6 +11,13 @@ interface DashboardViewProps {
   appointments: Appointment[];
   deals: any[];
   chatsUsed: number;
+  platformSupportBot: {
+    enabled: boolean;
+    name: string;
+    avatar: string;
+    welcomeMessage: string;
+    prompt: string;
+  };
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -18,13 +25,81 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   contacts,
   appointments,
   deals,
-  chatsUsed
+  chatsUsed,
+  platformSupportBot
 }) => {
   const pipelineValue = deals.reduce((acc, d) => acc + d.value, 0);
   const activeAppsCount = appointments.filter(a => a.status === 'scheduled').length;
   const conversionRate = contacts.length > 0 
     ? ((activeAppsCount / contacts.length) * 100).toFixed(1)
     : '0.0';
+
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'bot'; text: string }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Initialize welcome message when bot configuration is loaded
+  useEffect(() => {
+    setChatMessages([
+      {
+        sender: 'bot',
+        text: platformSupportBot?.welcomeMessage || 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?'
+      }
+    ]);
+  }, [platformSupportBot]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages, isTyping]);
+
+  const handleSendMessage = async (textToSend?: string) => {
+    const text = (textToSend || chatInput).trim();
+    if (!text) return;
+
+    if (!textToSend) {
+      setChatInput('');
+    }
+
+    // Add user message
+    setChatMessages(prev => [...prev, { sender: 'user', text }]);
+    setIsTyping(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          agentId: 'platform-support',
+          tenantId: tenant.id,
+          history: chatMessages.map(msg => ({
+            sender: msg.sender === 'user' ? 'customer' : 'ai',
+            text: msg.text
+          }))
+        })
+      });
+
+      setIsTyping(false);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.text) {
+          setChatMessages(prev => [...prev, { sender: 'bot', text: data.text }]);
+        } else {
+          setChatMessages(prev => [...prev, { sender: 'bot', text: 'I am having trouble answering right now. Please check back later.' }]);
+        }
+      } else {
+        setChatMessages(prev => [...prev, { sender: 'bot', text: 'Connection error. Please try again.' }]);
+      }
+    } catch (err) {
+      setIsTyping(false);
+      setChatMessages(prev => [...prev, { sender: 'bot', text: 'Something went wrong. Please check your network connection.' }]);
+    }
+  };
 
   // Chart mock data
   const trafficData = [
@@ -213,34 +288,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Row 3: Upcoming Appointments and Activity */}
-      <div className="grid-cols-12">
-        <div className="col-span-6 glass-card" style={{ minHeight: '260px' }}>
+      <div className="grid-cols-12" style={{ gap: '20px' }}>
+        <div className={platformSupportBot?.enabled ? "col-span-4 glass-card" : "col-span-6 glass-card"} style={{ minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: 600 }}>Scheduled Appointments</h4>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 600 }}>Scheduled Appointments</h4>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
               {appointments.length} scheduled
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, overflowY: 'auto', maxHeight: '280px' }}>
             {appointments.map((a) => {
               const contactName = a.contactId === 'c-101' ? 'John Doe' : 'Sarah Jenkins';
               const date = new Date(a.dateTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
               const time = new Date(a.dateTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
               return (
-                <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div style={{ padding: '8px', background: 'var(--primary-glow)', borderRadius: '6px', color: 'var(--primary-color)' }}>
-                      <Calendar size={18} />
+                <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ padding: '6px', background: 'var(--primary-glow)', borderRadius: '6px', color: 'var(--primary-color)' }}>
+                      <Calendar size={14} />
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: '600' }}>{a.type} - {contactName}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{a.location}</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: '600' }}>{a.type} - {contactName}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{a.location ? a.location.substring(0, 20) : ''}...</div>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: '500' }}>{date}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{time} ({a.duration}m)</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{date}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{time}</div>
                   </div>
                 </div>
               );
@@ -248,40 +323,141 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        <div className="col-span-6 glass-card" style={{ minHeight: '260px' }}>
+        {platformSupportBot?.enabled && (
+          <div className="col-span-4 glass-card" style={{ minHeight: '360px', display: 'flex', flexDirection: 'column', padding: '16px', background: 'rgba(99, 102, 241, 0.02)', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.2rem' }}>{platformSupportBot.avatar || '🤖'}</span>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                    {platformSupportBot.name || 'Platform Assistant'}
+                  </h4>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success-color)', display: 'inline-block' }}></span>
+                    Online Guide
+                  </span>
+                </div>
+              </div>
+              <Sparkles size={14} className="animate-pulse" style={{ color: 'var(--primary-color)' }} />
+            </div>
+
+            {/* Chat Messages Log */}
+            <div style={{ flex: 1, overflowY: 'auto', maxHeight: '180px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px', background: 'rgba(0,0,0,0.15)', borderRadius: '6px', border: '1px solid var(--border-glass)', marginBottom: '8px' }}>
+              {chatMessages.map((msg, index) => (
+                <div
+                  key={index}
+                  style={{
+                    alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '85%',
+                    background: msg.sender === 'user' ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)',
+                    color: '#fff',
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    borderBottomRightRadius: msg.sender === 'user' ? '2px' : '8px',
+                    borderBottomLeftRadius: msg.sender === 'bot' ? '2px' : '8px',
+                    fontSize: '0.72rem',
+                    lineHeight: '1.35',
+                    border: msg.sender === 'bot' ? '1px solid var(--border-glass)' : 'none',
+                    whiteSpace: 'pre-line'
+                  }}
+                >
+                  {msg.text}
+                </div>
+              ))}
+              {isTyping && (
+                <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: '8px', borderBottomLeftRadius: '2px', border: '1px solid var(--border-glass)', display: 'flex', gap: '3px' }}>
+                  <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-secondary)', display: 'inline-block' }} className="animate-bounce"></span>
+                  <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-secondary)', display: 'inline-block', animationDelay: '0.2s' }} className="animate-bounce"></span>
+                  <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-secondary)', display: 'inline-block', animationDelay: '0.4s' }} className="animate-bounce"></span>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* suggestion chips */}
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '6px' }}>
+              <button
+                type="button"
+                onClick={() => handleSendMessage('How to integrate Twilio?')}
+                style={{ flex: '0 0 auto', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', borderRadius: '12px', padding: '4px 8px', fontSize: '0.65rem', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                🔑 Twilio
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendMessage('How to configure BYO SIP Server?')}
+                style={{ flex: '0 0 auto', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', borderRadius: '12px', padding: '4px 8px', fontSize: '0.65rem', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                🌐 SIP Carrier
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendMessage('What are the packages and overage rates?')}
+                style={{ flex: '0 0 auto', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', borderRadius: '12px', padding: '4px 8px', fontSize: '0.65rem', color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                💰 Plan Rates
+              </button>
+            </div>
+
+            {/* Input entry */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+              }}
+              style={{ display: 'flex', gap: '6px' }}
+            >
+              <input
+                type="text"
+                placeholder="Ask about SIP, Twilio, BYO..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '6px', padding: '6px 10px', fontSize: '0.75rem', color: 'var(--text-primary)', outline: 'none' }}
+              />
+              <button
+                type="submit"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '6px', background: 'var(--primary-color)', border: 'none', color: '#fff', cursor: 'pointer' }}
+              >
+                <Send size={12} />
+              </button>
+            </form>
+          </div>
+        )}
+
+        <div className={platformSupportBot?.enabled ? "col-span-4 glass-card" : "col-span-6 glass-card"} style={{ minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: 600 }}>Active Workflow Logs</h4>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 600 }}>Active Workflow Logs</h4>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
               Live executions
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)' }}></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, overflowY: 'auto', maxHeight: '280px' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success-color)' }}></div>
               <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>Workflow Run Succeeded: Lead Capture & CRM Sync</span>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Trigger: Chat Lead Capture • Created deal worth $450 in CRM</div>
+                <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>Workflow Run Succeeded: Lead Capture & CRM Sync</span>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Trigger: Chat Lead Capture • Created deal worth $450 in CRM</div>
               </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>3 mins ago</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>3m ago</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)' }}></div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success-color)' }}></div>
               <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>Scheduler Event Triggered: Appointment Reminder Loop</span>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Sent SMS & WhatsApp reminders to Sarah Jenkins for Penthouse Tour</div>
+                <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>Scheduler Event Triggered: Appointment Reminder Loop</span>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Sent SMS & WhatsApp reminders to Sarah Jenkins for Penthouse Tour</div>
               </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>45 mins ago</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>45m ago</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--warning-color)' }}></div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--warning-color)' }}></div>
               <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>Human Escalation SLA Pinged</span>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Conversation conv-3 with Michael Chen transferred to developer support</div>
+                <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>Human Escalation SLA Pinged</span>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Conversation conv-3 with Michael Chen transferred to developer support</div>
               </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>2 hours ago</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>2h ago</span>
             </div>
           </div>
         </div>

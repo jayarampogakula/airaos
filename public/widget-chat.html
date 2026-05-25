@@ -202,28 +202,63 @@
 
     .message-slots {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
+      flex-direction: row;
+      gap: 8px;
       margin-top: 8px;
       width: 100%;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .message-slots::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .message-slots::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .message-slots::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
     }
 
     .slot-button {
       background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border: 1px solid var(--border-glass);
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
       color: var(--text-primary);
       font-size: 0.75rem;
-      text-align: left;
+      text-align: center;
       cursor: pointer;
-      transition: all 0.2s ease;
-      width: 100%;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .slot-button:hover {
       border-color: var(--primary-color);
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25), 0 0 8px rgba(255, 255, 255, 0.05);
+    }
+
+    .slot-more-button {
+      background: rgba(255, 255, 255, 0.02);
+      border-style: dashed;
+      color: var(--primary-color);
+    }
+
+    .slot-more-button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
     }
 
     .typing-indicator {
@@ -675,10 +710,18 @@
         slots.forEach(slot => {
           const btn = document.createElement('button');
           btn.className = 'slot-button';
-          btn.innerText = `📅 Reserve: ${slot}`;
+          btn.innerText = `📅 ${slot}`;
           btn.onclick = () => handleSlotQuickBook(slot);
           slotContainer.appendChild(btn);
         });
+        
+        // Add a View All button at the end
+        const viewAllBtn = document.createElement('button');
+        viewAllBtn.className = 'slot-button slot-more-button';
+        viewAllBtn.innerText = '🔍 View All';
+        viewAllBtn.onclick = () => switchTab('book');
+        slotContainer.appendChild(viewAllBtn);
+        
         msgDiv.appendChild(slotContainer);
       }
 
@@ -800,18 +843,24 @@
               if (availRes.ok) {
                 const availSlots = await availRes.json();
                 if (availSlots && availSlots.length > 0) {
-                  slots = availSlots.slice(0, 2).map(s => `${s} (Tomorrow)`);
+                  slots = availSlots.slice(0, 5).map(s => `${s} (Tomorrow)`);
                 }
               }
             } catch(e){}
-
+ 
             // Fallback dynamic slots if offline/empty
             if (!slots || slots.length === 0) {
               const dStr = tomorrow.toLocaleDateString([], { month: 'short', day: 'numeric' });
-              slots = [`10:00 AM (${dStr})`, `3:30 PM (${dStr})`];
+              slots = [
+                `09:30 AM (${dStr})`,
+                `11:00 AM (${dStr})`,
+                `01:30 PM (${dStr})`,
+                `03:00 PM (${dStr})`,
+                `04:30 PM (${dStr})`
+              ];
             }
           }
-
+ 
           addMessage(data.text, 'ai', slots);
         } else {
           addMessage("I am having trouble connecting right now. Can I help you with something else?", 'ai');
@@ -823,7 +872,13 @@
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         const dStr = tomorrow.toLocaleDateString([], { month: 'short', day: 'numeric' });
-        const fallbackSlots = [`10:30 AM (${dStr})`, `2:30 PM (${dStr})`];
+        const fallbackSlots = [
+          `09:00 AM (${dStr})`,
+          `10:30 AM (${dStr})`,
+          `01:00 PM (${dStr})`,
+          `02:30 PM (${dStr})`,
+          `04:00 PM (${dStr})`
+        ];
         
         addMessage("I am operating in offline mode. Let me know if you would like to book a slot tomorrow!", 'ai', fallbackSlots);
       }

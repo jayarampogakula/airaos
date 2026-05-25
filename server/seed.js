@@ -380,6 +380,14 @@ const initialIntegrations = {
   byoPhoneNumber: ''
 };
 
+const initialPlatformSupportBot = {
+  enabled: true,
+  name: 'Platform Guide',
+  avatar: '🤖',
+  welcomeMessage: 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?',
+  prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).\n\nYour task is to clarify doubts regarding:\n1. Twilio Integration: Enter Twilio Account SID, Auth Token, and Twilio Phone Number in the Integrations panel.\n2. BYO (Bring Your Own) Carrier: Configure BYO SIP Server host, username, password, and the custom phone number.\n3. SIP Integration: Use the BYO SIP Server credentials to route inbound and outbound calls through custom PBX/carriers.\n4. Packages & Rates: Growth ($499/mo, 2000 chats, 500 voice mins, 2 web edits), Scale ($1200/mo, 5000 chats, 1000 voice mins, 5 web edits), and Enterprise ($2500/mo, 10000 chats, 2500 voice mins, unlimited web edits). Overage rates: $0.05 per chat, $0.15 per voice minute, $0.10/min inbound, $0.20/min outbound.\n\nBe professional, brief, and clear. Help users understand how to set these up in their Settings and Integrations sections.'
+};
+
 function seed() {
   const dbData = {
     tenants: initialTenants,
@@ -390,7 +398,8 @@ function seed() {
     appointments: initialAppointments,
     working_shifts: initialWorkingShifts,
     knowledge_chunks: initialKnowledgeChunks,
-    integrations: initialIntegrations
+    integrations: initialIntegrations,
+    platformSupportBot: initialPlatformSupportBot
   };
 
   const success = writeDb(dbData);

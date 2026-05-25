@@ -78,6 +78,13 @@ function App() {
   const [workflows, setWorkflows] = useState<Workflow[]>(mockWorkflows);
   const [sources, setSources] = useState<KnowledgeSource[]>(mockKnowledgeSources);
   const [chunks, setChunks] = useState<KbChunk[]>(mockKbChunks);
+  const [platformSupportBot, setPlatformSupportBot] = useState({
+    enabled: true,
+    name: 'Platform Guide',
+    avatar: '🤖',
+    welcomeMessage: 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?',
+    prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).\n\nYour task is to clarify doubts regarding:\n1. Twilio Integration: Enter Twilio Account SID, Auth Token, and Twilio Phone Number in the Integrations panel.\n2. BYO (Bring Your Own) Carrier: Configure BYO SIP Server host, username, password, and the custom phone number.\n3. SIP Integration: Use the BYO SIP Server credentials to route inbound and outbound calls through custom PBX/carriers.\n4. Packages & Rates: Growth ($499/mo, 2000 chats, 500 voice mins, 2 web edits), Scale ($1200/mo, 5000 chats, 1000 voice mins, 5 web edits), and Enterprise ($2500/mo, 10000 chats, 2500 voice mins, unlimited web edits). Overage rates: $0.05 per chat, $0.15 per voice minute, $0.10/min inbound, $0.20/min outbound.\n\nBe professional, brief, and clear. Help users understand how to set these up in their Settings and Integrations sections.'
+  });
 
   const [websiteRefreshesCount, setWebsiteRefreshesCount] = useState<{ [tenantId: string]: number }>(() => {
     const stored = localStorage.getItem('agentstack_website_refreshes');
@@ -94,12 +101,13 @@ function App() {
   useEffect(() => {
     const loadBackendData = async () => {
       try {
-        const [contactsRes, dealsRes, appRes, convRes, tenantsRes] = await Promise.all([
+        const [contactsRes, dealsRes, appRes, convRes, tenantsRes, botRes] = await Promise.all([
           fetch('/api/contacts'),
           fetch('/api/deals'),
           fetch('/api/appointments'),
           fetch('/api/conversations'),
-          fetch('/api/tenants')
+          fetch('/api/tenants'),
+          fetch('/api/platform-support-bot')
         ]);
 
         if (contactsRes.ok) {
@@ -121,6 +129,10 @@ function App() {
         if (tenantsRes.ok) {
           const data = await tenantsRes.json();
           if (data && data.length > 0) setTenants(data);
+        }
+        if (botRes.ok) {
+          const data = await botRes.json();
+          if (data) setPlatformSupportBot(data);
         }
       } catch (err) {
         console.warn('Backend server not online. Running in simulation mode with local mock storage.', err);
@@ -852,6 +864,7 @@ function App() {
                   appointments={getFilteredAppointments()}
                   deals={getFilteredDeals()}
                   chatsUsed={getUsageLimits().conversationsUsed}
+                  platformSupportBot={platformSupportBot}
                 />
               )}
               {activeTab === 'brain' && (
@@ -995,6 +1008,15 @@ function App() {
               onToggleTenantStatus={handleToggleTenantStatus}
               onInstallTemplate={handleInstallTemplate}
               onVisitTenant={handleVisitTenant}
+              platformSupportBot={platformSupportBot}
+              onUpdatePlatformSupportBot={(data: any) => {
+                setPlatformSupportBot(data);
+                fetch('/api/platform-support-bot', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(data)
+                }).catch(err => console.error('Failed to save platform support bot settings:', err));
+              }}
             />
           )}
         </div>

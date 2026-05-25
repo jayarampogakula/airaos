@@ -12,6 +12,14 @@ interface SuperAdminViewProps {
   onToggleTenantStatus: (tenantId: string) => void;
   onInstallTemplate: (templateName: string) => void;
   onVisitTenant: (tenantId: string) => void;
+  platformSupportBot: {
+    enabled: boolean;
+    name: string;
+    avatar: string;
+    welcomeMessage: string;
+    prompt: string;
+  };
+  onUpdatePlatformSupportBot: (data: any) => void;
 }
 
 export interface IntegrationSettings {
@@ -38,10 +46,41 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   tenants,
   onToggleTenantStatus,
   onInstallTemplate,
-  onVisitTenant
+  onVisitTenant,
+  platformSupportBot,
+  onUpdatePlatformSupportBot
 }) => {
   const [installedTemplate, setInstalledTemplate] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+
+  const [botEnabled, setBotEnabled] = useState(platformSupportBot?.enabled ?? true);
+  const [botName, setBotName] = useState(platformSupportBot?.name ?? 'Platform Guide');
+  const [botAvatar, setBotAvatar] = useState(platformSupportBot?.avatar ?? '🤖');
+  const [botWelcomeMessage, setBotWelcomeMessage] = useState(platformSupportBot?.welcomeMessage ?? '');
+  const [botPrompt, setBotPrompt] = useState(platformSupportBot?.prompt ?? '');
+
+  useEffect(() => {
+    if (platformSupportBot) {
+      setBotEnabled(platformSupportBot.enabled);
+      setBotName(platformSupportBot.name);
+      setBotAvatar(platformSupportBot.avatar);
+      setBotWelcomeMessage(platformSupportBot.welcomeMessage);
+      setBotPrompt(platformSupportBot.prompt);
+    }
+  }, [platformSupportBot]);
+
+  const handleSaveSupportBot = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdatePlatformSupportBot({
+      enabled: botEnabled,
+      name: botName,
+      avatar: botAvatar,
+      welcomeMessage: botWelcomeMessage,
+      prompt: botPrompt
+    });
+    setSaveSuccess('support_bot');
+    setTimeout(() => setSaveSuccess(null), 2500);
+  };
 
   // Billing Pricing and Limit variables in state
   const [plansSettings, setPlansSettings] = useState(() => {
@@ -272,6 +311,19 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             }}
           >
             <ShoppingBag size={14} /> Template Marketplace
+          </button>
+          <button 
+            onClick={() => setActiveTab('support_bot')} 
+            className="btn" 
+            style={{ 
+              padding: '6px 12px', 
+              fontSize: '0.75rem', 
+              backgroundColor: activeTab === 'support_bot' ? 'var(--primary-color)' : 'transparent', 
+              color: activeTab === 'support_bot' ? 'white' : 'var(--text-secondary)',
+              gap: '6px'
+            }}
+          >
+            <Cpu size={14} /> Platform Support Bot
           </button>
         </div>
       </div>
@@ -1117,6 +1169,87 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             ))}
           </div>
 
+        </div>
+      )}
+
+      {activeTab === 'support_bot' && (
+        <div className="glass-panel" style={{ padding: '24px', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)' }}>Platform Support Assistant Settings</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                Configure the receptionist chatbot that helps users (tenants) with AiraOS settings (integrating Twilio, custom BYO Carrier, rates, etc.).
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveSupportBot} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'center', background: 'rgba(255,255,255,0.01)', padding: '16px', border: '1px solid var(--border-glass)', borderRadius: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                <input
+                  type="checkbox"
+                  checked={botEnabled}
+                  onChange={(e) => setBotEnabled(e.target.checked)}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--primary-color)' }}
+                />
+                Enable Platform Support Bot (Reception AI) on Dashboard for all users
+              </label>
+            </div>
+
+            <div className="grid-cols-12" style={{ gap: '16px' }}>
+              <div className="col-span-6" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Assistant Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={botName}
+                  onChange={(e) => setBotName(e.target.value)}
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '6px', padding: '10px', color: 'var(--text-primary)' }}
+                  required
+                />
+              </div>
+
+              <div className="col-span-6" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Avatar Icon / Emoji</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={botAvatar}
+                  onChange={(e) => setBotAvatar(e.target.value)}
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '6px', padding: '10px', color: 'var(--text-primary)' }}
+                  required
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Default AI Welcome Greeting</label>
+              <textarea
+                className="form-input"
+                rows={3}
+                style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '6px', padding: '10px', color: 'var(--text-primary)', resize: 'vertical' }}
+                value={botWelcomeMessage}
+                onChange={(e) => setBotWelcomeMessage(e.target.value)}
+                required
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label className="form-label" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>System Prompts / Knowledge Base Instructions</label>
+              <textarea
+                className="form-input"
+                rows={10}
+                style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '6px', padding: '10px', color: 'var(--text-primary)', resize: 'vertical', fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: '1.4' }}
+                value={botPrompt}
+                onChange={(e) => setBotPrompt(e.target.value)}
+                required
+              />
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', fontSize: '0.8rem', cursor: 'pointer' }}>
+              <Save size={16} /> Save Receptionist Settings
+            </button>
+          </form>
         </div>
       )}
     </div>
