@@ -868,6 +868,14 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
 
               {currentRole === 'tenant' && (
                 <div className="grid-cols-12" style={{ gap: '12px' }}>
+                  <div className="col-span-12" style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', borderRadius: '8px', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '8px' }}>
+                    ℹ️ <strong>Existing Chatwoot Inbox ID (Optional):</strong>
+                    <ul style={{ margin: '4px 0 0 16px', padding: 0, listStyleType: 'disc' }}>
+                      <li>If you provide it: AiraOS will bind directly to your existing Chatwoot inbox.</li>
+                      <li>If you leave it empty (recommended): AiraOS will automatically auto-provision a brand new inbox in your Chatwoot account for that channel during the "Connect Channel" setup.</li>
+                      <li style={{ color: 'var(--text-muted)' }}>To locate your existing inbox ID: Open Chatwoot settings, click Inboxes, choose your inbox, and copy the number at the end of the URL (e.g. <code>.../inbox/15</code>).</li>
+                    </ul>
+                  </div>
                   {channels.map((channel) => {
                     const draft = channelDrafts[channel.type] || {};
                     return (
