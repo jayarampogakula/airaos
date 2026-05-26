@@ -437,7 +437,23 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   // Load configuration from tenant.websiteConfig on tenant switch
   useEffect(() => {
     if (!tenant) return;
-    const config = tenant.websiteConfig;
+    
+    // Attempt to load from tenant configuration first, then fallback to client-side localStorage cache
+    let config = tenant.websiteConfig;
+    let loadedFromCache = false;
+    
+    if (!config) {
+      try {
+        const cached = localStorage.getItem(`agentstack_website_config_${tenant.id}`);
+        if (cached) {
+          config = JSON.parse(cached);
+          loadedFromCache = true;
+        }
+      } catch (e) {
+        console.warn('Error reading website config from cache:', e);
+      }
+    }
+
     if (config) {
       setBusinessName(config.businessName || tenant.name);
       setSlogan(config.slogan || '');
@@ -448,6 +464,19 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
       setTheme(config.theme || 'sleek-clinic');
       setIsWebsiteGenerated(config.isWebsiteGenerated || false);
       setWebsiteHTML(config.html || '');
+      
+      // Auto-restore database value if it was reset in production/ephemeral container
+      if (loadedFromCache && config.isWebsiteGenerated) {
+        if (onUpdateTenant) {
+          onUpdateTenant({ websiteConfig: config });
+        } else {
+          apiFetch('/api/current-tenant', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ websiteConfig: config })
+          }).catch(err => console.error('Failed to sync restored website config to backend', err));
+        }
+      }
     } else {
       // Load defaults
       setBusinessName(tenant.name);
@@ -740,6 +769,19 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
           const compiled = compileWebsiteHTML(config);
           setWebsiteHTML(compiled);
           
+          // Cache the website config in localStorage to persist on refresh/backend restarts
+          try {
+            localStorage.setItem(
+              `agentstack_website_config_${tenant.id}`,
+              JSON.stringify({
+                ...config,
+                html: compiled
+              })
+            );
+          } catch (e) {
+            console.warn('Failed to save website config to localStorage cache', e);
+          }
+
           if (onUpdateTenant) {
             onUpdateTenant({
               websiteConfig: {
@@ -767,6 +809,11 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   const handleResetWebsite = () => {
     setIsWebsiteGenerated(false);
     setWebsiteHTML('');
+    try {
+      localStorage.removeItem(`agentstack_website_config_${tenant.id}`);
+    } catch (e) {
+      console.warn('Failed to clear website config cache', e);
+    }
     if (onUpdateTenant) {
       onUpdateTenant({ websiteConfig: undefined });
     } else {
@@ -794,6 +841,16 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
       isWebsiteGenerated: true,
       html: htmlToSave
     };
+
+    // Cache the manually updated website config in localStorage
+    try {
+      localStorage.setItem(
+        `agentstack_website_config_${tenant.id}`,
+        JSON.stringify(config)
+      );
+    } catch (e) {
+      console.warn('Failed to cache manually saved website HTML', e);
+    }
 
     if (onUpdateTenant) {
       onUpdateTenant({ websiteConfig: config });
