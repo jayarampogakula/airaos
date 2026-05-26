@@ -48,9 +48,12 @@
     .airaos-widget-launcher:active {
       transform: scale(0.95);
     }
+    .airaos-widget-launcher.open {
+      display: none !important;
+    }
     .airaos-widget-container {
       position: fixed;
-      bottom: 96px;
+      bottom: 24px;
       ${position}: 24px;
       width: 380px;
       height: 600px;
@@ -86,11 +89,7 @@
         border-radius: 0 !important;
       }
       .airaos-widget-launcher.open {
-        bottom: 20px !important;
-        ${position}: 20px !important;
-        width: 44px !important;
-        height: 44px !important;
-        z-index: 9999999 !important;
+        display: none !important;
       }
     }
   `;

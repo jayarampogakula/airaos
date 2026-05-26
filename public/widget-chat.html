@@ -623,6 +623,18 @@
     const widgetTitle = params.get('title') || 'AI Assistant';
     const agentId = params.get('agentId') || '';
 
+    // Isolate platform guide storage keys from tenant-specific chatbot keys
+    const isPlatformSupport = (agentId === 'platform-support');
+    const chatHistoryKey = isPlatformSupport 
+      ? `airaos_chat_history_platform_${tenantId}` 
+      : `airaos_chat_history_${tenantId}`;
+    const sessionTimeKey = isPlatformSupport 
+      ? `airaos_session_time_platform_${tenantId}` 
+      : `airaos_session_time_${tenantId}`;
+    const identityKey = isPlatformSupport 
+      ? `airaos_identity_platform_${tenantId}` 
+      : `airaos_identity_${tenantId}`;
+
     // Logged-in auto-fill parameters
     const paramName = params.get('userName') || '';
     const paramEmail = params.get('userEmail') || '';
@@ -673,7 +685,7 @@
       if (action === 'human') {
         renderMessageNode("Talk to Human", "customer");
         chatHistory.push({ text: "Talk to Human", sender: 'customer' });
-        localStorage.setItem(`airaos_chat_history_${tenantId}`, JSON.stringify(chatHistory));
+        localStorage.setItem(chatHistoryKey, JSON.stringify(chatHistory));
 
         const typing = document.getElementById('typing-indicator');
         typing.style.display = 'block';
@@ -745,17 +757,17 @@
 
     // 24 Hours Session Auto-Clear
     function checkSessionExpiry() {
-      const lastSessionTime = localStorage.getItem(`airaos_session_time_${tenantId}`);
+      const lastSessionTime = localStorage.getItem(sessionTimeKey);
       const now = Date.now();
       
       if (lastSessionTime) {
         const diff = now - parseInt(lastSessionTime, 10);
         if (diff > 24 * 3600 * 1000) { // 24 hours
-          localStorage.removeItem(`airaos_chat_history_${tenantId}`);
-          localStorage.setItem(`airaos_session_time_${tenantId}`, now.toString());
+          localStorage.removeItem(chatHistoryKey);
+          localStorage.setItem(sessionTimeKey, now.toString());
         }
       } else {
-        localStorage.setItem(`airaos_session_time_${tenantId}`, now.toString());
+        localStorage.setItem(sessionTimeKey, now.toString());
       }
     }
 
@@ -806,12 +818,12 @@
         // Check Logged-in parameters first
         if (paramName && paramEmail) {
           const identity = { name: paramName, email: paramEmail, phone: paramPhone };
-          localStorage.setItem(`airaos_identity_${tenantId}`, JSON.stringify(identity));
+          localStorage.setItem(identityKey, JSON.stringify(identity));
           leadCaptureStep = 0;
         }
 
         // Load cached identity or start lead capture
-        const savedIdentityStr = localStorage.getItem(`airaos_identity_${tenantId}`);
+        const savedIdentityStr = localStorage.getItem(identityKey);
         if (savedIdentityStr) {
           try {
             const identity = JSON.parse(savedIdentityStr);
@@ -835,7 +847,7 @@
       }
 
       // Initialize chat logs
-      const savedHistory = localStorage.getItem(`airaos_chat_history_${tenantId}`);
+      const savedHistory = localStorage.getItem(chatHistoryKey);
       if (savedHistory) {
         try {
           chatHistory = JSON.parse(savedHistory);
@@ -972,7 +984,7 @@
 
     function addMessage(text, sender, slots) {
       chatHistory.push({ text, sender, slots });
-      localStorage.setItem(`airaos_chat_history_${tenantId}`, JSON.stringify(chatHistory));
+      localStorage.setItem(chatHistoryKey, JSON.stringify(chatHistory));
       renderMessageNode(text, sender, slots);
     }
 
@@ -1047,7 +1059,7 @@
 
         // Save Identity
         const identityObj = { name: capturedName, email: capturedEmail, phone: capturedPhone };
-        localStorage.setItem(`airaos_identity_${tenantId}`, JSON.stringify(identityObj));
+        localStorage.setItem(identityKey, JSON.stringify(identityObj));
         
         // Sync inputs in calendar
         document.getElementById('client-name').value = capturedName;
@@ -1082,7 +1094,7 @@
       scrollToBottom();
 
       try {
-        const savedIdentityStr = localStorage.getItem(`airaos_identity_${tenantId}`);
+        const savedIdentityStr = localStorage.getItem(identityKey);
         let identity = null;
         if (savedIdentityStr) {
           try {
