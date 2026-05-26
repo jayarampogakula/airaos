@@ -1705,6 +1705,112 @@ app.put('/api/tenants/:id/integrations', authMiddleware, (req, res) => {
   res.json(db.tenants[tenantIndex].integrations);
 });
 
+// Helper to call OpenAI, Gemini, or DeepSeek chat completion models
+async function callModel(provider, apiKey, messages, temperature = 0.5) {
+  if (provider === 'gemini') {
+    const systemMessage = messages.find(m => m.role === 'system');
+    const systemPrompt = systemMessage ? systemMessage.content : '';
+    
+    const geminiContents = [];
+    messages.forEach(msg => {
+      if (msg.role === 'system') return;
+      const role = (msg.role === 'user') ? 'user' : 'model';
+      if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === role) {
+        geminiContents[geminiContents.length - 1].parts[0].text += '\n' + msg.content;
+      } else {
+        geminiContents.push({
+          role: role,
+          parts: [{ text: msg.content }]
+        });
+      }
+    });
+
+    if (geminiContents.length > 0 && geminiContents[0].role === 'model') {
+      geminiContents.shift();
+    }
+    
+    if (geminiContents.length === 0) {
+      geminiContents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: geminiContents,
+        ...(systemPrompt ? { systemInstruction: { parts: [{ text: systemPrompt }] } } : {}),
+        generationConfig: {
+          temperature: temperature
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Gemini API returned status ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
+      return data.candidates[0].content.parts[0].text;
+    }
+    throw new Error('Gemini API response structure invalid: ' + JSON.stringify(data));
+  } else if (provider === 'deepseek') {
+    const url = 'https://api.deepseek.com/chat/completions';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: messages,
+        temperature: temperature
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`DeepSeek API returned status ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      return data.choices[0].message.content;
+    }
+    throw new Error('DeepSeek API response structure invalid: ' + JSON.stringify(data));
+  } else {
+    const url = 'https://api.openai.com/v1/chat/completions';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: messages,
+        temperature: temperature
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OpenAI API returned status ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      return data.choices[0].message.content;
+    }
+    throw new Error('OpenAI API response structure invalid: ' + JSON.stringify(data));
+  }
+}
+
 // ----------------------------------------
 // AI Brain chat endpoint
 // ----------------------------------------
@@ -1723,7 +1829,7 @@ app.post('/api/chat', async (req, res) => {
     agent = db.agents.find(a => a.id === agentId && a.tenantId === tenantId) || tenantScoped(db.agents, tenantId)[0] || db.agents[0];
   }
   const tenant = db.tenants.find(t => t.id === tenantId);
-  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
+  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}), ...(tenant?.settings || {}) };
 
   // Retrieve relevant knowledge grounding chunks (RAG) filtered by tenant
   const allChunks = db.knowledge_chunks || [];
@@ -1880,10 +1986,18 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
-  const apiKey = integrations.openaiApiKey || integrations.difyApiKey || process.env.OPENAI_API_KEY;
+  const activeProvider = integrations.activeModelProvider || 'openai';
+  let apiKey = '';
+  if (activeProvider === 'gemini') {
+    apiKey = integrations.geminiApiKey || process.env.GEMINI_API_KEY;
+  } else if (activeProvider === 'deepseek') {
+    apiKey = integrations.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+  } else {
+    apiKey = integrations.openaiApiKey || integrations.difyApiKey || process.env.OPENAI_API_KEY;
+  }
 
   if (apiKey) {
-    // Call live OpenAI
+    // Call live AI Brain
     try {
       const messages = [
         {
@@ -1897,25 +2011,7 @@ app.post('/api/chat', async (req, res) => {
         { role: 'user', content: message }
       ];
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages,
-          temperature: 0.5
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API responded with ${response.status}`);
-      }
-
-      const resData = await response.json();
-      const reply = resData.choices[0].message.content;
+      const reply = await callModel(activeProvider, apiKey, messages, 0.5);
 
       // Save reply locally
       if (conversation) {
@@ -2051,8 +2147,7 @@ app.post('/api/crew/run', async (req, res) => {
   }
 
   const tenant = db.tenants.find(t => t.id === tenantId);
-  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
-  const apiKey = integrations.openaiApiKey || integrations.difyApiKey || process.env.OPENAI_API_KEY;
+  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}), ...(tenant?.settings || {}) };
 
   try {
     const result = await runCrew({
@@ -2060,7 +2155,7 @@ app.post('/api/crew/run', async (req, res) => {
       tasks,
       inputs,
       db,
-      apiKey,
+      integrations,
       tenantId
     });
     res.json(result);
@@ -2502,8 +2597,17 @@ app.post('/api/voice/gather', async (req, res) => {
   const groundingContext = searchKnowledgeChunks(speechInput, tenantChunks);
   
   const tenant = db.tenants.find(t => t.id === tenantId);
-  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
-  const apiKey = integrations.openaiApiKey || integrations.difyApiKey || process.env.OPENAI_API_KEY;
+  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}), ...(tenant?.settings || {}) };
+  
+  const activeProvider = integrations.activeModelProvider || 'openai';
+  let apiKey = '';
+  if (activeProvider === 'gemini') {
+    apiKey = integrations.geminiApiKey || process.env.GEMINI_API_KEY;
+  } else if (activeProvider === 'deepseek') {
+    apiKey = integrations.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+  } else {
+    apiKey = integrations.openaiApiKey || integrations.difyApiKey || process.env.OPENAI_API_KEY;
+  }
 
   if (apiKey) {
     try {
@@ -2519,23 +2623,7 @@ app.post('/api/voice/gather', async (req, res) => {
         { role: 'user', content: speechInput }
       ];
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages,
-          temperature: 0.5
-        })
-      });
-
-      if (response.ok) {
-        const resData = await response.json();
-        replyText = resData.choices[0].message.content;
-      }
+      replyText = await callModel(activeProvider, apiKey, messages, 0.5);
     } catch (e) {
       console.error(e);
     }

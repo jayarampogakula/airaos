@@ -267,6 +267,32 @@ const compileWebsiteHTML = (config: any) => {
   <footer>
     <p>&copy; ${new Date().getFullYear()} ${config.businessName}. Powered by AiraOS AI receptionist.</p>
   </footer>
+  <script>
+    // Intercept relative and hash link clicks to prevent iframe navigation in preview
+    document.addEventListener('click', function(e) {
+      var target = e.target.closest('a');
+      if (target) {
+        var href = target.getAttribute('href');
+        if (href) {
+          if (href.startsWith('#')) {
+            e.preventDefault();
+            var id = href.substring(1);
+            var el = document.getElementById(id);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth' });
+            }
+          } else if (href.startsWith('/') || href.includes(window.location.host)) {
+            e.preventDefault();
+            var sectionId = href.split('/').pop().replace('#', '');
+            var el = document.getElementById(sectionId);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth' });
+            }
+          }
+        }
+      }
+    });
+  </script>
 </body>
 </html>`;
 };

@@ -24,6 +24,112 @@ function searchKnowledgeChunks(query, chunks) {
     .map(item => item.chunk.content);
 }
 
+// Helper to call OpenAI, Gemini, or DeepSeek chat completion models
+async function callModel(provider, apiKey, messages, temperature = 0.5) {
+  if (provider === 'gemini') {
+    const systemMessage = messages.find(m => m.role === 'system');
+    const systemPrompt = systemMessage ? systemMessage.content : '';
+    
+    const geminiContents = [];
+    messages.forEach(msg => {
+      if (msg.role === 'system') return;
+      const role = (msg.role === 'user') ? 'user' : 'model';
+      if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === role) {
+        geminiContents[geminiContents.length - 1].parts[0].text += '\n' + msg.content;
+      } else {
+        geminiContents.push({
+          role: role,
+          parts: [{ text: msg.content }]
+        });
+      }
+    });
+
+    if (geminiContents.length > 0 && geminiContents[0].role === 'model') {
+      geminiContents.shift();
+    }
+    
+    if (geminiContents.length === 0) {
+      geminiContents.push({ role: 'user', parts: [{ text: 'Hello' }] });
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: geminiContents,
+        ...(systemPrompt ? { systemInstruction: { parts: [{ text: systemPrompt }] } } : {}),
+        generationConfig: {
+          temperature: temperature
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Gemini API returned status ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
+      return data.candidates[0].content.parts[0].text;
+    }
+    throw new Error('Gemini API response structure invalid: ' + JSON.stringify(data));
+  } else if (provider === 'deepseek') {
+    const url = 'https://api.deepseek.com/chat/completions';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: messages,
+        temperature: temperature
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`DeepSeek API returned status ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      return data.choices[0].message.content;
+    }
+    throw new Error('DeepSeek API response structure invalid: ' + JSON.stringify(data));
+  } else {
+    const url = 'https://api.openai.com/v1/chat/completions';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: messages,
+        temperature: temperature
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OpenAI API returned status ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      return data.choices[0].message.content;
+    }
+    throw new Error('OpenAI API response structure invalid: ' + JSON.stringify(data));
+  }
+}
+
 // Tool executor
 async function executeTool(action, input, db, logCallback, tenantId = 't-1') {
   logCallback(`Calling tool [${action}] with parameters: ${JSON.stringify(input)}`);
@@ -188,9 +294,19 @@ async function executeTool(action, input, db, logCallback, tenantId = 't-1') {
 }
 
 // Run a single agent task
-export async function runCrewTask(agent, task, previousOutputsContext, db, apiKey, logCallback, tenantId = 't-1') {
+export async function runCrewTask(agent, task, previousOutputsContext, db, integrations, logCallback, tenantId = 't-1') {
   let step = 0;
   const maxSteps = 5;
+  
+  const activeProvider = integrations?.activeModelProvider || 'openai';
+  let apiKey = '';
+  if (activeProvider === 'gemini') {
+    apiKey = integrations?.geminiApiKey || process.env.GEMINI_API_KEY;
+  } else if (activeProvider === 'deepseek') {
+    apiKey = integrations?.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+  } else {
+    apiKey = integrations?.openaiApiKey || integrations?.difyApiKey || process.env.OPENAI_API_KEY;
+  }
   
   // Format history messages
   const messages = [
@@ -243,27 +359,9 @@ Do not combine a tool call JSON with "FINAL RESPONSE:". Choose one.`
     
     if (apiKey) {
       try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages,
-            temperature: 0.3
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`OpenAI API returned status ${response.status}`);
-        }
-
-        const data = await response.json();
-        reply = data.choices[0].message.content;
+        reply = await callModel(activeProvider, apiKey, messages, 0.3);
       } catch (err) {
-        logCallback(`[Error] OpenAI API connection issue: ${err.message}. Falling back to sandbox output.`);
+        logCallback(`[Error] AI Brain API connection issue: ${err.message}. Falling back to sandbox output.`);
         reply = `FINAL RESPONSE: [Simulated] Task executed successfully. Match output expectation: ${task.expectedOutput}`;
       }
     } else {
@@ -320,7 +418,7 @@ Do not combine a tool call JSON with "FINAL RESPONSE:". Choose one.`
 }
 
 // Orchestrate the whole crew sequential run
-export async function runCrew({ crewAgentIds, tasks, inputs = {}, db, apiKey, tenantId = 't-1' }) {
+export async function runCrew({ crewAgentIds, tasks, inputs = {}, db, integrations, tenantId = 't-1' }) {
   const logs = [];
   const addLog = (msg) => {
     const timeStr = new Date().toLocaleTimeString();
@@ -354,7 +452,7 @@ export async function runCrew({ crewAgentIds, tasks, inputs = {}, db, apiKey, te
       { ...task, description: finalDesc },
       previousOutput,
       db,
-      apiKey,
+      integrations,
       addLog,
       tenantId
     );

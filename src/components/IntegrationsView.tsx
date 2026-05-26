@@ -32,6 +32,9 @@ export interface UnifiedIntegrationConfig {
   phonepeSaltKey: string;
   chatwootUrl: string;
   n8nUrl: string;
+  geminiApiKey: string;
+  deepseekApiKey: string;
+  activeModelProvider: 'openai' | 'gemini' | 'deepseek';
 }
 
 export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, currentRole = 'tenant' }) => {
@@ -55,7 +58,10 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
     phonepeMerchantId: '',
     phonepeSaltKey: '',
     chatwootUrl: 'https://chat.cleveradai.in',
-    n8nUrl: 'https://flow.cleveradai.in'
+    n8nUrl: 'https://flow.cleveradai.in',
+    geminiApiKey: '',
+    deepseekApiKey: '',
+    activeModelProvider: 'openai'
   });
 
   const [activeSubTab, setActiveSubTab] = useState<'openai' | 'telephony' | 'payments' | 'channels'>('openai');
@@ -84,7 +90,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
         const globalRes = await apiFetch('/api/integrations');
         if (globalRes.ok) {
           const globalData = await globalRes.json();
-          if (globalData && (globalData.difyApiKey || globalData.openaiApiKey)) {
+          if (globalData && (globalData.difyApiKey || globalData.openaiApiKey || globalData.geminiApiKey || globalData.deepseekApiKey)) {
             setGlobalHasApiKey(true);
           }
         }
@@ -122,11 +128,14 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
               phonepeMerchantId: data.phonepeMerchantId || '',
               phonepeSaltKey: data.phonepeSaltKey || '',
               chatwootUrl: data.chatwootUrl || 'https://chat.cleveradai.in',
-              n8nUrl: data.n8nUrl || 'https://flow.cleveradai.in'
+              n8nUrl: data.n8nUrl || 'https://flow.cleveradai.in',
+              geminiApiKey: data.geminiApiKey || '',
+              deepseekApiKey: data.deepseekApiKey || '',
+              activeModelProvider: data.activeModelProvider || 'openai'
             }));
 
-            // If we are a tenant and loaded a custom key, enable override status
-            if (currentRole === 'tenant' && (data.difyApiKey || data.openaiApiKey)) {
+            // If we are a tenant and loaded a custom key or provider, enable override status
+            if (currentRole === 'tenant' && (data.difyApiKey || data.openaiApiKey || data.geminiApiKey || data.deepseekApiKey || data.activeModelProvider)) {
               setOverrideOpenAI(true);
             }
 
@@ -165,9 +174,12 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
             phonepeMerchantId: parsed.phonepeMerchantId || '',
             phonepeSaltKey: parsed.phonepeSaltKey || '',
             chatwootUrl: parsed.chatwootUrl || 'https://chat.cleveradai.in',
-            n8nUrl: parsed.n8nUrl || 'https://flow.cleveradai.in'
+            n8nUrl: parsed.n8nUrl || 'https://flow.cleveradai.in',
+            geminiApiKey: parsed.geminiApiKey || '',
+            deepseekApiKey: parsed.deepseekApiKey || '',
+            activeModelProvider: parsed.activeModelProvider || 'openai'
           }));
-          if (currentRole === 'tenant' && (parsed.difyApiKey || parsed.openaiApiKey)) {
+          if (currentRole === 'tenant' && (parsed.difyApiKey || parsed.openaiApiKey || parsed.geminiApiKey || parsed.deepseekApiKey || parsed.activeModelProvider)) {
             setOverrideOpenAI(true);
           }
         } catch (e) {}
@@ -197,13 +209,19 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // If tenant is saving and hasn't checked "override", clear the API key to fall back to global platform key
+    // If tenant is saving and hasn't checked "override", clear the API keys to fall back to global platform keys
     const customApiKey = (currentRole === 'tenant' && !overrideOpenAI) ? '' : config.difyApiKey;
+    const customGeminiKey = (currentRole === 'tenant' && !overrideOpenAI) ? '' : config.geminiApiKey;
+    const customDeepseekKey = (currentRole === 'tenant' && !overrideOpenAI) ? '' : config.deepseekApiKey;
+    const customActiveProvider = (currentRole === 'tenant' && !overrideOpenAI) ? 'openai' : config.activeModelProvider;
 
     const payload = {
       mode: config.mode,
       difyApiKey: customApiKey,
       openaiApiKey: customApiKey,
+      geminiApiKey: customGeminiKey,
+      deepseekApiKey: customDeepseekKey,
+      activeModelProvider: customActiveProvider,
       twilioAccountSid: config.twilioAccountSid,
       twilioAuthToken: config.twilioAuthToken,
       twilioPhoneNumber: config.twilioPhoneNumber,
@@ -308,8 +326,16 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
     setTestResult(null);
     setTimeout(() => {
       setIsTesting(false);
-      if (activeSubTab === 'openai' && (currentRole !== 'tenant' || overrideOpenAI) && !config.difyApiKey) {
-        setTestResult('error');
+      if (activeSubTab === 'openai' && (currentRole !== 'tenant' || overrideOpenAI)) {
+        if (config.activeModelProvider === 'gemini' && !config.geminiApiKey) {
+          setTestResult('error');
+        } else if (config.activeModelProvider === 'deepseek' && !config.deepseekApiKey) {
+          setTestResult('error');
+        } else if (config.activeModelProvider === 'openai' && !config.difyApiKey) {
+          setTestResult('error');
+        } else {
+          setTestResult('success');
+        }
       } else if (activeSubTab === 'telephony' && config.mode === 'byoc' && (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioPhoneNumber)) {
         setTestResult('error');
       } else if (activeSubTab === 'telephony' && config.inboundRouting === 'byo' && !config.byoSipServer) {
@@ -425,7 +451,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
           {activeSubTab === 'openai' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.15)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                🚀 <strong>OpenAI GPT-4o-mini Integration:</strong> Provide an API key to power RAG semantic search, custom prompts, and live chat widget responses for your digital employees.
+                🤖 <strong>Central AI Brain Configurations:</strong> Choose your active LLM provider and configure respective API keys to power custom prompts, RAG search, voice receptionist nodes, and CRM Crew execution.
               </div>
 
               {currentRole === 'tenant' && globalHasApiKey && (
@@ -437,7 +463,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                     </span>
                   </div>
                   <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
-                    The agency administrator has configured a shared OpenAI connection for this workspace. You are currently using this shared connection, and the raw key is hidden for security.
+                    The agency administrator has configured a shared AI brain connection for this workspace. You are currently using this shared connection, and the raw keys are hidden for security.
                   </p>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-primary)', cursor: 'pointer' }}>
                     <input 
@@ -446,40 +472,118 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                       onChange={(e) => {
                         setOverrideOpenAI(e.target.checked);
                         if (!e.target.checked) {
-                          setConfig(prev => ({ ...prev, difyApiKey: '' }));
+                          setConfig(prev => ({
+                            ...prev,
+                            difyApiKey: '',
+                            geminiApiKey: '',
+                            deepseekApiKey: '',
+                            activeModelProvider: 'openai'
+                          }));
                         }
                       }}
                       style={{ cursor: 'pointer' }}
                     />
-                    Override platform default and use my own custom OpenAI API Key
+                    Override platform default and configure custom AI Models
                   </label>
                 </div>
               )}
 
               {(currentRole !== 'tenant' || !globalHasApiKey || overrideOpenAI) && (
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem' }}>
-                    {currentRole === 'tenant' ? 'Custom OpenAI API Key (Override)' : 'Global Platform OpenAI API Key'}
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <Key size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                    <input 
-                      type={showPassword['difyApiKey'] ? 'text' : 'password'}
-                      className="form-input" 
-                      style={{ paddingLeft: '32px', paddingRight: '60px' }}
-                      placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx"
-                      value={config.difyApiKey}
-                      onChange={(e) => setConfig({ ...config, difyApiKey: e.target.value })}
-                      required={currentRole === 'tenant' ? overrideOpenAI : false}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('difyApiKey')}
-                      style={{ position: 'absolute', right: '10px', top: '8px', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--text-primary)' }}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  
+                  {/* Model Provider Dropdown */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Active LLM Provider</label>
+                    <select
+                      className="form-input"
+                      value={config.activeModelProvider}
+                      onChange={(e) => setConfig({ ...config, activeModelProvider: e.target.value as any })}
+                      style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '6px' }}
                     >
-                      {showPassword['difyApiKey'] ? 'Hide' : 'Show'}
-                    </button>
+                      <option value="openai">OpenAI (GPT-4o-mini) - Standard Capabilities</option>
+                      <option value="gemini">Google Gemini (1.5 Flash) - Fast & Free/Low Cost</option>
+                      <option value="deepseek">DeepSeek (deepseek-chat) - Ultra-Low Cost API</option>
+                    </select>
                   </div>
+
+                  {/* OpenAI API Key */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem' }}>
+                      {currentRole === 'tenant' ? 'Custom OpenAI API Key (Override)' : 'Global Platform OpenAI API Key'}
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Key size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+                      <input 
+                        type={showPassword['difyApiKey'] ? 'text' : 'password'}
+                        className="form-input" 
+                        style={{ paddingLeft: '32px', paddingRight: '60px' }}
+                        placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={config.difyApiKey}
+                        onChange={(e) => setConfig({ ...config, difyApiKey: e.target.value })}
+                        required={(currentRole === 'tenant' ? overrideOpenAI : false) && config.activeModelProvider === 'openai'}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('difyApiKey')}
+                        style={{ position: 'absolute', right: '10px', top: '8px', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--text-primary)' }}
+                      >
+                        {showPassword['difyApiKey'] ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Gemini API Key */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem' }}>
+                      {currentRole === 'tenant' ? 'Custom Gemini API Key (Override)' : 'Global Platform Gemini API Key'}
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Key size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+                      <input 
+                        type={showPassword['geminiApiKey'] ? 'text' : 'password'}
+                        className="form-input" 
+                        style={{ paddingLeft: '32px', paddingRight: '60px' }}
+                        placeholder="AIzaSyxxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={config.geminiApiKey}
+                        onChange={(e) => setConfig({ ...config, geminiApiKey: e.target.value })}
+                        required={(currentRole === 'tenant' ? overrideOpenAI : false) && config.activeModelProvider === 'gemini'}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('geminiApiKey')}
+                        style={{ position: 'absolute', right: '10px', top: '8px', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--text-primary)' }}
+                      >
+                        {showPassword['geminiApiKey'] ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* DeepSeek API Key */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem' }}>
+                      {currentRole === 'tenant' ? 'Custom DeepSeek API Key (Override)' : 'Global Platform DeepSeek API Key'}
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Key size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+                      <input 
+                        type={showPassword['deepseekApiKey'] ? 'text' : 'password'}
+                        className="form-input" 
+                        style={{ paddingLeft: '32px', paddingRight: '60px' }}
+                        placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={config.deepseekApiKey}
+                        onChange={(e) => setConfig({ ...config, deepseekApiKey: e.target.value })}
+                        required={(currentRole === 'tenant' ? overrideOpenAI : false) && config.activeModelProvider === 'deepseek'}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('deepseekApiKey')}
+                        style={{ position: 'absolute', right: '10px', top: '8px', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--text-primary)' }}
+                      >
+                        {showPassword['deepseekApiKey'] ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                  </div>
+
                   <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
                     Your keys are AES-256 encrypted at rest and never shared outside your private backend sandbox instance.
                   </span>
@@ -1006,8 +1110,10 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>AI Brain</span>
-                <span style={{ fontWeight: 'bold', color: (config.difyApiKey || globalHasApiKey) ? 'var(--success-color)' : 'var(--danger-color)' }}>
-                  {(config.difyApiKey || globalHasApiKey) ? 'Configured (Active)' : 'Pending Setup'}
+                <span style={{ fontWeight: 'bold', color: (config.activeModelProvider === 'gemini' ? (config.geminiApiKey || globalHasApiKey) : config.activeModelProvider === 'deepseek' ? (config.deepseekApiKey || globalHasApiKey) : (config.difyApiKey || globalHasApiKey)) ? 'var(--success-color)' : 'var(--danger-color)' }}>
+                  {(config.activeModelProvider === 'gemini' ? (config.geminiApiKey || globalHasApiKey) : config.activeModelProvider === 'deepseek' ? (config.deepseekApiKey || globalHasApiKey) : (config.difyApiKey || globalHasApiKey)) 
+                    ? `Configured (${config.activeModelProvider.toUpperCase()})` 
+                    : 'Pending Setup'}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>

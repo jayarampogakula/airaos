@@ -155,7 +155,8 @@ export function ensureSaasSchema(data) {
         chatwootAccountId: '1',
         chatwootApiAccessToken: 'GC8whkYToqKKV9kW98gdDntX',
         n8nUrl: tenant.settings?.n8nUrl || '',
-        timezone: tenant.settings?.timezone || 'Asia/Calcutta'
+        timezone: tenant.settings?.timezone || 'Asia/Calcutta',
+        ...(tenant.settings || {})
       };
       return {
         ...tenant,
@@ -166,7 +167,8 @@ export function ensureSaasSchema(data) {
           accountName: tenant.name,
           status: 'connected',
           inboxIds: tenant.chatwootMapping?.inboxIds || [],
-          channelIds: tenant.chatwootMapping?.channelIds || []
+          channelIds: tenant.chatwootMapping?.channelIds || [],
+          ...(tenant.chatwootMapping || {})
         }
       };
     });
