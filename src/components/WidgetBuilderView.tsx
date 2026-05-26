@@ -282,6 +282,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   const [configTab, setConfigTab] = useState<'website' | 'widget'>(mode);
   const [websiteHTML, setWebsiteHTML] = useState('');
   const [isEditingHTML, setIsEditingHTML] = useState(false);
+  const [widgetSaved, setWidgetSaved] = useState(false);
 
   useEffect(() => {
     setConfigTab(mode);
@@ -331,19 +332,11 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   });
 
   // Lead capture states
-  const [requirePreChatLeadCapture, setRequirePreChatLeadCapture] = useState(() => {
-    if (!tenant) return false;
-    return localStorage.getItem(`widget_prechat_leadcapture_${tenant.id}`) === 'true';
-  });
+  const [requirePreChatLeadCapture, setRequirePreChatLeadCapture] = useState(false);
   const [leadName, setLeadName] = useState('');
   const [leadEmail, setLeadEmail] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
   const [hasSubmittedLead, setHasSubmittedLead] = useState(false);
-
-  useEffect(() => {
-    if (!tenant) return;
-    localStorage.setItem(`widget_prechat_leadcapture_${tenant.id}`, String(requirePreChatLeadCapture));
-  }, [requirePreChatLeadCapture, tenant?.id]);
 
   useEffect(() => {
     setHasSubmittedLead(false);
@@ -463,21 +456,38 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
     }
   }, [tenant]);
 
-  // Sync widget customizations to active tenant defaults
+  // Sync widget customizations to active tenant defaults or loaded widgetConfig
   useEffect(() => {
     if (!tenant) return;
-    setWidgetTitle(`${tenant.name} AI Assistant`);
-    setWidgetColor(tenant.primaryColor);
-    
-    let defaultGreeting = `Hello! I am ${activeAgent?.name || 'Sarah'}, your AI assistant for ${tenant.name}. How can I assist you today?`;
-    if (tenant.id === 't-1') {
-      defaultGreeting = `Hi! I am ${activeAgent?.name || 'Sarah'}, the AI receptionist for ${tenant.name}. I can help answer FAQs, check availability, and book a consulting session. What would you like to schedule?`;
-    } else if (tenant.id === 't-2') {
-      defaultGreeting = `Hi! I am ${activeAgent?.name || 'Marcus'}, the AI coordinator for ${tenant.name}. I can capture your requirements and schedule a tour or call. What are you looking for?`;
+    const wc = tenant.widgetConfig;
+    if (wc) {
+      setWidgetTitle(wc.widgetTitle || `${tenant.name} AI Assistant`);
+      setWidgetColor(wc.widgetColor || tenant.primaryColor);
+      setGreeting(wc.greeting || `Hello! How can I help you today?`);
+      setPosition(wc.position || 'right');
+      setWidgetMode(wc.widgetMode || 'hybrid');
+      setSelectedAgentId(wc.selectedAgentId || agents[0]?.id || '');
+      setRequirePreChatLeadCapture(!!wc.requirePreChatLeadCapture);
+    } else {
+      setWidgetTitle(`${tenant.name} AI Assistant`);
+      setWidgetColor(tenant.primaryColor);
+      
+      let defaultGreeting = `Hello! I am ${activeAgent?.name || 'Sarah'}, your AI assistant for ${tenant.name}. How can I assist you today?`;
+      if (tenant.id === 't-1') {
+        defaultGreeting = `Hi! I am ${activeAgent?.name || 'Sarah'}, the AI receptionist for ${tenant.name}. I can help answer FAQs, check availability, and book a consulting session. What would you like to schedule?`;
+      } else if (tenant.id === 't-2') {
+        defaultGreeting = `Hi! I am ${activeAgent?.name || 'Marcus'}, the AI coordinator for ${tenant.name}. I can capture your requirements and schedule a tour or call. What are you looking for?`;
+      }
+      setGreeting(defaultGreeting);
+      setPosition('right');
+      setWidgetMode('hybrid');
+      setRequirePreChatLeadCapture(false);
+      if (agents.length > 0) {
+        const defaultAgent = agents.find(a => a.department === 'Reception' || a.department === 'Sales') || agents[0];
+        setSelectedAgentId(defaultAgent.id);
+      }
     }
-    
-    setGreeting(defaultGreeting);
-  }, [tenant?.id, activeAgent, tenant?.name, tenant?.primaryColor]);
+  }, [tenant, activeAgent, agents]);
 
   const handleStartVoiceCall = () => {
     setIsCalling(true);
@@ -762,6 +772,44 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
         });
       } catch (error) {
         console.error('Error saving manual HTML:', error);
+      }
+    }
+  };
+
+  const handleSaveWidgetConfig = async () => {
+    const config = {
+      widgetTitle,
+      greeting,
+      widgetColor,
+      position,
+      widgetMode,
+      selectedAgentId,
+      requirePreChatLeadCapture
+    };
+
+    if (onUpdateTenant) {
+      onUpdateTenant({ 
+        widgetConfig: config,
+        primaryColor: widgetColor
+      });
+      setWidgetSaved(true);
+      setTimeout(() => setWidgetSaved(false), 2000);
+    } else {
+      try {
+        const response = await apiFetch('/api/current-tenant', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            widgetConfig: config,
+            primaryColor: widgetColor
+          })
+        });
+        if (response.ok) {
+          setWidgetSaved(true);
+          setTimeout(() => setWidgetSaved(false), 2000);
+        }
+      } catch (error) {
+        console.error('Error saving widget configuration:', error);
       }
     }
   };
@@ -1405,7 +1453,29 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                 </select>
               </div>
 
-              <div style={{ height: '1px', background: 'var(--border-glass)', margin: '4px 0' }} />
+              <button
+                type="button"
+                onClick={handleSaveWidgetConfig}
+                className="btn btn-primary"
+                style={{ 
+                  marginTop: '6px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '8px', 
+                  background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)',
+                  border: 'none',
+                  boxShadow: 'var(--shadow-glow)',
+                  fontWeight: 'bold',
+                  fontSize: '0.75rem',
+                  padding: '8px 12px'
+                }}
+              >
+                <CheckCircle2 size={14} /> 
+                {widgetSaved ? 'Widget Customizations Saved!' : 'Save Widget Customizations'}
+              </button>
+
+              <div style={{ height: '1px', background: 'var(--border-glass)', margin: '8px 0' }} />
 
               {/* Copyable HTML Code Block */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

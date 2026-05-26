@@ -34,6 +34,15 @@ export interface Tenant {
     isWebsiteGenerated?: boolean;
     html?: string;
   };
+  widgetConfig?: {
+    widgetTitle?: string;
+    greeting?: string;
+    widgetColor?: string;
+    position?: 'right' | 'left';
+    widgetMode?: 'chat' | 'voice' | 'hybrid';
+    selectedAgentId?: string;
+    requirePreChatLeadCapture?: boolean;
+  };
 }
 
 export type RoleName = 'Owner' | 'Admin' | 'Manager' | 'Agent';
