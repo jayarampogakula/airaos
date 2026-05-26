@@ -12,14 +12,35 @@ interface BillingUpgradeViewProps {
     websitesUsed?: number;
     websitesLimit?: number;
   };
+  platformBillingSettings?: any;
 }
 
-export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, usageLimits }) => {
+export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, usageLimits, platformBillingSettings }) => {
   const [loading, setLoading] = useState<string | null>(null);
 
   const activePlan = tenant.plan || 'Growth';
   const extraCredits = tenant.credits || 0;
   const billingHistory = tenant.billingHistory || [];
+
+  const settings = platformBillingSettings || {
+    growthPrice: 499,
+    growthChats: 2000,
+    growthVoice: 500,
+    growthWebsites: 2,
+    scalePrice: 1200,
+    scaleChats: 5000,
+    scaleVoice: 1000,
+    scaleWebsites: 5,
+    enterprisePrice: 2500,
+    enterpriseChats: 10000,
+    enterpriseVoice: 2500,
+    enterpriseWebsites: 999,
+    currency: '$',
+    chatAddonPrice: 250,
+    voiceAddonPrice: 400
+  };
+
+  const currency = settings.currency || '$';
 
   const handleCheckout = async (amount: number, type: 'plan_upgrade' | 'buy_credits', planName?: string, creditsCount?: number) => {
     setLoading(type === 'plan_upgrade' ? planName || 'upgrade' : `credits-${creditsCount}`);
@@ -166,9 +187,9 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
                 <h4 style={{ fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>500 Messages</h4>
                 <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Instantly pushes 500 extra LLM chat messages to your active month quota limits.</p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '8px' }}>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>₹250 INR</span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{currency}{settings.chatAddonPrice ?? 250}</span>
                   <button
-                    onClick={() => handleCheckout(250, 'buy_credits', undefined, 500)}
+                    onClick={() => handleCheckout(settings.chatAddonPrice ?? 250, 'buy_credits', undefined, 500)}
                     disabled={!!loading}
                     className="btn btn-primary"
                     style={{ fontSize: '0.7rem', padding: '6px 12px' }}
@@ -184,9 +205,9 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
                 <h4 style={{ fontSize: '1.2rem', fontWeight: '800', margin: 0 }}>100 Mins Call</h4>
                 <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Adds 100 outbound/inbound voice assistant phone calling minutes immediately.</p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '8px' }}>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>₹400 INR</span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{currency}{settings.voiceAddonPrice ?? 400}</span>
                   <button
-                    onClick={() => handleCheckout(400, 'buy_credits', undefined, 100)}
+                    onClick={() => handleCheckout(settings.voiceAddonPrice ?? 400, 'buy_credits', undefined, 100)}
                     disabled={!!loading}
                     className="btn btn-primary"
                     style={{ fontSize: '0.7rem', padding: '6px 12px' }}
@@ -253,13 +274,13 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
                 <h5 style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   Growth Plan {activePlan === 'Growth' && <span style={{ color: 'var(--success-color)', fontSize: '0.65rem' }}>✓ Active</span>}
                 </h5>
-                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>2K Chats • 500 Voice Mins • 2 Sites</p>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{(settings.growthChats).toLocaleString()} Chats • {settings.growthVoice} Voice Mins • {settings.growthWebsites} Sites</p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block' }}>₹3,900/mo</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block' }}>{currency}{settings.growthPrice}/mo</span>
                 {activePlan !== 'Growth' && (
                   <button
-                    onClick={() => handleCheckout(3900, 'plan_upgrade', 'Growth')}
+                    onClick={() => handleCheckout(settings.growthPrice, 'plan_upgrade', 'Growth')}
                     disabled={!!loading}
                     style={{ fontSize: '0.65rem', padding: '2px 8px', border: 'none', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer', marginTop: '4px' }}
                   >
@@ -283,13 +304,13 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
                 <h5 style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   Scale Plan {activePlan === 'Scale' && <span style={{ color: 'var(--success-color)', fontSize: '0.65rem' }}>✓ Active</span>}
                 </h5>
-                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>10K Chats • 2K Voice Mins • 5 Sites</p>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{(settings.scaleChats).toLocaleString()} Chats • {settings.scaleVoice} Voice Mins • {settings.scaleWebsites} Sites</p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block' }}>₹7,900/mo</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block' }}>{currency}{settings.scalePrice}/mo</span>
                 {activePlan !== 'Scale' && (
                   <button
-                    onClick={() => handleCheckout(7900, 'plan_upgrade', 'Scale')}
+                    onClick={() => handleCheckout(settings.scalePrice, 'plan_upgrade', 'Scale')}
                     disabled={!!loading}
                     className="btn btn-primary"
                     style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', marginTop: '4px' }}
@@ -314,13 +335,13 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
                 <h5 style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   Enterprise {activePlan === 'Enterprise' && <span style={{ color: 'var(--success-color)', fontSize: '0.65rem' }}>✓ Active</span>}
                 </h5>
-                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Unlimited Chats • 10K Mins • Unlimited Sites</p>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{settings.enterpriseChats >= 99999 ? 'Unlimited' : (settings.enterpriseChats).toLocaleString()} Chats • {settings.enterpriseVoice} Mins • {settings.enterpriseWebsites >= 999 ? 'Unlimited' : settings.enterpriseWebsites} Sites</p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block' }}>₹23,900/mo</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block' }}>{currency}{settings.enterprisePrice}/mo</span>
                 {activePlan !== 'Enterprise' && (
                   <button
-                    onClick={() => handleCheckout(23900, 'plan_upgrade', 'Enterprise')}
+                    onClick={() => handleCheckout(settings.enterprisePrice, 'plan_upgrade', 'Enterprise')}
                     disabled={!!loading}
                     className="btn btn-primary"
                     style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', marginTop: '4px' }}
@@ -361,7 +382,7 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
                   <td>{tx.date}</td>
                   <td style={{ fontWeight: 'bold' }}>{tx.type}</td>
                   <td>{tx.description}</td>
-                  <td style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>₹{tx.amount} INR</td>
+                  <td style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{currency}{tx.amount}</td>
                   <td>
                     <span className="badge badge-success">{tx.status || 'Completed'}</span>
                   </td>

@@ -6,7 +6,7 @@ import crypto from 'crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const DB_FILE = path.join(__dirname, 'db.json');
+export const DB_FILE = process.env.DB_PATH || path.join(__dirname, 'db.json');
 
 const ROLE_NAMES = ['Owner', 'Admin', 'Manager', 'Agent'];
 
@@ -88,6 +88,28 @@ export function ensureSaasSchema(data) {
     users: [],
     memberships: [],
     roles: [],
+    platformSettings: {
+      growthPrice: 499,
+      growthChats: 2000,
+      growthVoice: 500,
+      growthWebsites: 2,
+      scalePrice: 1200,
+      scaleChats: 5000,
+      scaleVoice: 1000,
+      scaleWebsites: 5,
+      enterprisePrice: 2500,
+      enterpriseChats: 10000,
+      enterpriseVoice: 2500,
+      enterpriseWebsites: 999,
+      currency: '$',
+      overageChatRate: 0.05,
+      overageVoiceRate: 0.15,
+      inboundCallRate: 0.10,
+      outboundCallRate: 0.20,
+      voiceSynthesisRate: 0.02,
+      chatAddonPrice: 250,
+      voiceAddonPrice: 400
+    },
     ...data
   };
 
@@ -406,6 +428,10 @@ export function ensureSaasSchema(data) {
 }
 
 function initDb() {
+  const dir = path.dirname(DB_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
   if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify(ensureSaasSchema({}), null, 2), 'utf8');
   }
@@ -426,6 +452,10 @@ export function readDb() {
 
 export function writeDb(data) {
   try {
+    const dir = path.dirname(DB_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     fs.writeFileSync(DB_FILE, JSON.stringify(ensureSaasSchema(data), null, 2), 'utf8');
     return true;
   } catch (err) {

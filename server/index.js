@@ -1074,7 +1074,7 @@ app.get('/api/platform-support-bot', (req, res) => {
     name: 'Platform Guide',
     avatar: '🤖',
     welcomeMessage: 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?',
-    prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).\n\nYour task is to clarify doubts regarding:\n1. Twilio Integration: Enter Twilio Account SID, Auth Token, and Twilio Phone Number in the Integrations panel.\n2. BYO (Bring Your Own) Carrier: Configure BYO SIP Server host, username, password, and the custom phone number.\n3. SIP Integration: Use the BYO SIP Server credentials to route inbound and outbound calls through custom PBX/carriers.\n4. Packages & Rates: Growth ($499/mo, 2000 chats, 500 voice mins, 2 web edits), Scale ($1200/mo, 5000 chats, 1000 voice mins, 5 web edits), and Enterprise ($2500/mo, 10000 chats, 2500 voice mins, unlimited web edits). Overage rates: $0.05 per chat, $0.15 per voice minute, $0.10/min inbound, $0.20/min outbound.\n\nBe professional, brief, and clear. Help users understand how to set these up in their Settings and Integrations sections.'
+    prompt: 'You are the AiraOS Platform Assistant (Reception AI), a professional and friendly digital concierge designed to guide workspace tenants and platform customers through configurations, integrations, billing, and carrier setups.\n\nYour task is to provide clear, actionable assistance regarding:\n\n1. TELEPHONY & VOICE AI INTEGRATIONS:\n- Twilio Integration: Users can bring their own keys. Require Twilio Account SID, Auth Token, and Twilio Phone Number (or Messaging Service SID) in the integrations settings tab.\n- BYO (Bring Your Own) Carrier: Set up custom trunk routing using SIP URI / Gateway Host, Trunk Username, Trunk Password, and Custom Phone Number.\n- Webhook Routing URL: To handle inbound SMS, WhatsApp replies, or incoming calls on custom numbers, the user must copy the dynamic Webhook URL from the Integrations panel (formatted as `https://<your-domain>/api/voice/inbound?tenantId=<tenant_id>`) and paste it as the Webhook (HTTP POST) handler in their Twilio Console or custom SIP Carrier dashboard.\n- SIP Gateways vs Twilio: Managed strategy uses AiraOS platform trunks, whereas BYO strategy runs directly through the user\'s custom trunk configurations.\n\n2. UNIFIED CRM & CHANNELS:\n- Chatwoot: Customers do NOT need to create separate Chatwoot accounts or manually create separate inboxes. AiraOS automatically provisions separate inboxes (Website widget, Telegram, Email Support, etc.) inside the platform\'s central Chatwoot console whenever they click "Connect Channel".\n- n8n Engine: The platform connects to a centralized n8n workflow engine (e.g., https://flow.cleveradai.in) to coordinate RAG lookups, AI agent schedules, and notifications automatically.\n\n3. PAYMENT GATEWAYS:\n- Admin Gateway Configuration: The SuperAdmin can configure and activate either PhonePe or Razorpay as the global active payment gateway.\n- PhonePe requires: Merchant ID, Salt Key, and Salt Index.\n- Razorpay requires: Key ID and Key Secret.\n- Tenant Upgrades: Once configured, tenants can purchase extra chat/voice credits or upgrade subscription packages directly inside their billing panel using active UPI, card, or netbanking hosted checkout sessions.\n\n4. PLATFORM PLANS, RATES & OVERAGES:\n- Growth Plan: includes chats, voice minutes, and website generation edits.\n- Scale Plan: includes higher caps and more active digital employees.\n- Enterprise Plan: includes unlimited digital employees and priority SLAs.\n- Overage Charges: Extra chats, extra voice minutes, and call rates can all be dynamically configured by the SuperAdmin from the admin billing panel.\n- Currency: The currency symbol (e.g. $, ₹, €, £) is set globally by the SuperAdmin and dynamically reflects across all customer billing layouts.\n\nBe direct, highly professional, structured, and helpful. Always guide the user to the correct tab (e.g. Settings > Integrations, Settings > Billing) to configure these options.'
   });
 });
 
@@ -1086,6 +1086,43 @@ app.put('/api/platform-support-bot', (req, res) => {
   };
   writeDb(db);
   res.json(db.platformSupportBot);
+});
+
+// Platform Billing & Plans Settings endpoints
+app.get('/api/platform-billing-settings', (req, res) => {
+  const db = readDb();
+  res.json(db.platformSettings || {
+    growthPrice: 499,
+    growthChats: 2000,
+    growthVoice: 500,
+    growthWebsites: 2,
+    scalePrice: 1200,
+    scaleChats: 5000,
+    scaleVoice: 1000,
+    scaleWebsites: 5,
+    enterprisePrice: 2500,
+    enterpriseChats: 10000,
+    enterpriseVoice: 2500,
+    enterpriseWebsites: 999,
+    currency: '$',
+    overageChatRate: 0.05,
+    overageVoiceRate: 0.15,
+    inboundCallRate: 0.10,
+    outboundCallRate: 0.20,
+    voiceSynthesisRate: 0.02,
+    chatAddonPrice: 250,
+    voiceAddonPrice: 400
+  });
+});
+
+app.put('/api/platform-billing-settings', (req, res) => {
+  const db = readDb();
+  db.platformSettings = {
+    ...(db.platformSettings || {}),
+    ...req.body
+  };
+  writeDb(db);
+  res.json(db.platformSettings);
 });
 
 // Tenant-Specific Integrations
@@ -2135,4 +2172,12 @@ if (fs.existsSync(distPath)) {
 
 app.listen(PORT, () => {
   console.log(`AiraOS custom production backend running on port ${PORT}`);
+  try {
+    const db = readDb();
+    console.log(`Database loaded successfully from ${DB_FILE}`);
+    console.log(`Initialized with ${db.users.length} users:`);
+    db.users.forEach(u => console.log(` - ${u.email} (${u.name})`));
+  } catch (err) {
+    console.error('Error verifying database on startup:', err);
+  }
 });

@@ -7,7 +7,7 @@ import {
 import { useAuth } from '../auth/AuthProvider';
 
 interface LandingPageViewProps {
-  onLoginSuccess: (role: 'tenant' | 'superadmin', tenantId?: string) => void;
+  onLoginSuccess: (role: 'tenant' | 'superadmin', tenantId?: string, email?: string) => void;
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess }) => {
@@ -138,7 +138,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
 
     try {
       const session = await login(email, password);
-      onLoginSuccess('tenant', session.activeTenantId || undefined);
+      onLoginSuccess('tenant', session.activeTenantId || undefined, session.user.email);
     } catch (err: any) {
       setLoginError(err.message || 'Invalid email or password. Open the Reviewer Credentials drawer below to auto-fill.');
     }
@@ -172,7 +172,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
       }).then((session) => {
         setIsSubmitting(false);
         setAuthMode(null);
-        onLoginSuccess('tenant', session.activeTenantId || undefined);
+        onLoginSuccess('tenant', session.activeTenantId || undefined, session.user.email);
       }).catch((err: any) => {
         setIsSubmitting(false);
         setOnboardingError(err.message || 'Could not create workspace.');
@@ -1026,79 +1026,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
           </div>
         </section>
 
-        {/* Pricing Matrix */}
-        <section style={{ padding: '60px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif' }}>
-              Transparent Subscription Plans
-            </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginTop: '6px' }}>
-              Select a tier suitable for your business scale. Setup configuration is identical.
-            </p>
-          </div>
 
-          <div className="grid-cols-12" style={{ gap: '20px' }}>
-            <div className="col-span-4 glass-card" style={{ padding: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '360px' }}>
-              <div>
-                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#6366f1' }}>Growth Plan</h4>
-                <div style={{ margin: '14px 0 20px 0' }}>
-                  <span style={{ fontSize: '2rem', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif', color: 'white' }}>$499</span>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}> / month</span>
-                </div>
-                <ul style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                  <li>🟢 2,000 Chats / month cap</li>
-                  <li>🟢 500 Voice Mins / month cap</li>
-                  <li>🟢 1 Active Digital Employee</li>
-                  <li>🟢 Standard Knowledge Base upload</li>
-                </ul>
-              </div>
-              <button onClick={() => setAuthMode('login')} className="btn btn-secondary" style={{ width: '100%', fontSize: '0.8rem', padding: '8px', marginTop: '20px', cursor: 'pointer' }}>
-                Select Growth
-              </button>
-            </div>
-
-            <div className="col-span-4 glass-panel" style={{ padding: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '380px', marginTop: '-10px', border: '1px solid #6366f1', background: 'rgba(99, 102, 241, 0.02)' }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#f59e0b' }}>Scale Plan</h4>
-                  <span style={{ fontSize: '0.65rem', background: '#f59e0b22', color: '#f59e0b', padding: '2px 8px', borderRadius: '10px', border: '1px solid #f59e0b44' }}>POPULAR</span>
-                </div>
-                <div style={{ margin: '14px 0 20px 0' }}>
-                  <span style={{ fontSize: '2.2rem', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif', color: 'white' }}>$1,200</span>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}> / month</span>
-                </div>
-                <ul style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                  <li>🟢 5,000 Chats / month cap</li>
-                  <li>🟢 1,000 Voice Mins / month cap</li>
-                  <li>🟢 3 Active Digital Employees</li>
-                  <li>🟢 Advanced Workflow Automations</li>
-                </ul>
-              </div>
-              <button onClick={() => setAuthMode('login')} className="btn btn-primary" style={{ width: '100%', fontSize: '0.8rem', padding: '10px', marginTop: '20px', cursor: 'pointer' }}>
-                Select Scale
-              </button>
-            </div>
-
-            <div className="col-span-4 glass-card" style={{ padding: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '360px' }}>
-              <div>
-                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#10b981' }}>Enterprise Plan</h4>
-                <div style={{ margin: '14px 0 20px 0' }}>
-                  <span style={{ fontSize: '2rem', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif', color: 'white' }}>$2,500</span>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}> / month</span>
-                </div>
-                <ul style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: 0, listStyle: 'none' }}>
-                  <li>🟢 10,000 Chats / month cap</li>
-                  <li>🟢 2,500 Voice Mins / month cap</li>
-                  <li>🟢 Unlimited Digital Employees</li>
-                  <li>🟢 Priority Vector DB Lookup SLA</li>
-                </ul>
-              </div>
-              <button onClick={() => setAuthMode('login')} className="btn btn-secondary" style={{ width: '100%', fontSize: '0.8rem', padding: '8px', marginTop: '20px', cursor: 'pointer' }}>
-                Select Enterprise
-              </button>
-            </div>
-          </div>
-        </section>
 
         {/* Accordion FAQ Section */}
         <section style={{ padding: '60px 0 100px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>

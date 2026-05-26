@@ -89,6 +89,18 @@ function App() {
   }, [activeTenantId]);
 
   useEffect(() => {
+    if (currentRole === 'superadmin') {
+      if (!['tenants', 'plans', 'infrastructure', 'marketplace', 'support_bot'].includes(activeTab)) {
+        setActiveTab('tenants');
+      }
+    } else {
+      if (['tenants', 'plans', 'infrastructure', 'marketplace', 'support_bot'].includes(activeTab)) {
+        setActiveTab('dashboard');
+      }
+    }
+  }, [currentRole, activeTab]);
+
+  useEffect(() => {
     if (authTenants.length > 0) {
       setTenants(authTenants);
     }
@@ -112,6 +124,35 @@ function App() {
     prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).\n\nYour task is to clarify doubts regarding:\n1. Twilio Integration: Enter Twilio Account SID, Auth Token, and Twilio Phone Number in the Integrations panel.\n2. BYO (Bring Your Own) Carrier: Configure BYO SIP Server host, username, password, and the custom phone number.\n3. SIP Integration: Use the BYO SIP Server credentials to route inbound and outbound calls through custom PBX/carriers.\n4. Packages & Rates: Growth ($499/mo, 2000 chats, 500 voice mins, 2 web edits), Scale ($1200/mo, 5000 chats, 1000 voice mins, 5 web edits), and Enterprise ($2500/mo, 10000 chats, 2500 voice mins, unlimited web edits). Overage rates: $0.05 per chat, $0.15 per voice minute, $0.10/min inbound, $0.20/min outbound.\n\nBe professional, brief, and clear. Help users understand how to set these up in their Settings and Integrations sections.'
   });
 
+  const [platformBillingSettings, setPlatformBillingSettings] = useState(() => {
+    const stored = localStorage.getItem('platform_billing_settings');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) {}
+    }
+    return {
+      growthPrice: 499,
+      growthChats: 2000,
+      growthVoice: 500,
+      growthWebsites: 2,
+      scalePrice: 1200,
+      scaleChats: 5000,
+      scaleVoice: 1000,
+      scaleWebsites: 5,
+      enterprisePrice: 2500,
+      enterpriseChats: 10000,
+      enterpriseVoice: 2500,
+      enterpriseWebsites: 999,
+      currency: '$',
+      overageChatRate: 0.05,
+      overageVoiceRate: 0.15,
+      inboundCallRate: 0.10,
+      outboundCallRate: 0.20,
+      voiceSynthesisRate: 0.02,
+      chatAddonPrice: 250,
+      voiceAddonPrice: 400
+    };
+  });
+
   const [websiteRefreshesCount, setWebsiteRefreshesCount] = useState<{ [tenantId: string]: number }>(() => {
     const stored = localStorage.getItem('agentstack_website_refreshes');
     if (stored) {
@@ -125,12 +166,25 @@ function App() {
   }, [websiteRefreshesCount]);
 
   useEffect(() => {
+    localStorage.setItem('platform_billing_settings', JSON.stringify(platformBillingSettings));
+  }, [platformBillingSettings]);
+
+  // Force superadmin role for admin user
+  useEffect(() => {
+    if (user?.email === 'admin@airaos.com' && currentRole !== 'superadmin' && !isImpersonating) {
+      setCurrentRole('superadmin');
+      setActiveTab('tenants');
+    }
+  }, [user, currentRole, isImpersonating]);
+
+  useEffect(() => {
     if (!isAuthenticated) return;
     const loadBackendData = async () => {
       try {
-        const [bootstrapRes, botRes] = await Promise.all([
+        const [bootstrapRes, botRes, billingRes] = await Promise.all([
           apiFetch('/api/current-tenant/bootstrap'),
-          apiFetch('/api/platform-support-bot')
+          apiFetch('/api/platform-support-bot'),
+          apiFetch('/api/platform-billing-settings')
         ]);
 
         if (bootstrapRes.ok) {
@@ -145,6 +199,10 @@ function App() {
         if (botRes.ok) {
           const data = await botRes.json();
           if (data) setPlatformSupportBot(data);
+        }
+        if (billingRes.ok) {
+          const data = await billingRes.json();
+          if (data) setPlatformBillingSettings(data);
         }
       } catch (err) {
         console.warn('Backend server not online. Running in simulation mode with local mock storage.', err);
@@ -803,10 +861,16 @@ function App() {
     setIsImpersonating(true);
   };
 
-  const handleLoginSuccess = (_role: 'tenant' | 'superadmin', tenantId?: string) => {
-    setCurrentRole('tenant');
-    setSelectedTenantId(tenantId || activeTenantId || 't-1');
-    setActiveTab('dashboard');
+  const handleLoginSuccess = (_role: 'tenant' | 'superadmin', tenantId?: string, email?: string) => {
+    const isAdmin = email === 'admin@airaos.com' || user?.email === 'admin@airaos.com';
+    if (isAdmin) {
+      setCurrentRole('superadmin');
+      setActiveTab('tenants');
+    } else {
+      setCurrentRole('tenant');
+      setSelectedTenantId(tenantId || activeTenantId || 't-1');
+      setActiveTab('dashboard');
+    }
     setViewMode('app');
   };
 
@@ -820,21 +884,7 @@ function App() {
   };
 
   const getBillingSettings = () => {
-    const stored = localStorage.getItem('platform_billing_settings');
-    if (stored) {
-      try { return JSON.parse(stored); } catch (e) {}
-    }
-    return {
-      growthChats: 2000,
-      growthVoice: 500,
-      growthWebsites: 2,
-      scaleChats: 5000,
-      scaleVoice: 1000,
-      scaleWebsites: 5,
-      enterpriseChats: 10000,
-      enterpriseVoice: 2500,
-      enterpriseWebsites: 999,
-    };
+    return platformBillingSettings;
   };
 
   // Usage limits calculator
@@ -1136,6 +1186,7 @@ function App() {
                 <BillingUpgradeView
                   tenant={selectedTenant}
                   usageLimits={getUsageLimits()}
+                  platformBillingSettings={platformBillingSettings}
                 />
               )}
             </>
@@ -1155,6 +1206,15 @@ function App() {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(data)
                 }).catch(err => console.error('Failed to save platform support bot settings:', err));
+              }}
+              platformBillingSettings={platformBillingSettings}
+              onUpdatePlatformBillingSettings={(data: any) => {
+                setPlatformBillingSettings(data);
+                apiFetch('/api/platform-billing-settings', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(data)
+                }).catch(err => console.error('Failed to save platform billing settings:', err));
               }}
             />
           )}

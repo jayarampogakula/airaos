@@ -20,6 +20,8 @@ interface SuperAdminViewProps {
     prompt: string;
   };
   onUpdatePlatformSupportBot: (data: any) => void;
+  platformBillingSettings: any;
+  onUpdatePlatformBillingSettings: (data: any) => void;
 }
 
 export interface IntegrationSettings {
@@ -54,7 +56,9 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   onInstallTemplate,
   onVisitTenant,
   platformSupportBot,
-  onUpdatePlatformSupportBot
+  onUpdatePlatformSupportBot,
+  platformBillingSettings,
+  onUpdatePlatformBillingSettings
 }) => {
   const [installedTemplate, setInstalledTemplate] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
@@ -89,52 +93,55 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   };
 
   // Billing Pricing and Limit variables in state
-  const [plansSettings, setPlansSettings] = useState(() => {
-    const stored = localStorage.getItem('platform_billing_settings');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        return {
-          growthPrice: parsed.growthPrice ?? 499,
-          growthChats: parsed.growthChats ?? 2000,
-          growthVoice: parsed.growthVoice ?? 500,
-          growthWebsites: parsed.growthWebsites ?? 2,
-          scalePrice: parsed.scalePrice ?? 1200,
-          scaleChats: parsed.scaleChats ?? 5000,
-          scaleVoice: parsed.scaleVoice ?? 1000,
-          scaleWebsites: parsed.scaleWebsites ?? 5,
-          enterprisePrice: parsed.enterprisePrice ?? 2500,
-          enterpriseChats: parsed.enterpriseChats ?? 10000,
-          enterpriseVoice: parsed.enterpriseVoice ?? 2500,
-          enterpriseWebsites: parsed.enterpriseWebsites ?? 999,
-          overageChatRate: parsed.overageChatRate ?? 0.05,
-          overageVoiceRate: parsed.overageVoiceRate ?? 0.15,
-          inboundCallRate: parsed.inboundCallRate ?? 0.10,
-          outboundCallRate: parsed.outboundCallRate ?? 0.20,
-          voiceSynthesisRate: parsed.voiceSynthesisRate ?? 0.02
-        };
-      } catch (e) {}
-    }
-    return {
-      growthPrice: 499,
-      growthChats: 2000,
-      growthVoice: 500,
-      growthWebsites: 2,
-      scalePrice: 1200,
-      scaleChats: 5000,
-      scaleVoice: 1000,
-      scaleWebsites: 5,
-      enterprisePrice: 2500,
-      enterpriseChats: 10000,
-      enterpriseVoice: 2500,
-      enterpriseWebsites: 999,
-      overageChatRate: 0.05,
-      overageVoiceRate: 0.15,
-      inboundCallRate: 0.10,
-      outboundCallRate: 0.20,
-      voiceSynthesisRate: 0.02
-    };
+  const [plansSettings, setPlansSettings] = useState({
+    growthPrice: platformBillingSettings?.growthPrice ?? 499,
+    growthChats: platformBillingSettings?.growthChats ?? 2000,
+    growthVoice: platformBillingSettings?.growthVoice ?? 500,
+    growthWebsites: platformBillingSettings?.growthWebsites ?? 2,
+    scalePrice: platformBillingSettings?.scalePrice ?? 1200,
+    scaleChats: platformBillingSettings?.scaleChats ?? 5000,
+    scaleVoice: platformBillingSettings?.scaleVoice ?? 1000,
+    scaleWebsites: platformBillingSettings?.scaleWebsites ?? 5,
+    enterprisePrice: platformBillingSettings?.enterprisePrice ?? 2500,
+    enterpriseChats: platformBillingSettings?.enterpriseChats ?? 10000,
+    enterpriseVoice: platformBillingSettings?.enterpriseVoice ?? 2500,
+    enterpriseWebsites: platformBillingSettings?.enterpriseWebsites ?? 999,
+    currency: platformBillingSettings?.currency ?? '$',
+    overageChatRate: platformBillingSettings?.overageChatRate ?? 0.05,
+    overageVoiceRate: platformBillingSettings?.overageVoiceRate ?? 0.15,
+    inboundCallRate: platformBillingSettings?.inboundCallRate ?? 0.10,
+    outboundCallRate: platformBillingSettings?.outboundCallRate ?? 0.20,
+    voiceSynthesisRate: platformBillingSettings?.voiceSynthesisRate ?? 0.02,
+    chatAddonPrice: platformBillingSettings?.chatAddonPrice ?? 250,
+    voiceAddonPrice: platformBillingSettings?.voiceAddonPrice ?? 400
   });
+
+  useEffect(() => {
+    if (platformBillingSettings) {
+      setPlansSettings({
+        growthPrice: platformBillingSettings.growthPrice ?? 499,
+        growthChats: platformBillingSettings.growthChats ?? 2000,
+        growthVoice: platformBillingSettings.growthVoice ?? 500,
+        growthWebsites: platformBillingSettings.growthWebsites ?? 2,
+        scalePrice: platformBillingSettings.scalePrice ?? 1200,
+        scaleChats: platformBillingSettings.scaleChats ?? 5000,
+        scaleVoice: platformBillingSettings.scaleVoice ?? 1000,
+        scaleWebsites: platformBillingSettings.scaleWebsites ?? 5,
+        enterprisePrice: platformBillingSettings.enterprisePrice ?? 2500,
+        enterpriseChats: platformBillingSettings.enterpriseChats ?? 10000,
+        enterpriseVoice: platformBillingSettings.enterpriseVoice ?? 2500,
+        enterpriseWebsites: platformBillingSettings.enterpriseWebsites ?? 999,
+        currency: platformBillingSettings.currency ?? '$',
+        overageChatRate: platformBillingSettings.overageChatRate ?? 0.05,
+        overageVoiceRate: platformBillingSettings.overageVoiceRate ?? 0.15,
+        inboundCallRate: platformBillingSettings.inboundCallRate ?? 0.10,
+        outboundCallRate: platformBillingSettings.outboundCallRate ?? 0.20,
+        voiceSynthesisRate: platformBillingSettings.voiceSynthesisRate ?? 0.02,
+        chatAddonPrice: platformBillingSettings.chatAddonPrice ?? 250,
+        voiceAddonPrice: platformBillingSettings.voiceAddonPrice ?? 400
+      });
+    }
+  }, [platformBillingSettings]);
 
   // Integration settings state
   const [integrations, setIntegrations] = useState<IntegrationSettings>(() => {
@@ -231,7 +238,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
   const handleSaveBilling = (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('platform_billing_settings', JSON.stringify(plansSettings));
+    onUpdatePlatformBillingSettings(plansSettings);
     setSaveSuccess('billing');
     setTimeout(() => setSaveSuccess(null), 2500);
   };
@@ -271,78 +278,9 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       <div className="view-header" style={{ marginBottom: '20px' }}>
         <div>
           <h2 className="view-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Shield size={24} style={{ color: 'var(--danger-color)' }} /> Super Admin Platform Control
+            <Shield size={24} style={{ color: 'var(--danger-color)' }} /> Super Admin
           </h2>
           <p className="view-subtitle">Global agency infrastructure, client accounts subscription management, and template marketplaces.</p>
-        </div>
-
-        {/* Sub tabs switches synced to global activeTab */}
-        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
-          <button 
-            onClick={() => setActiveTab('tenants')} 
-            className="btn" 
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '0.75rem', 
-              backgroundColor: activeTab === 'tenants' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'tenants' ? 'white' : 'var(--text-secondary)',
-              gap: '6px'
-            }}
-          >
-            <Users size={14} /> Client Accounts
-          </button>
-          <button 
-            onClick={() => setActiveTab('plans')} 
-            className="btn" 
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '0.75rem', 
-              backgroundColor: activeTab === 'plans' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'plans' ? 'white' : 'var(--text-secondary)',
-              gap: '6px'
-            }}
-          >
-            <DollarSign size={14} /> Billing & Plans
-          </button>
-          <button 
-            onClick={() => setActiveTab('infrastructure')} 
-            className="btn" 
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '0.75rem', 
-              backgroundColor: activeTab === 'infrastructure' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'infrastructure' ? 'white' : 'var(--text-secondary)',
-              gap: '6px'
-            }}
-          >
-            <Server size={14} /> System Infrastructure
-          </button>
-          <button 
-            onClick={() => setActiveTab('marketplace')} 
-            className="btn" 
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '0.75rem', 
-              backgroundColor: activeTab === 'marketplace' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'marketplace' ? 'white' : 'var(--text-secondary)',
-              gap: '6px'
-            }}
-          >
-            <ShoppingBag size={14} /> Template Marketplace
-          </button>
-          <button 
-            onClick={() => setActiveTab('support_bot')} 
-            className="btn" 
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '0.75rem', 
-              backgroundColor: activeTab === 'support_bot' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'support_bot' ? 'white' : 'var(--text-secondary)',
-              gap: '6px'
-            }}
-          >
-            <Cpu size={14} /> Platform Support Bot
-          </button>
         </div>
       </div>
 
@@ -489,12 +427,54 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
               {/* Tiers Settings grids */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Global Settings */}
+                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '14px' }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-color)', marginBottom: '10px' }}>Global Settings</h4>
+                  <div className="grid-cols-12" style={{ gap: '10px' }}>
+                    <div className="col-span-4 form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Currency Symbol</label>
+                      <select 
+                        className="form-input" 
+                        value={plansSettings.currency || '$'} 
+                        onChange={(e) => setPlansSettings({ ...plansSettings, currency: e.target.value })}
+                        style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                      >
+                        <option value="$">USD ($)</option>
+                        <option value="₹">INR (₹)</option>
+                        <option value="€">EUR (€)</option>
+                        <option value="£">GBP (£)</option>
+                        <option value="¥">JPY (¥)</option>
+                        <option value="A$">AUD (A$)</option>
+                        <option value="C$">CAD (C$)</option>
+                      </select>
+                    </div>
+                    <div className="col-span-4 form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Chat Addon Price (500 chats)</label>
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        value={plansSettings.chatAddonPrice ?? 250} 
+                        onChange={(e) => setPlansSettings({ ...plansSettings, chatAddonPrice: parseInt(e.target.value) || 0 })} 
+                      />
+                    </div>
+                    <div className="col-span-4 form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Voice Addon Price (100 mins)</label>
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        value={plansSettings.voiceAddonPrice ?? 400} 
+                        onChange={(e) => setPlansSettings({ ...plansSettings, voiceAddonPrice: parseInt(e.target.value) || 0 })} 
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Growth */}
                 <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '14px' }}>
                   <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-color)', marginBottom: '10px' }}>Growth Tier (Small SME)</h4>
                   <div className="grid-cols-12">
                     <div className="col-span-3 form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Base Price ($/mo)</label>
+                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Base Price ({plansSettings.currency || '$'}/mo)</label>
                       <input 
                         type="number" 
                         className="form-input" 
@@ -537,7 +517,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f59e0b', marginBottom: '10px' }}>Scale Tier (Mid-size Firm)</h4>
                   <div className="grid-cols-12">
                     <div className="col-span-3 form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Base Price ($/mo)</label>
+                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Base Price ({plansSettings.currency || '$'}/mo)</label>
                       <input 
                         type="number" 
                         className="form-input" 
@@ -580,7 +560,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--danger-color)', marginBottom: '10px' }}>Enterprise Tier (Large Corporate)</h4>
                   <div className="grid-cols-12">
                     <div className="col-span-3 form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Base Price ($/mo)</label>
+                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Base Price ({plansSettings.currency || '$'}/mo)</label>
                       <input 
                         type="number" 
                         className="form-input" 
@@ -630,7 +610,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <div className="form-group" style={{ margin: 0, flex: 1 }}>
-                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Chat Overage Fee ($/chat)</label>
+                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Chat Overage Fee ({plansSettings.currency || '$'}/chat)</label>
                       <input 
                         type="number" 
                         step="0.01" 
@@ -640,7 +620,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                       />
                     </div>
                     <div className="form-group" style={{ margin: 0, flex: 1 }}>
-                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Voice Overage Fee ($/min)</label>
+                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Voice Overage Fee ({plansSettings.currency || '$'}/min)</label>
                       <input 
                         type="number" 
                         step="0.01" 
@@ -653,7 +633,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <div className="form-group" style={{ margin: 0, flex: 1 }}>
-                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Inbound Call Rate ($/min)</label>
+                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Inbound Call Rate ({plansSettings.currency || '$'}/min)</label>
                       <input 
                         type="number" 
                         step="0.01" 
@@ -663,7 +643,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                       />
                     </div>
                     <div className="form-group" style={{ margin: 0, flex: 1 }}>
-                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Outbound Call Rate ($/min)</label>
+                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Outbound Call Rate ({plansSettings.currency || '$'}/min)</label>
                       <input 
                         type="number" 
                         step="0.01" 
@@ -675,7 +655,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   </div>
 
                   <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.65rem' }}>TTS Synthesis ($/1k char)</label>
+                    <label className="form-label" style={{ fontSize: '0.65rem' }}>TTS Synthesis ({plansSettings.currency || '$'}/1k char)</label>
                     <input 
                       type="number" 
                       step="0.001" 

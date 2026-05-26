@@ -93,6 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'plans', label: 'Billing & Plans', icon: Settings },
     { id: 'infrastructure', label: 'Infrastructure status', icon: Database },
     { id: 'marketplace', label: 'Marketplace templates', icon: ShoppingBag },
+    { id: 'support_bot', label: 'Platform Support Bot', icon: MessageSquare }
   ];
 
 
@@ -251,49 +252,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
 
-      {/* Role Selector for Platform Admins */}
-      {user?.email === 'admin@airaos.com' && (
-        <div style={{ padding: '0 16px 12px 16px' }}>
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
-            <button
-              type="button"
-              onClick={() => onSelectRole('tenant')}
-              className="btn"
-              style={{
-                flex: 1,
-                padding: '6px',
-                fontSize: '0.72rem',
-                fontWeight: '600',
-                backgroundColor: currentRole === 'tenant' ? 'var(--primary-color)' : 'transparent',
-                color: currentRole === 'tenant' ? 'white' : 'var(--text-secondary)',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                justifyContent: 'center'
-              }}
-            >
-              Workspace View
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectRole('superadmin')}
-              className="btn"
-              style={{
-                flex: 1,
-                padding: '6px',
-                fontSize: '0.72rem',
-                fontWeight: '600',
-                backgroundColor: currentRole === 'superadmin' ? 'var(--primary-color)' : 'transparent',
-                color: currentRole === 'superadmin' ? 'white' : 'var(--text-secondary)',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                justifyContent: 'center'
-              }}
-            >
-              Super Admin
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* Navigation Items */}
       <div 
