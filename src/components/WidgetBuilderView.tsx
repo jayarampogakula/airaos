@@ -1557,7 +1557,9 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
               <a 
-                href={`${getBackendOrigin()}/website/${tenant.slug}`} 
+                href={domainType === 'custom' && customDomain 
+                  ? `https://${customDomain}` 
+                  : `${getBackendOrigin().replace(/^(https?:\/\/)(app|dashboard|www|admin)\./i, '$1')}/${tenant.slug}`}
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{ 
@@ -1570,7 +1572,9 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                 }}
                 title="Open live website in new tab"
               >
-                {domainType === 'custom' && customDomain ? `https://${customDomain}` : `https://${tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)}`}
+                {domainType === 'custom' && customDomain 
+                  ? `https://${customDomain}` 
+                  : `${getBackendOrigin().replace(/^(https?:\/\/)(app|dashboard|www|admin)\./i, '$1')}/${tenant.slug}`}
               </a>
             </div>
             

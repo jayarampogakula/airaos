@@ -654,12 +654,14 @@
         normalized = normalized.substring(1);
       }
       
-      const isIndian = clean.startsWith('+91') || clean.startsWith('91') || clean.startsWith('0') || digits.length === 10;
+      // Indian mobile numbers typically start with 6, 7, 8, or 9 and are 10 digits.
+      const startsWithIndianMobile = /^[6-9]/.test(normalized);
+      const isIndian = clean.startsWith('+91') || clean.startsWith('91') || clean.startsWith('0') || startsWithIndianMobile;
       
       if (isIndian) {
         return normalized.length === 10;
       }
-      return digits.length >= 7;
+      return digits.length >= 7 && digits.length <= 15;
     }
 
     async function handleQuickAction(action) {
@@ -995,11 +997,26 @@
 
       // Conversational Lead Capture State Machine
       if (leadCaptureStep === 1) {
-        // Check if the name looks like a common greeting
+        // Helper to check if user input is likely a general question rather than a name
+        const isLikelyQuery = (val) => {
+          const lower = val.toLowerCase().trim();
+          if (lower.includes('?')) return true;
+          if (val.length > 25) return true;
+          const queryKeywords = [
+            'what', 'how', 'why', 'where', 'when', 'who', 'which', 'whom',
+            'do you', 'can you', 'is there', 'are you', 'offer', 'price',
+            'cost', 'treatment', 'slot', 'book', 'schedule', 'appointment',
+            'location', 'address', 'phone', 'email', 'help', 'info', 'service',
+            'work', 'open', 'close', 'hour'
+          ];
+          return queryKeywords.some(keyword => lower.includes(keyword));
+        };
+
+        // Check if the name looks like a common greeting or query
         const greetings = ['hi', 'hello', 'hey', 'yo', 'sup', 'greetings', 'hola', 'test', 'demo', 'good morning', 'good afternoon', 'good evening'];
         const normalized = text.toLowerCase().trim().replace(/[^a-z\s]/g, '');
-        if (greetings.includes(normalized) || text.length < 2) {
-          addMessage("Hi there! To register you properly, could you please enter your full name?", "ai");
+        if (greetings.includes(normalized) || text.length < 2 || isLikelyQuery(text)) {
+          addMessage("Hi there! To help you properly and answer your queries, could you please enter your full name first?", "ai");
           return;
         }
         capturedName = text;

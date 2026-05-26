@@ -38,8 +38,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Subdomain and custom DNS website routing middleware
 app.use((req, res, next) => {
@@ -2802,6 +2802,49 @@ app.post('/api/voice/outbound', async (req, res) => {
   } catch (err) {
     console.error('Twilio Outbound Dial Error:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Path-based tenant slug routing fallback (e.g. cleveradai.in/smile-dentals)
+app.get('/:slug', (req, res, next) => {
+  const systemPaths = ['api', 'assets', 'website', 'dashboard', 'login', 'signup', 'admin', 'widget', 'crm', 'inbox', 'calendar', 'employees', 'knowledge', 'builder', 'orchestrator', 'publisher', 'voice', 'workflows', 'settings', 'whitelabel'];
+  const slug = req.params.slug;
+  
+  if (systemPaths.includes(slug) || slug.includes('.')) {
+    return next();
+  }
+
+  const db = readDb();
+  const tenant = db.tenants.find(t => t.slug === slug);
+  if (!tenant) {
+    return next();
+  }
+
+  if (tenant.websiteConfig && tenant.websiteConfig.html) {
+    let html = tenant.websiteConfig.html;
+    if (!html.includes('widget.js')) {
+      const widgetScript = `
+        <script src="/widget.js" data-tenant-id="${tenant.id}" data-color="${tenant.primaryColor || '#0ea5e9'}" data-title="${tenant.name} AI Assistant"></script>
+      `;
+      if (html.includes('</body>')) {
+        html = html.replace('</body>', `${widgetScript}</body>`);
+      } else {
+        html = html + widgetScript;
+      }
+    }
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(html);
+  } else {
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(`
+      <div style="font-family: sans-serif; text-align: center; padding: 100px 20px; background: #0a0f1d; color: #fff; min-height: 100vh;">
+        <h1 style="color: ${tenant.primaryColor || '#0ea5e9'}; font-size: 2.5rem; margin-bottom: 10px;">${tenant.name}</h1>
+        <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 30px;">Website has not been generated yet. Please go to the Website Builder tab and click "Generate AI Website" to build it.</p>
+        <div style="display: inline-block;">
+          <script src="/widget.js" data-tenant-id="${tenant.id}" data-color="${tenant.primaryColor || '#0ea5e9'}" data-title="${tenant.name} AI Assistant"></script>
+        </div>
+      </div>
+    `);
   }
 });
 
