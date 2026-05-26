@@ -107,10 +107,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       data = text ? JSON.parse(text) : {};
     } catch (err) {
-      throw new Error('Server returned an invalid response.');
+      console.error('Failed to parse login response as JSON:', text);
+      throw new Error(`Server returned an invalid response (Status ${res.status}).`);
     }
 
-    if (!res.ok) throw new Error(data.error || 'Unable to sign in.');
+    if (!res.ok) {
+      console.warn(`Login failed: status ${res.status}, error:`, data.error);
+      throw new Error(data.error || `Unable to sign in (Status ${res.status}).`);
+    }
     return applySession(data);
   }, [applySession]);
 
@@ -125,9 +129,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       data = text ? JSON.parse(text) : {};
     } catch (err) {
-      throw new Error('Server returned an invalid response.');
+      console.error('Failed to parse signup response as JSON:', text);
+      throw new Error(`Server returned an invalid response (Status ${res.status}).`);
     }
-    if (!res.ok) throw new Error(data.error || 'Unable to create workspace.');
+    if (!res.ok) {
+      console.warn(`Signup failed: status ${res.status}, error:`, data.error);
+      throw new Error(data.error || `Unable to create workspace (Status ${res.status}).`);
+    }
     return applySession(data);
   }, [applySession]);
 
