@@ -1880,7 +1880,7 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
-  const apiKey = integrations.difyApiKey || process.env.OPENAI_API_KEY;
+  const apiKey = integrations.openaiApiKey || integrations.difyApiKey || process.env.OPENAI_API_KEY;
 
   if (apiKey) {
     // Call live OpenAI
@@ -2052,7 +2052,7 @@ app.post('/api/crew/run', async (req, res) => {
 
   const tenant = db.tenants.find(t => t.id === tenantId);
   const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
-  const apiKey = integrations.difyApiKey || process.env.OPENAI_API_KEY;
+  const apiKey = integrations.openaiApiKey || integrations.difyApiKey || process.env.OPENAI_API_KEY;
 
   try {
     const result = await runCrew({
@@ -2503,7 +2503,7 @@ app.post('/api/voice/gather', async (req, res) => {
   
   const tenant = db.tenants.find(t => t.id === tenantId);
   const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}) };
-  const apiKey = integrations.difyApiKey || process.env.OPENAI_API_KEY;
+  const apiKey = integrations.openaiApiKey || integrations.difyApiKey || process.env.OPENAI_API_KEY;
 
   if (apiKey) {
     try {

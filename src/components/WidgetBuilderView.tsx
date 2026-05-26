@@ -32,6 +32,14 @@ const getBaseDomain = () => {
   return cleaned;
 };
 
+const getBackendOrigin = () => {
+  const loc = window.location;
+  if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') {
+    return `${loc.protocol}//${loc.hostname}:3001`;
+  }
+  return loc.origin;
+};
+
 const compileWebsiteHTML = (config: any) => {
   let themeBg = '#0b1329';
   let themeText = '#f8fafc';
@@ -1523,7 +1531,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
               <a 
-                href={`http://localhost:3001/website/${tenant.slug}`} 
+                href={`${getBackendOrigin()}/website/${tenant.slug}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{ 

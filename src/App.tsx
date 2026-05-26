@@ -189,6 +189,9 @@ function App() {
 
         if (bootstrapRes.ok) {
           const data = await bootstrapRes.json();
+          if (data.tenant) {
+            setTenants(prev => prev.map(t => t.id === data.tenant.id ? data.tenant : t));
+          }
           setContacts(data.contacts || []);
           setDeals(data.deals || []);
           setAppointments(data.appointments || []);
@@ -284,7 +287,7 @@ function App() {
     }
   }, [platformSupportBot?.enabled, platformSupportBot?.name, selectedTenantId]);
 
-  const selectedTenant = activeTenant || tenants.find(t => t.id === selectedTenantId) || tenants[0];
+  const selectedTenant = tenants.find(t => t.id === selectedTenantId) || activeTenant || tenants[0];
 
   // Dynamic White Label Branding Application
   useEffect(() => {
