@@ -659,7 +659,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
                     {currentStep === 4 && (
                       <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         <label style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#1e293b' }}>
-                          How many employees will use these tools?
+                          How many employees do you have?
                         </label>
                         <input 
                           type="number" 
