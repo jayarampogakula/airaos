@@ -6,7 +6,18 @@ import crypto from 'crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const DB_FILE = process.env.DB_PATH || path.join(__dirname, 'db.json');
+let resolvedDbFile = process.env.DB_PATH || path.join(__dirname, 'db.json');
+
+try {
+  if (fs.existsSync(resolvedDbFile) && fs.lstatSync(resolvedDbFile).isDirectory()) {
+    console.warn(`[DATABASE] WARNING: Database path ${resolvedDbFile} is a directory! Falling back to db_file.json to prevent crash loops.`);
+    resolvedDbFile = path.join(path.dirname(resolvedDbFile), 'db_file.json');
+  }
+} catch (e) {
+  console.error("[DATABASE] Error inspecting database path:", e);
+}
+
+export const DB_FILE = resolvedDbFile;
 
 const ROLE_NAMES = ['Owner', 'Admin', 'Manager', 'Agent'];
 

@@ -238,18 +238,35 @@ app.post('/api/auth/signup', (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
+  console.log(`[LOGIN] Attempting login for email: ${email}`);
   const db = readDb();
   const user = (db.users || []).find((u) => u.email.toLowerCase() === String(email || '').trim().toLowerCase());
-  if (!user || !verifyPassword(password || '', user.passwordHash)) {
+  
+  if (!user) {
+    console.warn(`[LOGIN] Failed: User not found for email: ${email}`);
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+  
+  if (!verifyPassword(password || '', user.passwordHash, user)) {
+    console.warn(`[LOGIN] Failed: Incorrect password for email: ${email}`);
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
 
   const tenants = getUserTenants(db, user.id);
   if (tenants.length === 0) {
+    console.warn(`[LOGIN] Failed: User ${email} does not belong to any workspace.`);
     return res.status(403).json({ error: 'User does not belong to any workspace.' });
   }
 
+  // Auto-migrate legacy plain text passwords to hashes
+  if (user.password && !user.passwordHash) {
+    console.log(`[LOGIN] Migrating legacy plain text password for user: ${email}`);
+    user.passwordHash = hashPassword(user.password);
+    delete user.password;
+  }
+
   const session = createSession(db, user.id, tenants[0].id);
+  console.log(`[LOGIN] Success: User ${email} logged in. Active workspace: ${tenants[0].name} (${tenants[0].id})`);
   writeDb(db);
   res.json(sessionPayload(db, session, user));
 });

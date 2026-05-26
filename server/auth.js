@@ -9,7 +9,10 @@ export function hashPassword(password) {
   return `${salt}:${hash}`;
 }
 
-export function verifyPassword(password, storedHash) {
+export function verifyPassword(password, storedHash, userRaw) {
+  if (!storedHash && userRaw && userRaw.password) {
+    return password === userRaw.password;
+  }
   if (!storedHash || !storedHash.includes(':')) return false;
   const [salt, originalHash] = storedHash.split(':');
   const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
