@@ -564,7 +564,23 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary-glow)', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.85rem' }}>
                           {contact.name.charAt(0)}
                         </div>
-                        <span style={{ fontWeight: '600' }}>{contact.name}</span>
+                        <span style={{ fontWeight: '600', display: 'inline-flex', alignItems: 'center' }}>
+                          {contact.name}
+                          {contact.inquiryCount && contact.inquiryCount > 1 && (
+                            <span style={{ 
+                              fontSize: '0.65rem', 
+                              marginLeft: '6px', 
+                              padding: '1px 5px', 
+                              background: 'rgba(245, 158, 11, 0.15)', 
+                              color: '#f59e0b', 
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                              borderRadius: '4px',
+                              fontWeight: 'bold'
+                            }}>
+                              {contact.inquiryCount}x
+                            </span>
+                          )}
+                        </span>
                       </div>
                     </td>
                     <td>{contact.email}</td>

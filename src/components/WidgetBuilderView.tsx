@@ -1559,7 +1559,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
               <a 
                 href={domainType === 'custom' && customDomain 
                   ? `https://${customDomain}` 
-                  : `${getBackendOrigin().replace(/^(https?:\/\/)(app|dashboard|www|admin)\./i, '$1')}/${tenant.slug}`}
+                  : `${getBackendOrigin()}/${tenant.slug}`}
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{ 
@@ -1574,7 +1574,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
               >
                 {domainType === 'custom' && customDomain 
                   ? `https://${customDomain}` 
-                  : `${getBackendOrigin().replace(/^(https?:\/\/)(app|dashboard|www|admin)\./i, '$1')}/${tenant.slug}`}
+                  : `${getBackendOrigin()}/${tenant.slug}`}
               </a>
             </div>
             

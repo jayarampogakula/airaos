@@ -95,6 +95,7 @@ export interface Contact {
   city?: string;
   project?: string;
   assignedAgentId?: string;
+  inquiryCount?: number;
 }
 
 export interface Deal {

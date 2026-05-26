@@ -494,8 +494,12 @@ app.get('/api/current-tenant/bootstrap', authMiddleware, tenantMiddleware, (req,
 });
 
 app.put('/api/current-tenant', authMiddleware, tenantMiddleware, (req, res) => {
+  console.log(`[TENANT UPDATE] Received updates for tenant ${req.tenantId}:`, Object.keys(req.body));
   const tenantIndex = req.db.tenants.findIndex((t) => t.id === req.tenantId);
-  if (tenantIndex === -1) return res.status(404).json({ error: 'Tenant not found.' });
+  if (tenantIndex === -1) {
+    console.error(`[TENANT UPDATE] Tenant ${req.tenantId} not found.`);
+    return res.status(404).json({ error: 'Tenant not found.' });
+  }
 
   req.db.tenants[tenantIndex] = {
     ...req.db.tenants[tenantIndex],
@@ -503,6 +507,12 @@ app.put('/api/current-tenant', authMiddleware, tenantMiddleware, (req, res) => {
     id: req.tenantId
   };
   saveDb(req);
+  
+  const configSize = req.db.tenants[tenantIndex].websiteConfig 
+    ? JSON.stringify(req.db.tenants[tenantIndex].websiteConfig).length 
+    : 0;
+  console.log(`[TENANT UPDATE] Tenant ${req.tenantId} successfully updated. websiteConfig size: ${configSize} bytes`);
+  
   res.json(req.db.tenants[tenantIndex]);
 });
 
@@ -598,6 +608,31 @@ app.get('/api/current-tenant/contacts', authMiddleware, tenantMiddleware, (req, 
 });
 
 app.post('/api/current-tenant/contacts', authMiddleware, tenantMiddleware, (req, res) => {
+  const email = req.body.email;
+  const phone = req.body.phone;
+  
+  let existingContact = null;
+  if (email || phone) {
+    existingContact = req.db.contacts.find(c => 
+      c.tenantId === req.tenantId && 
+      ((email && c.email && c.email.toLowerCase() === email.toLowerCase()) || 
+       (phone && c.phone && c.phone.replace(/\D/g, '') === phone.replace(/\D/g, '')))
+    );
+  }
+
+  if (existingContact) {
+    existingContact.inquiryCount = (existingContact.inquiryCount || 1) + 1;
+    if (req.body.name) existingContact.name = req.body.name;
+    if (req.body.tags) {
+      existingContact.tags = Array.from(new Set([...(existingContact.tags || []), ...req.body.tags]));
+    }
+    if (req.body.notes) {
+      existingContact.notes = [...(existingContact.notes || []), ...req.body.notes];
+    }
+    saveDb(req);
+    return res.status(200).json(existingContact);
+  }
+
   const newContact = {
     id: req.body.id || `c-${Date.now()}`,
     tenantId: req.tenantId,
@@ -610,7 +645,8 @@ app.post('/api/current-tenant/contacts', authMiddleware, tenantMiddleware, (req,
     company: req.body.company || 'Individual',
     city: req.body.city || '',
     project: req.body.project,
-    assignedAgentId: req.body.assignedAgentId || tenantScoped(req.db.agents, req.tenantId)[0]?.id
+    assignedAgentId: req.body.assignedAgentId || tenantScoped(req.db.agents, req.tenantId)[0]?.id,
+    inquiryCount: 1
   };
   req.db.contacts.push(newContact);
   saveDb(req);
@@ -1129,6 +1165,77 @@ app.get('/api/contacts', (req, res) => {
 app.post('/api/contacts', async (req, res) => {
   const db = readDb();
   const tenantId = tenantFromPublicRequest(req);
+
+  // Check if contact with same email or phone already exists for this tenant
+  let existingContact = null;
+  if (req.body.email || req.body.phone) {
+    existingContact = db.contacts.find(c => 
+      c.tenantId === tenantId && 
+      ((req.body.email && c.email && c.email.toLowerCase() === req.body.email.toLowerCase()) || 
+       (req.body.phone && c.phone && c.phone.replace(/\D/g, '') === req.body.phone.replace(/\D/g, '')))
+    );
+  }
+
+  if (existingContact) {
+    existingContact.inquiryCount = (existingContact.inquiryCount || 1) + 1;
+    const incomingTags = req.body.tags || ['New Lead'];
+    existingContact.tags = Array.from(new Set([...(existingContact.tags || []), ...incomingTags]));
+    
+    const noteText = `Enquired again via ${req.body.company || 'Chatbot/Widget'} on ${new Date().toLocaleDateString()} (Total inquiries: ${existingContact.inquiryCount})`;
+    existingContact.notes = [...(existingContact.notes || []), noteText];
+    if (req.body.name) existingContact.name = req.body.name;
+    if (req.body.company) existingContact.company = req.body.company;
+    if (req.body.city) existingContact.city = req.body.city;
+
+    // Ensure they have a deal in CRM
+    const dealExists = db.deals && db.deals.some(d => d.contactId === existingContact.id && d.tenantId === tenantId);
+    if (!dealExists) {
+      const dealName = tenantId === 't-1' ? 'Dental Consultation' : tenantId === 't-2' ? 'KP Heights Site Visit' : tenantId === 't-3' ? 'Coaching Enrollment' : 'General Inquiry';
+      const dealValue = tenantId === 't-1' ? 450 : tenantId === 't-2' ? 120000 : tenantId === 't-3' ? 1200 : 150;
+      const newDeal = {
+        id: `d-${Date.now()}`,
+        tenantId,
+        contactId: existingContact.id,
+        name: `${existingContact.name} - ${dealName}`,
+        value: dealValue,
+        stage: 'lead',
+        createdAt: new Date().toISOString()
+      };
+      if (!db.deals) db.deals = [];
+      db.deals.push(newDeal);
+    }
+
+    // Append to or create conversation
+    let activeConv = db.conversations && db.conversations.find(c => c.contactId === existingContact.id && c.tenantId === tenantId);
+    if (activeConv) {
+      const msg1 = { id: `m-${Date.now()}-1`, tenantId, conversationId: activeConv.id, sender: 'customer', text: `Enquired again: My name is ${existingContact.name}, email: ${existingContact.email}, phone: ${existingContact.phone}`, timestamp: new Date().toISOString() };
+      const msg2 = { id: `m-${Date.now()}-2`, tenantId, conversationId: activeConv.id, sender: 'ai', text: `Welcome back! I have saved your latest inquiry. How can I help you today?`, timestamp: new Date().toISOString() };
+      activeConv.messages.push(msg1, msg2);
+      activeConv.lastMessageText = msg2.text;
+      activeConv.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      const newConversation = {
+        id: `conv-${Date.now()}`,
+        tenantId,
+        contactId: existingContact.id,
+        status: 'ai_active',
+        channel: 'web',
+        messages: [
+          { id: `m-${Date.now()}-1`, tenantId, conversationId: `conv-${Date.now()}`, sender: 'ai', text: 'Welcome back! How can I help you today?', timestamp: new Date().toISOString() }
+        ],
+        lastMessageText: 'Welcome back! How can I help you today?',
+        lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        assignedAgentId: existingContact.assignedAgentId || 'a-1',
+        unreadCount: 0
+      };
+      if (!db.conversations) db.conversations = [];
+      db.conversations.push(newConversation);
+    }
+
+    writeDb(db);
+    return res.status(200).json(existingContact);
+  }
+
   const newContact = {
     id: `c-${Date.now()}`,
     tenantId,
@@ -1140,7 +1247,8 @@ app.post('/api/contacts', async (req, res) => {
     phone: req.body.phone,
     company: req.body.company || 'Individual',
     city: req.body.city || '',
-    assignedAgentId: req.body.assignedAgentId || 'a-1'
+    assignedAgentId: req.body.assignedAgentId || 'a-1',
+    inquiryCount: 1
   };
 
   db.contacts.push(newContact);
