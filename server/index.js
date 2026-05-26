@@ -951,11 +951,12 @@ app.get('/api/contacts', (req, res) => {
   res.json(tenantScoped(db.contacts, tenantId));
 });
 
-app.post('/api/contacts', (req, res) => {
+app.post('/api/contacts', async (req, res) => {
   const db = readDb();
+  const tenantId = tenantFromPublicRequest(req);
   const newContact = {
     id: `c-${Date.now()}`,
-    tenantId: tenantFromPublicRequest(req),
+    tenantId,
     createdAt: new Date().toISOString(),
     tags: req.body.tags || ['New Lead'],
     notes: req.body.notes || [],
@@ -968,6 +969,113 @@ app.post('/api/contacts', (req, res) => {
   };
 
   db.contacts.push(newContact);
+
+  // Automatically create a deal in the 'lead' stage for this new contact
+  const dealName = tenantId === 't-1' ? 'Dental Consultation' : tenantId === 't-2' ? 'KP Heights Site Visit' : tenantId === 't-3' ? 'Coaching Enrollment' : 'General Inquiry';
+  const dealValue = tenantId === 't-1' ? 450 : tenantId === 't-2' ? 120000 : tenantId === 't-3' ? 1200 : 150;
+  const newDeal = {
+    id: `d-${Date.now()}`,
+    tenantId,
+    contactId: newContact.id,
+    name: `${newContact.name} - ${dealName}`,
+    value: dealValue,
+    stage: 'lead',
+    createdAt: new Date().toISOString()
+  };
+  if (!db.deals) db.deals = [];
+  db.deals.push(newDeal);
+
+  // Automatically create a local conversation for this contact to prevent empty inbox
+  const newConversation = {
+    id: `conv-${Date.now()}`,
+    tenantId,
+    contactId: newContact.id,
+    status: 'ai_active',
+    channel: 'web',
+    messages: [
+      { id: `m-${Date.now()}-1`, tenantId, conversationId: `conv-${Date.now()}`, sender: 'ai', text: 'Hello! Welcome to our virtual assistant.', timestamp: new Date().toISOString() },
+      { id: `m-${Date.now()}-2`, tenantId, conversationId: `conv-${Date.now()}`, sender: 'customer', text: `My name is ${newContact.name}, email: ${newContact.email}, phone: ${newContact.phone}`, timestamp: new Date().toISOString() },
+      { id: `m-${Date.now()}-3`, tenantId, conversationId: `conv-${Date.now()}`, sender: 'ai', text: 'Perfect! I have saved your contact details. How can I help you today?', timestamp: new Date().toISOString() }
+    ],
+    lastMessageText: 'Perfect! I have saved your contact details. How can I help you today?',
+    lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    assignedAgentId: newContact.assignedAgentId || 'a-1',
+    unreadCount: 0
+  };
+  if (!db.conversations) db.conversations = [];
+  db.conversations.push(newConversation);
+
+  // Chatwoot Sync if configured
+  const tenant = db.tenants.find(t => t.id === tenantId);
+  const hasChatwoot = tenant && tenant.settings && tenant.settings.chatwootAccountId && tenant.settings.chatwootApiAccessToken;
+  let websiteChannel = null;
+  if (hasChatwoot) {
+    websiteChannel = (db.channelConfigs || []).find(
+      (c) => c.tenantId === tenantId && c.type === 'website' && c.chatwootInboxId
+    );
+  }
+
+  if (hasChatwoot && websiteChannel && newContact.email) {
+    try {
+      const accountId = tenant.settings.chatwootAccountId;
+      // Search or create contact in Chatwoot
+      let cwContact = null;
+      const searchRes = await chatwootRequest({
+        tenant,
+        path: `/api/v1/accounts/${accountId}/contacts/search?q=${encodeURIComponent(newContact.email)}`
+      });
+      const searchPayload = searchRes.payload || searchRes.data?.payload || [];
+      if (searchPayload.length > 0) {
+        cwContact = searchPayload[0];
+      } else {
+        cwContact = await chatwootRequest({
+          tenant,
+          method: 'POST',
+          path: `/api/v1/accounts/${accountId}/contacts`,
+          body: {
+            name: newContact.name || 'Web Visitor',
+            email: newContact.email,
+            phone_number: newContact.phone || '',
+            inbox_id: parseInt(websiteChannel.chatwootInboxId)
+          }
+        });
+        if (cwContact.payload) cwContact = cwContact.payload;
+      }
+
+      if (cwContact && cwContact.id) {
+        // Create conversation in Chatwoot
+        const cwConv = await chatwootRequest({
+          tenant,
+          method: 'POST',
+          path: `/api/v1/accounts/${accountId}/conversations`,
+          body: {
+            source_id: `web-${newConversation.id}`,
+            inbox_id: parseInt(websiteChannel.chatwootInboxId),
+            contact_id: parseInt(cwContact.id),
+            status: 'open'
+          }
+        });
+        const chatwootConversationId = String(cwConv.id || cwConv.payload?.id);
+        if (chatwootConversationId && chatwootConversationId !== 'undefined') {
+          newConversation.chatwootConversationId = chatwootConversationId;
+          
+          // Post initial system/lead capture info as message to Chatwoot
+          await chatwootRequest({
+            tenant,
+            method: 'POST',
+            path: `/api/v1/accounts/${accountId}/conversations/${chatwootConversationId}/messages`,
+            body: {
+              content: `Lead Capture Completed:\nName: ${newContact.name}\nEmail: ${newContact.email}\nPhone: ${newContact.phone}`,
+              message_type: 'incoming'
+            }
+          });
+        }
+      }
+    } catch (cwErr) {
+      console.error('Chatwoot contact/conversation auto-sync error:', cwErr.message);
+    }
+  }
+
   writeDb(db);
   res.status(201).json(newContact);
 });

@@ -785,6 +785,13 @@
 
       // Conversational Lead Capture State Machine
       if (leadCaptureStep === 1) {
+        // Check if the name looks like a common greeting
+        const greetings = ['hi', 'hello', 'hey', 'yo', 'sup', 'greetings', 'hola', 'test', 'demo', 'good morning', 'good afternoon', 'good evening'];
+        const normalized = text.toLowerCase().trim().replace(/[^a-z\s]/g, '');
+        if (greetings.includes(normalized) || text.length < 2) {
+          addMessage("Hi there! To register you properly, could you please enter your full name?", "ai");
+          return;
+        }
         capturedName = text;
         leadCaptureStep = 2;
         addMessage(`Thank you, ${capturedName}! What is your email address?`, 'ai');
@@ -804,6 +811,12 @@
       }
 
       if (leadCaptureStep === 3) {
+        // Validate phone digits length
+        const digits = text.replace(/[^0-9]/g, '');
+        if (digits.length < 7) {
+          addMessage("Please enter a valid phone number (at least 7 digits) so we can reach you.", "ai");
+          return;
+        }
         capturedPhone = text;
         leadCaptureStep = 0;
 
