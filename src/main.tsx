@@ -9,8 +9,8 @@ if (typeof window !== 'undefined') {
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
     let targetInput = input;
     if (typeof input === 'string' && input.startsWith('/api/')) {
-      const { hostname, port } = window.location;
-      if ((hostname === 'localhost' || hostname === '127.0.0.1') && port !== '3001' && port !== '5173') {
+      const loc = window.location;
+      if ((loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') && loc.port !== '3001' && loc.port !== '5173') {
         targetInput = `http://localhost:3001${input}`;
       }
     }
