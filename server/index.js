@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { readDb, writeDb } from './db.js';
+import { DB_FILE, readDb, writeDb } from './db.js';
 import { runCrew } from './crewEngine.js';
 import {
   CHANNEL_TYPES,
