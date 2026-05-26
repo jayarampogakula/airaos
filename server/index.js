@@ -41,6 +41,79 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Subdomain and custom DNS website routing middleware
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api') || 
+      req.path.startsWith('/assets') || 
+      req.path.startsWith('/website') ||
+      req.path.includes('.') || 
+      req.hostname === 'localhost' || 
+      req.hostname === '127.0.0.1') {
+    return next();
+  }
+
+  const host = req.headers.host || '';
+  const parts = host.split('.');
+  
+  let subdomain = '';
+  if (parts.length > 2) {
+    subdomain = parts[0].toLowerCase();
+  }
+
+  const systemSubdomains = ['app', 'www', 'api', 'admin', 'dev'];
+  const db = readDb();
+  
+  let tenant = null;
+  if (subdomain && !systemSubdomains.includes(subdomain)) {
+    tenant = db.tenants.find(t => t.slug === subdomain);
+  }
+  
+  if (!tenant) {
+    tenant = db.tenants.find(t => t.domain === host || t.domain === req.hostname);
+  }
+
+  if (tenant) {
+    const isCustomDomain = tenant.domain && !tenant.domain.endsWith('.airaos.com') && !tenant.domain.endsWith('.cleveradai.in');
+    if (isCustomDomain && tenant.plan !== 'Enterprise') {
+      return res.status(403).send(`
+        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+          <h2>Custom Domain Locked</h2>
+          <p>This business requires an Enterprise Plan to use a custom domain. Please upgrade your plan in the dashboard.</p>
+        </div>
+      `);
+    }
+
+    if (tenant.websiteConfig && tenant.websiteConfig.html) {
+      let html = tenant.websiteConfig.html;
+      if (!html.includes('widget.js')) {
+        const widgetScript = `
+          <script src="/widget.js" data-tenant-id="${tenant.id}" data-color="${tenant.primaryColor || '#0ea5e9'}" data-title="${tenant.name} AI Assistant"></script>
+        `;
+        if (html.includes('</body>')) {
+          html = html.replace('</body>', `${widgetScript}</body>`);
+        } else {
+          html = html + widgetScript;
+        }
+      }
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(html);
+    } else {
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(`
+        <div style="font-family: sans-serif; text-align: center; padding: 100px 20px; background: #0a0f1d; color: #fff; min-height: 100vh;">
+          <h1 style="color: ${tenant.primaryColor || '#0ea5e9'}; font-size: 2.5rem; margin-bottom: 10px;">${tenant.name}</h1>
+          <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 30px;">Website is coming soon! Please generate the business website from the AiraOS Admin Panel.</p>
+          <div style="display: inline-block;">
+            <script src="/widget.js" data-tenant-id="${tenant.id}" data-color="${tenant.primaryColor || '#0ea5e9'}" data-title="${tenant.name} AI Assistant"></script>
+          </div>
+        </div>
+      `);
+    }
+  }
+
+  next();
+});
+
 // RAG Grounding Search Helper
 function searchKnowledgeChunks(query, chunks) {
   if (!query) return [];
@@ -414,9 +487,111 @@ app.get('/api/current-tenant/bootstrap', authMiddleware, tenantMiddleware, (req,
     workflows: tenantScoped(req.db.workflows, req.tenantId),
     teamMembers: tenantScoped(req.db.teamMembers, req.tenantId),
     notifications: tenantScoped(req.db.notifications, req.tenantId),
+    knowledge_sources: tenantScoped(req.db.knowledge_sources || [], req.tenantId),
+    knowledge_chunks: tenantScoped(req.db.knowledge_chunks || [], req.tenantId),
     settings: req.tenant.settings || {}
   });
 });
+
+app.put('/api/current-tenant', authMiddleware, tenantMiddleware, (req, res) => {
+  const tenantIndex = req.db.tenants.findIndex((t) => t.id === req.tenantId);
+  if (tenantIndex === -1) return res.status(404).json({ error: 'Tenant not found.' });
+
+  req.db.tenants[tenantIndex] = {
+    ...req.db.tenants[tenantIndex],
+    ...req.body,
+    id: req.tenantId
+  };
+  saveDb(req);
+  res.json(req.db.tenants[tenantIndex]);
+});
+
+app.get('/api/current-tenant/knowledge-sources', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(tenantScoped(req.db.knowledge_sources || [], req.tenantId));
+});
+
+app.get('/api/current-tenant/knowledge-chunks', authMiddleware, tenantMiddleware, (req, res) => {
+  res.json(tenantScoped(req.db.knowledge_chunks || [], req.tenantId));
+});
+
+app.post('/api/current-tenant/knowledge-sources', authMiddleware, tenantMiddleware, (req, res) => {
+  if (!req.db.knowledge_sources) req.db.knowledge_sources = [];
+  if (!req.db.knowledge_chunks) req.db.knowledge_chunks = [];
+
+  const newSource = {
+    id: req.body.id || `ks-${Date.now()}`,
+    tenantId: req.tenantId,
+    name: req.body.name,
+    type: req.body.type || 'file',
+    size: req.body.size || '0 KB',
+    tokenCount: req.body.tokenCount || 0,
+    status: 'synced',
+    lastSync: new Date().toISOString()
+  };
+
+  req.db.knowledge_sources.push(newSource);
+
+  const chunks = req.body.chunks || [];
+  const savedChunks = chunks.map((chk, i) => {
+    const chunkObj = {
+      id: chk.id || `chk-${Date.now()}-${i}`,
+      tenantId: req.tenantId,
+      sourceId: newSource.id,
+      sourceName: newSource.name,
+      content: typeof chk === 'string' ? chk : (chk.content || ''),
+      tokens: chk.tokens || 50
+    };
+    req.db.knowledge_chunks.push(chunkObj);
+    return chunkObj;
+  });
+
+  saveDb(req);
+  res.status(201).json({ source: newSource, chunks: savedChunks });
+});
+
+app.post('/api/current-tenant/conversations/:id/handoff', authMiddleware, tenantMiddleware, (req, res) => {
+  const db = req.db;
+  const convIndex = db.conversations.findIndex(c => c.id === req.params.id && c.tenantId === req.tenantId);
+  if (convIndex === -1) {
+    return res.status(404).json({ error: 'Conversation not found.' });
+  }
+
+  db.conversations[convIndex].status = 'human_escalated';
+
+  const notification = {
+    id: `notif-${Date.now()}`,
+    tenantId: req.tenantId,
+    title: 'Human Handoff Requested',
+    message: `A visitor in conversation ${req.params.id} has requested a human agent.`,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  if (!db.notifications) db.notifications = [];
+  db.notifications.push(notification);
+
+  if (db.conversations[convIndex].contactId) {
+    const contact = db.contacts.find(c => c.id === db.conversations[convIndex].contactId && c.tenantId === req.tenantId);
+    if (contact) {
+      if (!contact.notes) contact.notes = [];
+      contact.notes.push(`[${new Date().toLocaleString()}] Handoff requested: paused AI and alerted team.`);
+    }
+  }
+
+  const accountId = getChatwootAccountId(req.tenant);
+  const chatwootConvId = db.conversations[convIndex].chatwootConversationId;
+  if (accountId && chatwootConvId) {
+    chatwootRequest({
+      tenant: req.tenant,
+      method: 'POST',
+      path: `/api/v1/accounts/${accountId}/conversations/${chatwootConvId}/toggle_status`,
+      body: { status: 'open' }
+    }).catch(err => console.warn('Could not toggle Chatwoot status:', err.message));
+  }
+
+  saveDb(req);
+  res.json({ success: true, conversation: db.conversations[convIndex] });
+});
+
 
 app.get('/api/current-tenant/contacts', authMiddleware, tenantMiddleware, (req, res) => {
   res.json(tenantScoped(req.db.contacts, req.tenantId));
@@ -1172,6 +1347,151 @@ app.post('/api/conversations', (req, res) => {
   res.status(201).json(newConv);
 });
 
+// Public conversation handoff trigger from chatbot widget
+app.post('/api/conversations/:id/handoff', (req, res) => {
+  const db = readDb();
+  let convIndex = -1;
+  const targetId = req.params.id;
+
+  if (targetId && targetId !== 'current' && targetId !== 'null' && targetId !== 'undefined') {
+    convIndex = db.conversations.findIndex(c => c.id === targetId);
+  }
+
+  // If not found by ID, look up by email and tenantId
+  if (convIndex === -1) {
+    const { email, tenantId } = req.body;
+    if (email && tenantId) {
+      const contact = db.contacts.find(c => c.email === email && c.tenantId === tenantId);
+      if (contact) {
+        convIndex = db.conversations.findIndex(c => c.contactId === contact.id && c.tenantId === tenantId && c.channel === 'web');
+      }
+    }
+  }
+
+  // If still not found, let's create a placeholder contact & conversation to capture the handoff!
+  if (convIndex === -1) {
+    const { email, tenantId, name, phone } = req.body;
+    const resolvedTenantId = tenantId || 't-1';
+    
+    let contact = null;
+    if (email) {
+      contact = db.contacts.find(c => c.email === email && c.tenantId === resolvedTenantId);
+    }
+    
+    if (!contact) {
+      contact = {
+        id: `c-${Date.now()}`,
+        tenantId: resolvedTenantId,
+        createdAt: new Date().toISOString(),
+        tags: ['Web Lead', 'Handoff Request'],
+        notes: ['Created automatically during human handoff request.'],
+        name: name || 'Web Visitor',
+        email: email || `visitor-${Date.now()}@airaos.com`,
+        phone: phone || '',
+        company: 'Chatbot Handoff',
+        city: '',
+        assignedAgentId: 'a-1'
+      };
+      db.contacts.push(contact);
+    }
+
+    const newConv = {
+      id: `conv-${Date.now()}`,
+      tenantId: resolvedTenantId,
+      contactId: contact.id,
+      status: 'human_escalated',
+      channel: 'web',
+      messages: [
+        { id: `m-${Date.now()}-1`, tenantId: resolvedTenantId, conversationId: `conv-${Date.now()}`, sender: 'customer', text: 'Talk to Human (Handoff Requested)', timestamp: new Date().toISOString() }
+      ],
+      lastMessageText: 'Talk to Human (Handoff Requested)',
+      lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      assignedAgentId: 'a-1',
+      unreadCount: 1
+    };
+    
+    db.conversations.push(newConv);
+    convIndex = db.conversations.length - 1;
+  }
+
+  db.conversations[convIndex].status = 'human_escalated';
+
+  const conversation = db.conversations[convIndex];
+
+  const notification = {
+    id: `notif-${Date.now()}`,
+    tenantId: conversation.tenantId,
+    title: 'Human Handoff Requested',
+    message: `A visitor has requested a human agent.`,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  if (!db.notifications) db.notifications = [];
+  db.notifications.push(notification);
+
+  if (conversation.contactId) {
+    const contact = db.contacts.find(c => c.id === conversation.contactId && c.tenantId === conversation.tenantId);
+    if (contact) {
+      if (!contact.notes) contact.notes = [];
+      contact.notes.push(`[${new Date().toLocaleString()}] Handoff requested: paused AI and alerted team.`);
+    }
+  }
+
+  const tenant = db.tenants.find(t => t.id === conversation.tenantId);
+  if (tenant) {
+    const accountId = getChatwootAccountId(tenant);
+    const chatwootConvId = conversation.chatwootConversationId;
+    if (accountId && chatwootConvId) {
+      chatwootRequest({
+        tenant,
+        method: 'POST',
+        path: `/api/v1/accounts/${accountId}/conversations/${chatwootConvId}/toggle_status`,
+        body: { status: 'open' }
+      }).catch(err => console.warn('Could not toggle Chatwoot status:', err.message));
+    }
+  }
+
+  writeDb(db);
+  res.json({ success: true, conversation });
+});
+
+// Dynamic routing / preview for tenant websites
+app.get('/website/:slug', (req, res) => {
+  const db = readDb();
+  const tenant = db.tenants.find(t => t.slug === req.params.slug);
+  if (!tenant) {
+    return res.status(404).send('Tenant not found');
+  }
+
+  if (tenant.websiteConfig && tenant.websiteConfig.html) {
+    let html = tenant.websiteConfig.html;
+    if (!html.includes('widget.js')) {
+      const widgetScript = `
+        <script src="/widget.js" data-tenant-id="${tenant.id}" data-color="${tenant.primaryColor || '#0ea5e9'}" data-title="${tenant.name} AI Assistant"></script>
+      `;
+      if (html.includes('</body>')) {
+        html = html.replace('</body>', `${widgetScript}</body>`);
+      } else {
+        html = html + widgetScript;
+      }
+    }
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(html);
+  } else {
+    // Return a sleek placeholder preview page with chatbot widget
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(`
+      <div style="font-family: sans-serif; text-align: center; padding: 100px 20px; background: #0a0f1d; color: #fff; min-height: 100vh;">
+        <h1 style="color: ${tenant.primaryColor || '#0ea5e9'}; font-size: 2.5rem; margin-bottom: 10px;">${tenant.name}</h1>
+        <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 30px;">Website has not been generated yet. Please go to the Website Builder tab and click "Generate AI Website" to build it.</p>
+        <div style="display: inline-block;">
+          <script src="/widget.js" data-tenant-id="${tenant.id}" data-color="${tenant.primaryColor || '#0ea5e9'}" data-title="${tenant.name} AI Assistant"></script>
+        </div>
+      </div>
+    `);
+  }
+});
+
 // ----------------------------------------
 // Calendar Scheduler Endpoints
 // ----------------------------------------
@@ -1472,6 +1792,13 @@ app.post('/api/chat', async (req, res) => {
     conversation.lastMessageText = message;
     conversation.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     writeDb(db);
+
+    if (conversation.status === 'human_escalated') {
+      return res.json({
+        text: "Connecting you to a human manager... Please wait.",
+        paused: true
+      });
+    }
   }
 
   // Chatwoot synchronization details

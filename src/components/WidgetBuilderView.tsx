@@ -5,6 +5,7 @@ import {
   Trash2, Layers, Settings, Laptop, ArrowRight, AlertCircle
 } from 'lucide-react';
 import { Tenant, Agent, ChatMessage } from '../types';
+import { useAuth } from '../auth/AuthProvider';
 
 interface WidgetBuilderViewProps {
   tenant: Tenant | null | undefined;
@@ -18,6 +19,7 @@ interface WidgetBuilderViewProps {
   onIncrementWebsiteEdits: () => void;
   onAddContact: (newContactData: { name: string; email: string; phone: string; company: string }) => void;
   onSwitchTab?: (tab: string) => void;
+  onUpdateTenant?: (updates: Partial<Tenant>) => void;
 }
 
 const getBaseDomain = () => {
@@ -28,6 +30,237 @@ const getBaseDomain = () => {
     return host.replace(/^(app|dashboard|www|admin)\./i, '');
   }
   return cleaned;
+};
+
+const compileWebsiteHTML = (config: any) => {
+  let themeBg = '#0b1329';
+  let themeText = '#f8fafc';
+  let themeTextSec = '#94a3b8';
+  let themeAccent = '#0ea5e9';
+  let themeCardBg = 'rgba(14, 165, 233, 0.03)';
+  let themeCardBorder = 'rgba(14, 165, 233, 0.15)';
+  let themeHeaderBg = 'rgba(11, 19, 41, 0.85)';
+  let fontStyle = 'Inter, sans-serif';
+  let fontLink = '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">';
+
+  if (config.theme === 'sleek-clinic') {
+    themeBg = '#0b1329';
+    themeAccent = '#0ea5e9';
+    themeCardBg = 'rgba(14, 165, 233, 0.03)';
+    themeCardBorder = 'rgba(14, 165, 233, 0.15)';
+    themeHeaderBg = 'rgba(11, 19, 41, 0.85)';
+  } else if (config.theme === 'luxury-estate') {
+    themeBg = '#0c0a09';
+    themeAccent = '#f59e0b';
+    themeCardBg = 'rgba(245, 158, 11, 0.02)';
+    themeCardBorder = 'rgba(245, 158, 11, 0.12)';
+    themeHeaderBg = 'rgba(12, 10, 9, 0.9)';
+    fontStyle = 'Space Grotesk, sans-serif';
+    fontLink = '<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">';
+  } else if (config.theme === 'tech-minimalist') {
+    themeBg = '#050505';
+    themeAccent = '#10b981';
+    themeCardBg = 'rgba(16, 185, 129, 0.01)';
+    themeCardBorder = 'rgba(16, 185, 129, 0.1)';
+    themeHeaderBg = 'rgba(5, 5, 5, 0.95)';
+    fontStyle = 'monospace';
+    fontLink = '';
+  } else if (config.theme === 'warm-creative') {
+    themeBg = '#180e0f';
+    themeAccent = '#f43f5e';
+    themeCardBg = 'rgba(244, 63, 94, 0.02)';
+    themeCardBorder = 'rgba(244, 63, 94, 0.15)';
+    themeHeaderBg = 'rgba(24, 14, 15, 0.85)';
+    fontStyle = 'Outfit, sans-serif';
+    fontLink = '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">';
+  } else { 
+    themeBg = '#0a0f1d';
+    themeAccent = '#6366f1';
+    themeCardBg = 'rgba(255, 255, 255, 0.02)';
+    themeCardBorder = 'rgba(255, 255, 255, 0.06)';
+    themeHeaderBg = 'rgba(10, 15, 29, 0.75)';
+  }
+
+  const servicesList = (config.services || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+  const serviceCards = servicesList.map((s: string) => `
+    <div class="service-card">
+      <h3>${s}</h3>
+      <p>Professional delivery of ${s.toLowerCase()} tailored to meet your standard expectations and requirements.</p>
+    </div>
+  `).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${config.businessName} - Live Site</title>
+  ${fontLink}
+  <style>
+    :root {
+      --bg: ${themeBg};
+      --text: #f8fafc;
+      --text-sec: #94a3b8;
+      --accent: ${themeAccent};
+      --card-bg: ${themeCardBg};
+      --card-border: ${themeCardBorder};
+      --header-bg: ${themeHeaderBg};
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: ${fontStyle};
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    header {
+      padding: 20px 40px;
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    .logo-text {
+      color: var(--accent);
+    }
+    nav a {
+      color: var(--text-sec);
+      text-decoration: none;
+      margin-left: 20px;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    nav a:hover {
+      color: var(--accent);
+    }
+    .hero {
+      max-width: 800px;
+      margin: 100px auto;
+      text-align: center;
+      padding: 0 20px;
+    }
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--text-sec);
+      margin-bottom: 30px;
+    }
+    .btn {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      padding: 12px 30px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+    .services {
+      max-width: 1000px;
+      margin: 80px auto;
+      padding: 0 20px;
+    }
+    .services h2 {
+      text-align: center;
+      margin-bottom: 50px;
+      font-size: 2rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .service-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 24px;
+      border-radius: 12px;
+      transition: transform 0.2s;
+    }
+    .service-card:hover {
+      transform: translateY(-3px);
+    }
+    .service-card h3 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+    .about-contact {
+      max-width: 800px;
+      margin: 100px auto;
+      padding: 0 20px;
+      text-align: center;
+      border-top: 1px solid var(--card-border);
+      padding-top: 80px;
+    }
+    .about-contact p {
+      color: var(--text-sec);
+    }
+    footer {
+      text-align: center;
+      padding: 40px;
+      border-top: 1px solid var(--card-border);
+      color: var(--text-sec);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo-container">
+      <span class="logo-text">${config.businessName}</span>
+    </div>
+    <nav>
+      <a href="#home">Home</a>
+      <a href="#services">Services</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <div class="hero" id="home">
+    <h1>${config.slogan || 'Generative Excellence'}</h1>
+    <p>${config.description || 'Welcome to our platform-generated business website.'}</p>
+    <a href="#contact" class="btn">Connect With Us</a>
+  </div>
+
+  <div class="services" id="services">
+    <h2>Our Professional Services</h2>
+    <div class="grid">
+      ${serviceCards}
+    </div>
+  </div>
+
+  <div class="about-contact" id="contact">
+    <h2>Get in Touch</h2>
+    <p>Contact Email: ${config.email || 'support@airaos.com'} | Phone: ${config.phone || '+1 (555) 000-0000'}</p>
+  </div>
+
+  <footer>
+    <p>&copy; ${new Date().getFullYear()} ${config.businessName}. Powered by AiraOS AI receptionist.</p>
+  </footer>
+</body>
+</html>`;
 };
 
 export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
@@ -41,10 +274,14 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   websiteEditsUsed,
   onIncrementWebsiteEdits,
   onAddContact,
-  onSwitchTab
+  onSwitchTab,
+  onUpdateTenant
 }) => {
   // Config tab toggler synced with props mode
+  const { apiFetch } = useAuth();
   const [configTab, setConfigTab] = useState<'website' | 'widget'>(mode);
+  const [websiteHTML, setWebsiteHTML] = useState('');
+  const [isEditingHTML, setIsEditingHTML] = useState(false);
 
   useEffect(() => {
     setConfigTab(mode);
@@ -170,50 +407,61 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
     }
   }, [terminalLogs]);
 
-  // Load configuration from localStorage on tenant switch
+  // Load configuration from tenant.websiteConfig on tenant switch
   useEffect(() => {
     if (!tenant) return;
-    const savedConfig = localStorage.getItem(`tenant_website_config_${tenant.id}`);
-    if (savedConfig) {
-      try {
-        const parsed = JSON.parse(savedConfig);
-        setBusinessName(parsed.businessName || tenant.name);
-        setSlogan(parsed.slogan || '');
-        setDescription(parsed.description || '');
-        setServices(parsed.services || '');
-        setPhone(parsed.phone || '');
-        setEmail(parsed.email || '');
-        setTheme(parsed.theme || 'sleek-clinic');
-        setIsWebsiteGenerated(parsed.isWebsiteGenerated || false);
-      } catch (e) {}
+    const config = tenant.websiteConfig;
+    if (config) {
+      setBusinessName(config.businessName || tenant.name);
+      setSlogan(config.slogan || '');
+      setDescription(config.description || '');
+      setServices(config.services || '');
+      setPhone(config.phone || '');
+      setEmail(config.email || '');
+      setTheme(config.theme || 'sleek-clinic');
+      setIsWebsiteGenerated(config.isWebsiteGenerated || false);
+      setWebsiteHTML(config.html || '');
     } else {
       // Load defaults
       setBusinessName(tenant.name);
+      let dSlogan = "";
+      let dDesc = "";
+      let dServices = "";
+      let dPhone = "";
+      let dEmail = "";
+      let dTheme = "sleek-clinic";
       if (tenant.id === 't-1') {
-        setSlogan("Gentle Care, Beautiful Smiles");
-        setDescription("At Smile Dental Clinic, we provide state-of-the-art dental care for patients of all ages. From general checkups to cosmetic teeth whitening and cleanings, our professional team is dedicated to your oral health.");
-        setServices("Teeth Whitening, Dental Cleanings, Teeth Aligners, Cosmetic Dentistry, Emergency Oral Care");
-        setPhone("+1 (555) 019-2834");
-        setEmail("hello@smiledentalclinic.com");
-        setTheme("sleek-clinic");
+        dSlogan = "Gentle Care, Beautiful Smiles";
+        dDesc = "At Smile Dental Clinic, we provide state-of-the-art dental care for patients of all ages. From general checkups to cosmetic teeth whitening and cleanings, our professional team is dedicated to your oral health.";
+        dServices = "Teeth Whitening, Dental Cleanings, Teeth Aligners, Cosmetic Dentistry, Emergency Oral Care";
+        dPhone = "+1 (555) 019-2834";
+        dEmail = "hello@smiledentalclinic.com";
+        dTheme = "sleek-clinic";
       } else if (tenant.id === 't-2') {
-        setSlogan("Elevated Living - Premium Luxury Estates");
-        setDescription("Apex Heights connects you with the finest luxury properties in the metropolitan area. Specializing in high-end penthouse units, model suite viewings, and personalized real estate consultations.");
-        setServices("Private Penthouse Tours, Real Estate Consultations, Portfolio Management, Luxury Market Evaluation");
-        setPhone("+1 (555) 489-1122");
-        setEmail("listings@apexheights.co");
-        setTheme("luxury-estate");
+        dSlogan = "Elevated Living - Premium Luxury Estates";
+        dDesc = "Apex Heights connects you with the finest luxury properties in the metropolitan area. Specializing in high-end penthouse units, model suite viewings, and personalized real estate consultations.";
+        dServices = "Private Penthouse Tours, Real Estate Consultations, Portfolio Management, Luxury Market Evaluation";
+        dPhone = "+1 (555) 489-1122";
+        dEmail = "listings@apexheights.co";
+        dTheme = "luxury-estate";
       } else {
-        setSlogan("Scalable Infrastructure - Enterprise Dev Support");
-        setDescription("ByteTech Software Solutions builds secure, Docker-containerized cloud microservices. Our vector databases and technical API nodes process millions of sync transactions daily.");
-        setServices("API Integration Sync, Developer Support Consult, System Architecture Audit, Cloud Node Maintenance");
-        setPhone("+1 (555) 762-9900");
-        setEmail("dev-support@bytetech.io");
-        setTheme("tech-minimalist");
+        dSlogan = "Scalable Infrastructure - Enterprise Dev Support";
+        dDesc = "ByteTech Software Solutions builds secure, Docker-containerized cloud microservices. Our vector databases and technical API nodes process millions of sync transactions daily.";
+        dServices = "API Integration Sync, Developer Support Consult, System Architecture Audit, Cloud Node Maintenance";
+        dPhone = "+1 (555) 762-9900";
+        dEmail = "dev-support@bytetech.io";
+        dTheme = "tech-minimalist";
       }
+      setSlogan(dSlogan);
+      setDescription(dDesc);
+      setServices(dServices);
+      setPhone(dPhone);
+      setEmail(dEmail);
+      setTheme(dTheme);
       setIsWebsiteGenerated(false);
+      setWebsiteHTML('');
     }
-  }, [tenant?.id]);
+  }, [tenant]);
 
   // Sync widget customizations to active tenant defaults
   useEffect(() => {
@@ -434,7 +682,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
           setIsGenerating(false);
           setIsWebsiteGenerated(true);
           onIncrementWebsiteEdits(); // Call the parent callback to increment
-          // Save to localStorage
+          
           const config = {
             businessName,
             slogan,
@@ -445,7 +693,28 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
             theme,
             isWebsiteGenerated: true
           };
-          localStorage.setItem(`tenant_website_config_${tenant.id}`, JSON.stringify(config));
+          const compiled = compileWebsiteHTML(config);
+          setWebsiteHTML(compiled);
+          
+          if (onUpdateTenant) {
+            onUpdateTenant({
+              websiteConfig: {
+                ...config,
+                html: compiled
+              }
+            });
+          } else {
+            apiFetch('/api/current-tenant', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                websiteConfig: {
+                  ...config,
+                  html: compiled
+                }
+              })
+            }).catch(err => console.error('Failed to save website config', err));
+          }
         }, 800);
       }
     }, 600);
@@ -453,7 +722,48 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
 
   const handleResetWebsite = () => {
     setIsWebsiteGenerated(false);
-    localStorage.removeItem(`tenant_website_config_${tenant.id}`);
+    setWebsiteHTML('');
+    if (onUpdateTenant) {
+      onUpdateTenant({ websiteConfig: undefined });
+    } else {
+      apiFetch('/api/current-tenant', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteConfig: null })
+      }).catch(err => console.error('Failed to reset website config', err));
+    }
+  };
+
+  const handleSaveManualHTML = async (newHTML?: string) => {
+    const htmlToSave = typeof newHTML === 'string' ? newHTML : websiteHTML;
+    setWebsiteHTML(htmlToSave);
+    setIsWebsiteGenerated(true);
+
+    const config = {
+      businessName,
+      slogan,
+      description,
+      services,
+      phone,
+      email,
+      theme,
+      isWebsiteGenerated: true,
+      html: htmlToSave
+    };
+
+    if (onUpdateTenant) {
+      onUpdateTenant({ websiteConfig: config });
+    } else {
+      try {
+        await apiFetch('/api/current-tenant', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ websiteConfig: config })
+        });
+      } catch (error) {
+        console.error('Error saving manual HTML:', error);
+      }
+    }
   };
 
   // Render mock business site based on active inputs and theme selection
@@ -691,147 +1001,248 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
         
         {/* Left column: Configurations & Code */}
         <div className="col-span-5 glass-panel" style={{ padding: '20px 20px 80px 20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', height: '100%' }}>
-          
           {configTab === 'website' ? (
             /* Tab 1: AI Website Builder Form */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <Sparkles size={16} style={{ color: 'var(--primary-color)' }} /> Page Generator
-                </h3>
-                {isWebsiteGenerated && (
-                  <button 
-                    onClick={handleResetWebsite}
-                    className="btn"
-                    style={{ fontSize: '0.65rem', padding: '2px 8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', border: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Trash2 size={12} /> Clear Page
-                  </button>
-                )}
-              </div>
-
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Business Name</label>
-                <input type="text" className="form-input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} disabled={isGenerating} />
-              </div>
-
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Slogan / Headline</label>
-                <input type="text" className="form-input" value={slogan} onChange={(e) => setSlogan(e.target.value)} placeholder="e.g. Gentle Care, Beautiful Smiles" disabled={isGenerating} />
-              </div>
-
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Business Description</label>
-                <textarea 
-                  className="form-input" 
-                  style={{ height: '70px', resize: 'none', fontSize: '0.75rem', fontFamily: 'inherit' }} 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)} 
-                  placeholder="Summarize your company services and profile..."
-                  disabled={isGenerating}
-                />
-              </div>
-
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Services List (Comma-separated)</label>
-                <input type="text" className="form-input" value={services} onChange={(e) => setServices(e.target.value)} placeholder="e.g. Tooth Whitening, Cleaning, Braces" disabled={isGenerating} />
-              </div>
-
-              <div className="grid-cols-12" style={{ gap: '10px' }}>
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Contact Phone</label>
-                  <input type="text" className="form-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" disabled={isGenerating} />
-                </div>
-                <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Contact Email</label>
-                  <input type="text" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="info@business.com" disabled={isGenerating} />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Website Style & Theme</label>
-                <select className="form-input" value={theme} onChange={(e) => setTheme(e.target.value)} disabled={isGenerating}>
-                  <option value="sleek-clinic">Sleek Clinic (Sky Blue / Slate)</option>
-                  <option value="luxury-estate">Luxury Estate (Amber Gold / Obsidian)</option>
-                  <option value="tech-minimalist">Tech Minimalist (Neon Green / Deep Matrix)</option>
-                  <option value="warm-creative">Warm Creative (Coral Rose / Deep Chocolate)</option>
-                  <option value="neo-glass">Neo-Glass Dark (Classic Violet / Translucent)</option>
-                </select>
-              </div>
-
-              {websiteEditsUsed >= websiteEditsLimit && (
-                <div style={{ 
-                  padding: '12px', 
-                  background: 'rgba(239, 68, 68, 0.1)', 
-                  border: '1px solid var(--danger-color)', 
-                  borderRadius: '6px', 
-                  color: '#fca5a5', 
-                  fontSize: '0.75rem', 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  gap: '6px',
-                  marginTop: '6px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}>
-                    <AlertCircle size={14} style={{ color: 'var(--danger-color)' }} /> Website Edit Limit Reached
-                  </div>
-                  <div>Website edit limit reached for this billing cycle ({websiteEditsUsed}/{websiteEditsLimit}). Upgrade your plan or contact admin.</div>
-                </div>
-              )}
-
-              <button
-                onClick={handleGenerateWebsite}
-                disabled={isGenerating || websiteEditsUsed >= websiteEditsLimit}
-                className="btn btn-primary"
-                style={{ 
-                  marginTop: '6px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  gap: '8px', 
-                  background: (websiteEditsUsed >= websiteEditsLimit) ? '#475569' : 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)',
-                  border: 'none',
-                  boxShadow: (websiteEditsUsed >= websiteEditsLimit) ? 'none' : 'var(--shadow-glow)',
-                  cursor: (websiteEditsUsed >= websiteEditsLimit) ? 'not-allowed' : 'pointer',
-                  opacity: (websiteEditsUsed >= websiteEditsLimit) ? 0.6 : 1
-                }}
-              >
-                <Sparkles size={16} /> 
-                {isGenerating ? 'AI Architect Generating...' : isWebsiteGenerated ? 'Re-Generate AI Website' : 'Generate AI Website'}
-              </button>
-
-              {/* Terminal progress simulation */}
-              {(isGenerating || terminalLogs.length > 0) && (
-                <div 
-                  className="glass-card" 
-                  style={{ 
-                    background: '#04060b', 
-                    border: '1px solid var(--border-glass)', 
-                    borderRadius: '6px', 
-                    padding: '12px',
-                    fontFamily: 'monospace',
-                    fontSize: '0.7rem',
-                    color: '#10b981',
-                    maxHeight: '130px',
-                    overflowY: 'auto'
+              {/* Sub-tabs: AI settings vs Manual HTML Editor */}
+              <div style={{ display: 'flex', borderBottom: '1px solid var(--border-glass)', marginBottom: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingHTML(false)}
+                  style={{
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: !isEditingHTML ? '2px solid var(--primary-color)' : 'none',
+                    color: !isEditingHTML ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    fontWeight: !isEditingHTML ? 'bold' : 'normal',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-glass)', paddingBottom: '4px', marginBottom: '8px', fontWeight: 'bold' }}>
-                    <Terminal size={12} /> AI COMPILE TERMINAL
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {terminalLogs.map((log, lIdx) => (
-                      <div key={lIdx} style={{ color: log && log.startsWith('[SUCCESS]') ? '#6ee7b7' : log && log.startsWith('[SYSTEM]') ? '#a78bfa' : '#34d399' }}>
-                        {log}
-                      </div>
-                    ))}
-                    {isGenerating && (
-                      <div style={{ display: 'flex', gap: '2px', color: 'var(--text-muted)' }}>
-                        <span>▋</span>
-                      </div>
+                  <Sparkles size={14} /> AI Generator
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingHTML(true)}
+                  style={{
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: isEditingHTML ? '2px solid var(--primary-color)' : 'none',
+                    color: isEditingHTML ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    fontWeight: isEditingHTML ? 'bold' : 'normal',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Code size={14} /> HTML Editor
+                </button>
+              </div>
+
+              {!isEditingHTML ? (
+                /* AI Settings View */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                      <Sparkles size={16} style={{ color: 'var(--primary-color)' }} /> Page Generator
+                    </h3>
+                    {isWebsiteGenerated && (
+                      <button 
+                        onClick={handleResetWebsite}
+                        className="btn"
+                        style={{ fontSize: '0.65rem', padding: '2px 8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', border: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Trash2 size={12} /> Clear Page
+                      </button>
                     )}
-                    <div ref={terminalEndRef} />
                   </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Business Name</label>
+                    <input type="text" className="form-input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} disabled={isGenerating} />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Slogan / Headline</label>
+                    <input type="text" className="form-input" value={slogan} onChange={(e) => setSlogan(e.target.value)} placeholder="e.g. Gentle Care, Beautiful Smiles" disabled={isGenerating} />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Business Description</label>
+                    <textarea 
+                      className="form-input" 
+                      style={{ height: '70px', resize: 'none', fontSize: '0.75rem', fontFamily: 'inherit' }} 
+                      value={description} 
+                      onChange={(e) => setDescription(e.target.value)} 
+                      placeholder="Summarize your company services and profile..."
+                      disabled={isGenerating}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Services List (Comma-separated)</label>
+                    <input type="text" className="form-input" value={services} onChange={(e) => setServices(e.target.value)} placeholder="e.g. Tooth Whitening, Cleaning, Braces" disabled={isGenerating} />
+                  </div>
+
+                  <div className="grid-cols-12" style={{ gap: '10px' }}>
+                    <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                      <label className="form-label">Contact Phone</label>
+                      <input type="text" className="form-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" disabled={isGenerating} />
+                    </div>
+                    <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                      <label className="form-label">Contact Email</label>
+                      <input type="text" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="info@business.com" disabled={isGenerating} />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Website Style & Theme</label>
+                    <select className="form-input" value={theme} onChange={(e) => setTheme(e.target.value)} disabled={isGenerating}>
+                      <option value="sleek-clinic">Sleek Clinic (Sky Blue / Slate)</option>
+                      <option value="luxury-estate">Luxury Estate (Amber Gold / Obsidian)</option>
+                      <option value="tech-minimalist">Tech Minimalist (Neon Green / Deep Matrix)</option>
+                      <option value="warm-creative">Warm Creative (Coral Rose / Deep Chocolate)</option>
+                      <option value="neo-glass">Neo-Glass Dark (Classic Violet / Translucent)</option>
+                    </select>
+                  </div>
+
+                  {websiteEditsUsed >= websiteEditsLimit && (
+                    <div style={{ 
+                      padding: '12px', 
+                      background: 'rgba(239, 68, 68, 0.1)', 
+                      border: '1px solid var(--danger-color)', 
+                      borderRadius: '6px', 
+                      color: '#fca5a5', 
+                      fontSize: '0.75rem', 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      gap: '6px',
+                      marginTop: '6px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}>
+                        <AlertCircle size={14} style={{ color: 'var(--danger-color)' }} /> Website Edit Limit Reached
+                      </div>
+                      <div>Website edit limit reached for this billing cycle ({websiteEditsUsed}/{websiteEditsLimit}). Upgrade your plan or contact admin.</div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleGenerateWebsite}
+                    disabled={isGenerating || websiteEditsUsed >= websiteEditsLimit}
+                    className="btn btn-primary"
+                    style={{ 
+                      marginTop: '6px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      gap: '8px', 
+                      background: (websiteEditsUsed >= websiteEditsLimit) ? '#475569' : 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)',
+                      border: 'none',
+                      boxShadow: (websiteEditsUsed >= websiteEditsLimit) ? 'none' : 'var(--shadow-glow)',
+                      cursor: (websiteEditsUsed >= websiteEditsLimit) ? 'not-allowed' : 'pointer',
+                      opacity: (websiteEditsUsed >= websiteEditsLimit) ? 0.6 : 1
+                    }}
+                  >
+                    <Sparkles size={16} /> 
+                    {isGenerating ? 'AI Architect Generating...' : isWebsiteGenerated ? 'Re-Generate AI Website' : 'Generate AI Website'}
+                  </button>
+
+                  {/* Terminal progress simulation */}
+                  {(isGenerating || terminalLogs.length > 0) && (
+                    <div 
+                      className="glass-card" 
+                      style={{ 
+                        background: '#04060b', 
+                        border: '1px solid var(--border-glass)', 
+                        borderRadius: '6px', 
+                        padding: '12px',
+                        fontFamily: 'monospace',
+                        fontSize: '0.7rem',
+                        color: '#10b981',
+                        maxHeight: '130px',
+                        overflowY: 'auto'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-glass)', paddingBottom: '4px', marginBottom: '8px', fontWeight: 'bold' }}>
+                        <Terminal size={12} /> AI COMPILE TERMINAL
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {terminalLogs.map((log, lIdx) => (
+                          <div key={lIdx} style={{ color: log && log.startsWith('[SUCCESS]') ? '#6ee7b7' : log && log.startsWith('[SYSTEM]') ? '#a78bfa' : '#34d399' }}>
+                            {log}
+                          </div>
+                        ))}
+                        {isGenerating && (
+                          <div style={{ display: 'flex', gap: '2px', color: 'var(--text-muted)' }}>
+                            <span>▋</span>
+                          </div>
+                        )}
+                        <div ref={terminalEndRef} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Manual HTML Code Editor View */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                      <Code size={16} style={{ color: 'var(--primary-color)' }} /> Manual HTML Editor
+                    </h3>
+                    {isWebsiteGenerated && (
+                      <button 
+                        onClick={handleResetWebsite}
+                        className="btn"
+                        style={{ fontSize: '0.65rem', padding: '2px 8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', border: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Trash2 size={12} /> Clear Page
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">HTML Source Code</label>
+                    <textarea 
+                      className="form-input" 
+                      style={{ 
+                        height: '350px', 
+                        fontFamily: 'monospace', 
+                        fontSize: '0.75rem', 
+                        lineHeight: '1.4', 
+                        background: 'rgba(0,0,0,0.3)',
+                        border: '1px solid var(--border-glass)',
+                        color: '#6ee7b7',
+                        resize: 'vertical'
+                      }} 
+                      value={websiteHTML} 
+                      onChange={(e) => setWebsiteHTML(e.target.value)} 
+                      placeholder="Paste or edit HTML website structure here..."
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => handleSaveManualHTML()}
+                    className="btn btn-primary"
+                    style={{ 
+                      marginTop: '6px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      gap: '8px', 
+                      background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)',
+                      border: 'none',
+                      boxShadow: 'var(--shadow-glow)'
+                    }}
+                  >
+                    <CheckCircle2 size={16} /> Save Changes & Publish
+                  </button>
                 </div>
               )}
               {/* DNS & Custom Domain Config */}
@@ -1041,9 +1452,22 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }}></span>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '12px', fontFamily: 'monospace' }}>
+              <a 
+                href={`http://localhost:3001/website/${tenant.slug}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ 
+                  fontSize: '0.7rem', 
+                  color: 'var(--primary-color)', 
+                  marginLeft: '12px', 
+                  fontFamily: 'monospace',
+                  textDecoration: 'underline',
+                  cursor: 'pointer' 
+                }}
+                title="Open live website in new tab"
+              >
                 {domainType === 'custom' && customDomain ? `https://${customDomain}` : `https://${tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)}`}
-              </span>
+              </a>
             </div>
             
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1055,10 +1479,20 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             
             {/* Scrollable Preview Area */}
-            <div style={{ flex: 1, position: 'relative', overflowY: 'auto' }}>
+            <div style={{ flex: 1, position: 'relative', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
               {isWebsiteGenerated ? (
                 /* Render The Custom Generated Business Site */
-                renderMockupWebsite()
+                <iframe
+                  srcDoc={websiteHTML}
+                  title="Website Preview"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    background: '#090d16',
+                    flex: 1
+                  }}
+                />
               ) : (
                 /* High fidelity placeholder state prompting site builder usage */
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100%', padding: '40px', textAlign: 'center' }}>

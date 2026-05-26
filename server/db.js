@@ -89,6 +89,7 @@ export function ensureSaasSchema(data) {
     notifications: [],
     working_shifts: {},
     knowledge_chunks: [],
+    knowledge_sources: [],
     integrations: {},
     channelConfigs: [],
     chatwootAccounts: [],
@@ -360,6 +361,31 @@ export function ensureSaasSchema(data) {
   db.chatwootInboxes = withTenantId(db.chatwootInboxes, () => defaultTenantId);
   db.chatwootChannels = withTenantId(db.chatwootChannels, () => defaultTenantId);
   db.chatwootConversationMappings = withTenantId(db.chatwootConversationMappings, () => defaultTenantId);
+  db.knowledge_sources = withTenantId(db.knowledge_sources || [], () => defaultTenantId);
+  db.knowledge_chunks = withTenantId(db.knowledge_chunks || [], () => defaultTenantId);
+
+  if (!Array.isArray(db.knowledge_sources) || db.knowledge_sources.length === 0) {
+    db.knowledge_sources = [
+      { id: 'ks-1', tenantId: 't-1', name: 'Smile Dental FAQ.pdf', type: 'file', size: '1.8 MB', tokenCount: 14200, status: 'synced', lastSync: new Date().toISOString() },
+      { id: 'ks-2', tenantId: 't-1', name: 'Dental Insurance Guidelines.txt', type: 'file', size: '342 KB', tokenCount: 4100, status: 'synced', lastSync: new Date().toISOString() },
+      { id: 'ks-3', tenantId: 't-1', name: 'Website: smile-dental.com/about', type: 'url', size: '12 Pages', tokenCount: 22800, status: 'synced', lastSync: new Date().toISOString() },
+      { id: 'ks-5', tenantId: 't-2', name: 'KP Real Estate Brochure.pdf', type: 'file', size: '4.2 MB', tokenCount: 32000, status: 'synced', lastSync: new Date().toISOString() },
+      { id: 'ks-6', tenantId: 't-2', name: 'Website: kp-estates.com/properties', type: 'url', size: '20 Pages', tokenCount: 51200, status: 'synced', lastSync: new Date().toISOString() },
+      { id: 'ks-7', tenantId: 't-3', name: 'ABC Coaching Admissions Guide.pdf', type: 'file', size: '2.1 MB', tokenCount: 18400, status: 'synced', lastSync: new Date().toISOString() }
+    ];
+  }
+
+  if (!Array.isArray(db.knowledge_chunks) || db.knowledge_chunks.length === 0) {
+    db.knowledge_chunks = [
+      { id: 'chk-1', tenantId: 't-1', sourceId: 'ks-1', sourceName: 'Smile Dental FAQ.pdf', content: 'Smile Dental Clinic hours are Monday to Friday, 9:00 AM to 6:00 PM. We are closed on Saturdays and Sundays. For dental emergencies outside hours, call our emergency hotline at +1 (555) 999-EMER.', tokens: 42 },
+      { id: 'chk-2', tenantId: 't-1', sourceId: 'ks-1', sourceName: 'Smile Dental FAQ.pdf', content: 'Standard dental cleaning costs $120. In-office teeth whitening costs $450 per session and takes approximately 60 minutes. We support payment through cash, major credit cards, Stripe billing, and dental insurance packages.', tokens: 38 },
+      { id: 'chk-3', tenantId: 't-1', sourceId: 'ks-2', sourceName: 'Dental Insurance Guidelines.txt', content: 'We accept insurance plans from Aetna, Cigna, Delta Dental, and MetLife. Co-pays vary depending on specific policy guidelines. Basic teeth cleaning is covered 100% by most plans twice a year.', tokens: 35 },
+      { id: 'chk-4', tenantId: 't-1', sourceId: 'ks-3', sourceName: 'Website: smile-dental.com/about', content: 'Smile Dental Clinic was founded in 2018 by Dr. Elizabeth Vance, D.D.S. Dr. Vance has over 15 years of experience in restorative and cosmetic dentistry. The clinic is equipped with state-of-the-art digital dental imaging equipment.', tokens: 44 },
+      { id: 'chk-5', tenantId: 't-2', sourceId: 'ks-5', sourceName: 'KP Real Estate Brochure.pdf', content: 'KP Heights is a premium residential project offering 2BHK and 3BHK luxury apartments in New York. Features include a swimming pool, clubhouse, 24/7 security, and power backup. Pricing starts at $350,000 for 2BHK.', tokens: 41 },
+      { id: 'chk-6', tenantId: 't-2', sourceId: 'ks-6', sourceName: 'Website: kp-estates.com/properties', content: 'We offer flexible downpayment plans starting from 10%. Easy home loan approvals are available through partner banks. The booking amount for Apex Penthouse is $10,000, and site visits are available from Monday to Saturday.', tokens: 39 },
+      { id: 'chk-7', tenantId: 't-3', sourceId: 'ks-7', sourceName: 'ABC Coaching Admissions Guide.pdf', content: 'ABC Coaching specializes in K-12 academic programs, test preparation (SAT, AP exams), and college admissions counseling. Classes are held both online and in-person at our central campus.', tokens: 36 }
+    ];
+  }
 
   if (db.channelConfigs.length === 0) {
     const defaultChannels = ['website', 'whatsapp', 'gmail', 'outlook', 'smtp', 'telegram', 'instagram', 'facebook'];

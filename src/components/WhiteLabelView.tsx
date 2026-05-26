@@ -29,6 +29,74 @@ export const WhiteLabelView: React.FC<WhiteLabelViewProps> = ({
     setTimeout(() => setSaved(false), 2000);
   };
 
+  if (tenant.plan !== 'Enterprise') {
+    return (
+      <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="view-header">
+          <div>
+            <h2 className="view-title">White Label Branding</h2>
+            <p className="view-subtitle">Rebrand AiraOS console domain, layout styles, and customer touchpoints with your own agency identity.</p>
+          </div>
+        </div>
+
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.02)',
+          border: '1px solid var(--border-glass)',
+          borderRadius: '12px',
+          padding: '40px 20px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '16px',
+          maxWidth: '600px',
+          margin: '40px auto'
+        }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            background: 'rgba(245, 158, 11, 0.1)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2rem',
+            boxShadow: '0 8px 24px rgba(245, 158, 11, 0.15)'
+          }}>
+            🔒
+          </div>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', margin: 0 }}>
+            Enterprise Whitelabel Domain Locked
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '400px', margin: 0, lineHeight: '1.5' }}>
+            White labeling, CNAME domain mapping, custom accent colors, and custom brand logos are premium features reserved for **Enterprise Plan** members.
+          </p>
+          <button 
+            onClick={() => {
+              alert("Please navigate to the Settings > Billing tab to upgrade to the Enterprise Plan!");
+            }}
+            className="btn btn-primary"
+            style={{
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              border: 'none',
+              color: 'white',
+              fontWeight: 'bold',
+              padding: '10px 24px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            Upgrade to Enterprise Plan <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="view-header">

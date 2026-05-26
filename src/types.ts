@@ -23,6 +23,17 @@ export interface Tenant {
   }>;
   settings?: Record<string, any>;
   membershipRole?: RoleName;
+  websiteConfig?: {
+    businessName?: string;
+    slogan?: string;
+    description?: string;
+    services?: string;
+    phone?: string;
+    email?: string;
+    theme?: string;
+    isWebsiteGenerated?: boolean;
+    html?: string;
+  };
 }
 
 export type RoleName = 'Owner' | 'Admin' | 'Manager' | 'Agent';

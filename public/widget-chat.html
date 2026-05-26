@@ -419,6 +419,87 @@
       font-size: 3rem;
       color: #10b981;
     }
+
+    /* Welcome screen layout */
+    .welcome-container {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .welcome-banner {
+      background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .welcome-banner h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .welcome-banner p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    .welcome-actions-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 8px;
+    }
+
+    .welcome-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .welcome-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: left;
+    }
+
+    .welcome-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+
+    .welcome-card-icon {
+      font-size: 1.25rem;
+    }
+
+    .welcome-card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .welcome-card-desc {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      line-height: 1.3;
+    }
   </style>
 </head>
 <body>
@@ -562,6 +643,87 @@
     let capturedEmail = '';
     let capturedPhone = '';
 
+    function validatePhoneNumber(phoneStr) {
+      const clean = phoneStr.trim();
+      const digits = clean.replace(/\D/g, '');
+      
+      let normalized = digits;
+      if (normalized.startsWith('91') && normalized.length === 12) {
+        normalized = normalized.substring(2);
+      } else if (normalized.startsWith('0') && normalized.length === 11) {
+        normalized = normalized.substring(1);
+      }
+      
+      const isIndian = clean.startsWith('+91') || clean.startsWith('91') || clean.startsWith('0') || digits.length === 10;
+      
+      if (isIndian) {
+        return normalized.length === 10;
+      }
+      return digits.length >= 7;
+    }
+
+    async function handleQuickAction(action) {
+      if (action === 'book') {
+        switchTab('book');
+        return;
+      }
+
+      if (action === 'human') {
+        renderMessageNode("Talk to Human", "customer");
+        chatHistory.push({ text: "Talk to Human", sender: 'customer' });
+        localStorage.setItem(`airaos_chat_history_${tenantId}`, JSON.stringify(chatHistory));
+
+        const typing = document.getElementById('typing-indicator');
+        typing.style.display = 'block';
+        scrollToBottom();
+
+        try {
+          const response = await fetch(`/api/conversations/current/handoff`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: capturedEmail,
+              tenantId: tenantId,
+              name: capturedName,
+              phone: capturedPhone
+            })
+          });
+
+          typing.style.display = 'none';
+          if (response.ok) {
+            const reply = "I have paused AI responses and notified our human team members. A staff representative will connect with you here shortly.";
+            addMessage(reply, 'ai');
+            document.getElementById('chat-input').disabled = true;
+            document.getElementById('chat-input').placeholder = "Conversation transferred to staff...";
+            document.querySelector('.send-btn').style.opacity = 0.5;
+            document.querySelector('.send-btn').style.pointerEvents = 'none';
+          } else {
+            addMessage("Unable to reach staff at the moment. Please try again later or contact us directly.", "ai");
+          }
+        } catch (e) {
+          typing.style.display = 'none';
+          addMessage("Error connecting to human agent. Please check your internet connection.", "ai");
+        }
+        return;
+      }
+
+      let queryText = "";
+      if (action === 'treatments') {
+        queryText = "What treatments do you offer?";
+      } else if (action === 'pricing') {
+        queryText = "Tell me about your pricing and packages.";
+      } else if (action === 'location') {
+        queryText = "Where is the clinic located?";
+      } else if (action === 'emergency') {
+        queryText = "I have a dental emergency, what should I do?";
+      }
+
+      if (queryText) {
+        document.getElementById('chat-input').value = queryText;
+        sendChatMessage();
+      }
+    }
+
     const messagesList = document.getElementById('messages-list');
     const scrollBtn = document.getElementById('scroll-bottom-btn');
 
@@ -698,13 +860,56 @@
         addMessage(greeting, 'ai');
         return;
       }
-      if (leadCaptureStep === 1) {
-        const greeting = `Hello! Welcome to our virtual assistant. Before we begin, could you please tell me your full name?`;
-        addMessage(greeting, 'ai');
-      } else {
-        const greeting = `Welcome back, ${capturedName || 'Guest'}! I am ${activeAgent ? activeAgent.name : 'Sarah'}, your digital assistant. How can I help you today?`;
-        addMessage(greeting, 'ai');
-      }
+
+      const messagesListEl = document.getElementById('messages-list');
+      messagesListEl.innerHTML = ''; 
+
+      const welcomeContainer = document.createElement('div');
+      welcomeContainer.className = 'welcome-container';
+      
+      const welcomeBanner = document.createElement('div');
+      welcomeBanner.className = 'welcome-banner';
+      
+      const businessNameClean = tenantId === 't-1' ? 'Smile Dentals' : tenantId === 't-2' ? 'KP Real Estates' : tenantId === 't-3' ? 'ABC Coaching' : 'AiraOS';
+      const welcomeName = activeAgent ? activeAgent.name : 'Sarah';
+      
+      welcomeBanner.innerHTML = `
+        <h3>Welcome to ${businessNameClean}!</h3>
+        <p>Hi! I'm ${welcomeName}, your AI assistant. Ask me questions, view pricing, find our clinic, or book appointments directly below.</p>
+      `;
+      welcomeContainer.appendChild(welcomeBanner);
+
+      const actionTitle = document.createElement('div');
+      actionTitle.className = 'welcome-actions-title';
+      actionTitle.innerText = 'How can I help you today?';
+      welcomeContainer.appendChild(actionTitle);
+
+      const grid = document.createElement('div');
+      grid.className = 'welcome-grid';
+      
+      const actions = [
+        { id: 'book', icon: '📅', title: 'Book Appointment', desc: 'Find open calendar slots' },
+        { id: 'treatments', icon: '🩺', title: 'Our Treatments', desc: 'View list of services' },
+        { id: 'pricing', icon: '💳', title: 'Pricing & Packages', desc: 'Check plans and costs' },
+        { id: 'location', icon: '📍', title: 'Clinic Location', desc: 'Get address and directions' },
+        { id: 'human', icon: '🙋', title: 'Talk to Human', desc: 'Transfer to support staff' },
+        { id: 'emergency', icon: '🚨', title: 'Emergency Help', desc: 'Critical support guidelines' }
+      ];
+      
+      actions.forEach(act => {
+        const card = document.createElement('div');
+        card.className = 'welcome-card';
+        card.onclick = () => handleQuickAction(act.id);
+        card.innerHTML = `
+          <div class="welcome-card-icon">${act.icon}</div>
+          <div class="welcome-card-title">${act.title}</div>
+          <div class="welcome-card-desc">${act.desc}</div>
+        `;
+        grid.appendChild(card);
+      });
+      
+      welcomeContainer.appendChild(grid);
+      messagesListEl.appendChild(welcomeContainer);
     }
 
     function switchTab(tabName) {
@@ -729,6 +934,11 @@
 
     // Message Rendering Node
     function renderMessageNode(text, sender, slots) {
+      const welcomeEl = document.querySelector('.welcome-container');
+      if (welcomeEl) {
+        welcomeEl.remove();
+      }
+
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${sender}`;
       msgDiv.innerText = text;
@@ -811,10 +1021,8 @@
       }
 
       if (leadCaptureStep === 3) {
-        // Validate phone digits length
-        const digits = text.replace(/[^0-9]/g, '');
-        if (digits.length < 7) {
-          addMessage("Please enter a valid phone number (at least 7 digits) so we can reach you.", "ai");
+        if (!validatePhoneNumber(text)) {
+          addMessage("Please enter a valid 10-digit Indian phone number (strip +91 or 0 if needed).", "ai");
           return;
         }
         capturedPhone = text;
@@ -995,6 +1203,11 @@
 
       if (!name || !email || !phone) {
         alert("Please fill in all details to reserve the slot.");
+        return;
+      }
+
+      if (!validatePhoneNumber(phone)) {
+        alert("Please enter a valid 10-digit Indian phone number (strip +91 or 0 if needed).");
         return;
       }
 

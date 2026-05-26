@@ -195,6 +195,8 @@ function App() {
           setConversations(data.conversations || []);
           setAgents(data.agents?.length ? data.agents : getFilteredAgents());
           if (data.workflows?.length) setWorkflows(data.workflows);
+          if (data.knowledge_sources) setSources(data.knowledge_sources);
+          if (data.knowledge_chunks) setChunks(data.knowledge_chunks);
         }
         if (botRes.ok) {
           const data = await botRes.json();
@@ -478,12 +480,22 @@ function App() {
 
 
   const handleAddContactNote = (contactId: string, note: string) => {
+    let updatedContact: any = null;
     setContacts(prev => prev.map(c => {
       if (c.id === contactId) {
-        return { ...c, notes: [...c.notes, note] };
+        updatedContact = { ...c, notes: [...c.notes, note] };
+        return updatedContact;
       }
       return c;
     }));
+
+    if (updatedContact) {
+      apiFetch(`/api/current-tenant/contacts/${contactId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedContact)
+      }).catch(err => console.warn('Could not sync contact note to backend.', err));
+    }
   };
 
   const handleAddContactTag = (contactId: string, tag: string) => {
@@ -726,23 +738,48 @@ function App() {
     if (agentId && agentId !== 'global') {
       setAgents(prev => prev.map(a => {
         if (a.id === agentId) {
-          return {
+          const updatedAgent = {
             ...a,
             knowledgeSources: [...a.knowledgeSources, newSource.name]
           };
+          apiFetch(`/api/current-tenant/agents/${a.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedAgent)
+          }).catch(err => console.warn('Could not sync agent kb updates to backend.', err));
+          return updatedAgent;
         }
         return a;
       }));
     }
+
+    apiFetch('/api/current-tenant/knowledge-sources', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...newSource,
+        chunks: sourceChunks
+      })
+    }).catch(err => console.warn('Could not sync knowledge source to backend.', err));
   };
 
   const handleUpdateBranding = (tenantId: string, updates: Partial<Tenant>) => {
+    let updatedTenant: any = null;
     setTenants(prev => prev.map(t => {
       if (t.id === tenantId) {
-        return { ...t, ...updates };
+        updatedTenant = { ...t, ...updates };
+        return updatedTenant;
       }
       return t;
     }));
+
+    if (updatedTenant) {
+      apiFetch('/api/current-tenant', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      }).catch(err => console.warn('Could not sync branding changes to backend.', err));
+    }
   };
 
   const handleHireAgent = (newAgent: Agent) => {
@@ -1081,6 +1118,7 @@ function App() {
                   deals={getFilteredDeals()}
                   onUpdateDealStage={handleUpdateDealStage}
                   onAddContact={handleAddContact}
+                  onAddContactNote={handleAddContactNote}
                   agents={getFilteredAgents()}
                   tenantId={selectedTenantId}
                 />
@@ -1141,6 +1179,7 @@ function App() {
                   }}
                   onAddContact={handleAddContact}
                   onSwitchTab={setActiveTab}
+                  onUpdateTenant={(updates) => handleUpdateBranding(selectedTenantId, updates)}
                 />
               )}
               {activeTab === 'website' && (
@@ -1161,6 +1200,7 @@ function App() {
                   }}
                   onAddContact={handleAddContact}
                   onSwitchTab={setActiveTab}
+                  onUpdateTenant={(updates) => handleUpdateBranding(selectedTenantId, updates)}
                 />
               )}
               {activeTab === 'whitelabel' && (

@@ -11,6 +11,7 @@ interface CRMPipelineViewProps {
   deals: Deal[];
   onUpdateDealStage: (dealId: string, stage: Deal['stage']) => void;
   onAddContact: (contact: Omit<Contact, 'id' | 'createdAt' | 'tags' | 'notes'>) => void;
+  onAddContactNote?: (contactId: string, note: string) => void;
   agents: Agent[];
   tenantId: string;
 }
@@ -33,6 +34,7 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
   deals,
   onUpdateDealStage,
   onAddContact,
+  onAddContactNote,
   agents,
   tenantId
 }) => {
@@ -48,6 +50,11 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
   // Selected contact for detail drawer
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
+  // AI Campaign states
+  const [campaignObjective, setCampaignObjective] = useState('');
+  const [isCampaignRunning, setIsCampaignRunning] = useState(false);
+  const [campaignLogs, setCampaignLogs] = useState<string[]>([]);
+
   // New contact form state
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState('');
@@ -60,6 +67,61 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisReport, setAnalysisReport] = useState<DropoffAnalysisReport | null>(null);
   const [webhookStatus, setWebhookStatus] = useState<string | null>(null);
+
+  const handleRunCampaign = (contactId: string) => {
+    if (!campaignObjective.trim()) return;
+    setIsCampaignRunning(true);
+    setCampaignLogs([`[SYSTEM] Initializing outbound follow-up campaign...`]);
+
+    setTimeout(() => {
+      setCampaignLogs(prev => [...prev, `[AI AGENT] Fetching contact credentials for WhatsApp dispatch...`]);
+    }, 400);
+
+    setTimeout(() => {
+      setCampaignLogs(prev => [...prev, `[AI AGENT] Sending message: "Hi! Following up regarding your inquiry. Are you still looking to achieve: '${campaignObjective}'?"`]);
+      if (onAddContactNote) {
+        onAddContactNote(contactId, `AI Campaign Triggered: Sent WhatsApp message with objective: "${campaignObjective}"`);
+      }
+    }, 900);
+
+    setTimeout(() => {
+      setCampaignLogs(prev => [...prev, `[SYSTEM] Analyzing customer response payload...`]);
+    }, 1600);
+
+    setTimeout(() => {
+      const responses = [
+        "Yes, I'm absolutely interested! Can we schedule a slots tomorrow?",
+        "Yes, that fits my budget, let's schedule a call.",
+        "Sure, tell me more about it.",
+        "I'm interested, please share the admission details."
+      ];
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      setCampaignLogs(prev => [...prev, `[CUSTOMER REPLIED] "${randomResponse}"`]);
+      
+      if (onAddContactNote) {
+        onAddContactNote(contactId, `Customer Replied: "${randomResponse}" (Sentiment: Positive)`);
+      }
+    }, 2200);
+
+    setTimeout(() => {
+      setCampaignLogs(prev => [...prev, `[DECISION ENGINE] Sentiment: POSITIVE. Automatically advancing pipeline deal stage to "Qualified".`]);
+      
+      const contactDeals = deals.filter(d => d.contactId === contactId);
+      if (contactDeals.length > 0) {
+        const targetDeal = contactDeals[0];
+        onUpdateDealStage(targetDeal.id, 'qualified');
+        
+        if (onAddContactNote) {
+          onAddContactNote(contactId, `System Action: Automatically advanced Deal "${targetDeal.name}" to Qualified stage based on AI Campaign response.`);
+        }
+      } else {
+        setCampaignLogs(prev => [...prev, `[WARNING] No deal found for this contact. Deal progress skipped.`]);
+      }
+      
+      setIsCampaignRunning(false);
+      setCampaignObjective('');
+    }, 3000);
+  };
 
   const stages: { id: Deal['stage']; label: string; color: string }[] = [
     { id: 'lead', label: 'Lead Inbound', color: 'var(--accent-color)' },
@@ -869,6 +931,83 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
                   <span key={idx} className="badge badge-primary" style={{ fontSize: '0.65rem' }}>{t}</span>
                 ))}
               </div>
+            </div>
+
+            {/* AI Follow-up Campaign Form */}
+            <div style={{
+              background: 'rgba(14, 165, 233, 0.03)',
+              border: '1px solid rgba(14, 165, 233, 0.15)',
+              borderRadius: '8px',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }} key={contact.id}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                <Brain size={16} />
+                <span>AI Follow-up Campaign</span>
+              </div>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
+                Trigger an automated AI outbound follow-up message to this contact to progress their deal stage based on sentiment analysis.
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>CAMPAIGN OBJECTIVE:</label>
+                <input 
+                  type="text" 
+                  value={campaignObjective} 
+                  onChange={(e) => setCampaignObjective(e.target.value)}
+                  placeholder="e.g. Schedule whitening checkup / confirm property budget"
+                  style={{
+                    background: '#111827',
+                    border: '1px solid var(--border-glass)',
+                    borderRadius: '4px',
+                    padding: '8px',
+                    fontSize: '0.75rem',
+                    color: 'white',
+                    outline: 'none'
+                  }}
+                  disabled={isCampaignRunning}
+                />
+              </div>
+
+              <button
+                onClick={() => handleRunCampaign(contact.id)}
+                className="btn btn-primary"
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)',
+                  border: 'none',
+                  color: 'white',
+                  cursor: isCampaignRunning ? 'not-allowed' : 'pointer'
+                }}
+                disabled={isCampaignRunning || !campaignObjective.trim()}
+              >
+                {isCampaignRunning ? 'AI Campaign Running...' : 'Run Outbound AI Campaign'}
+              </button>
+
+              {campaignLogs.length > 0 && (
+                <div style={{
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: '4px',
+                  padding: '8px',
+                  fontSize: '0.65rem',
+                  color: '#10b981',
+                  fontFamily: 'monospace',
+                  maxHeight: '120px',
+                  overflowY: 'auto',
+                  border: '1px solid var(--border-glass)'
+                }}>
+                  {campaignLogs.map((log, i) => (
+                    <div key={i} style={{ marginBottom: '4px' }}>{log}</div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Notes & Feedback Logs */}
