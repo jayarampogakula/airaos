@@ -19,9 +19,6 @@ export interface UnifiedIntegrationConfig {
   twilioAuthToken: string;
   twilioPhoneNumber: string;
   whatsappToken: string;
-  chatwootInboxToken: string;
-  chatwootAccountId: string;
-  chatwootApiAccessToken: string;
   inboundRouting: 'twilio' | 'byo';
   outboundRouting: 'twilio' | 'byo';
   byoSipServer: string;
@@ -30,7 +27,6 @@ export interface UnifiedIntegrationConfig {
   byoPhoneNumber: string;
   phonepeMerchantId: string;
   phonepeSaltKey: string;
-  chatwootUrl: string;
   n8nUrl: string;
   geminiApiKey: string;
   deepseekApiKey: string;
@@ -46,9 +42,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
     twilioAuthToken: '',
     twilioPhoneNumber: '',
     whatsappToken: '',
-    chatwootInboxToken: '',
-    chatwootAccountId: '',
-    chatwootApiAccessToken: '',
     inboundRouting: 'twilio',
     outboundRouting: 'twilio',
     byoSipServer: '',
@@ -57,7 +50,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
     byoPhoneNumber: '',
     phonepeMerchantId: '',
     phonepeSaltKey: '',
-    chatwootUrl: 'https://chat.cleveradai.in',
     n8nUrl: 'https://flow.cleveradai.in',
     geminiApiKey: '',
     deepseekApiKey: '',
@@ -116,9 +108,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
               twilioAuthToken: data.twilioAuthToken || '',
               twilioPhoneNumber: data.twilioPhoneNumber || '',
               whatsappToken: data.whatsappToken || '',
-              chatwootInboxToken: data.chatwootInboxToken || '',
-              chatwootAccountId: data.chatwootAccountId || '',
-              chatwootApiAccessToken: data.chatwootApiAccessToken || '',
               inboundRouting: data.inboundRouting || 'twilio',
               outboundRouting: data.outboundRouting || 'twilio',
               byoSipServer: data.byoSipServer || '',
@@ -127,7 +116,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
               byoPhoneNumber: data.byoPhoneNumber || data.byoPhoneNum || '',
               phonepeMerchantId: data.phonepeMerchantId || '',
               phonepeSaltKey: data.phonepeSaltKey || '',
-              chatwootUrl: data.chatwootUrl || 'https://chat.cleveradai.in',
               n8nUrl: data.n8nUrl || 'https://flow.cleveradai.in',
               geminiApiKey: data.geminiApiKey || '',
               deepseekApiKey: data.deepseekApiKey || '',
@@ -162,9 +150,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
             twilioAuthToken: parsed.twilioAuthToken || '',
             twilioPhoneNumber: parsed.twilioPhoneNumber || '',
             whatsappToken: parsed.whatsappToken || '',
-            chatwootInboxToken: parsed.chatwootInboxToken || '',
-            chatwootAccountId: parsed.chatwootAccountId || '',
-            chatwootApiAccessToken: parsed.chatwootApiAccessToken || '',
             inboundRouting: parsed.inboundRouting || 'twilio',
             outboundRouting: parsed.outboundRouting || 'twilio',
             byoSipServer: parsed.byoSipServer || '',
@@ -173,7 +158,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
             byoPhoneNumber: parsed.byoPhoneNumber || parsed.byoPhoneNum || '',
             phonepeMerchantId: parsed.phonepeMerchantId || '',
             phonepeSaltKey: parsed.phonepeSaltKey || '',
-            chatwootUrl: parsed.chatwootUrl || 'https://chat.cleveradai.in',
             n8nUrl: parsed.n8nUrl || 'https://flow.cleveradai.in',
             geminiApiKey: parsed.geminiApiKey || '',
             deepseekApiKey: parsed.deepseekApiKey || '',
@@ -226,9 +210,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
       twilioAuthToken: config.twilioAuthToken,
       twilioPhoneNumber: config.twilioPhoneNumber,
       whatsappToken: config.whatsappToken,
-      chatwootInboxToken: config.chatwootInboxToken,
-      chatwootAccountId: config.chatwootAccountId,
-      chatwootApiAccessToken: config.chatwootApiAccessToken,
       inboundRouting: config.inboundRouting,
       outboundRouting: config.outboundRouting,
       byoSipServer: config.byoSipServer,
@@ -238,7 +219,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
       byoPhoneNum: config.byoPhoneNumber,
       phonepeMerchantId: config.phonepeMerchantId,
       phonepeSaltKey: config.phonepeSaltKey,
-      chatwootUrl: config.chatwootUrl,
       n8nUrl: config.n8nUrl
     };
 
@@ -291,12 +271,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chatwootUrl: config.chatwootUrl,
-          chatwootAccountId: config.chatwootAccountId,
-          chatwootApiAccessToken: config.chatwootApiAccessToken,
-          chatwootInboxId: draft.chatwootInboxId,
-          autoCreateInbox: !draft.chatwootInboxId,
-          autoProvisionAccount: true,
           config: {
             websiteUrl: draft.websiteUrl || tenant.domain,
             email: draft.email,
@@ -839,90 +813,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                 💬 <strong>Communication Channels & Workflows:</strong> Link helpdesks, messaging tokens, and background automation triggers.
               </div>
 
-              {/* Section 1: Chatwoot Helpdesk Integration */}
-              <div style={{ border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255,255,255,0.01)' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary-color)' }}>
-                  💬 Chatwoot Customer Helpdesk Settings
-                </span>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                  <span>
-                    💡 <strong>Auto-Provisioning:</strong> The platform will automatically connect your communication channels and register them in Chatwoot when you click "Connect Channel" below.
-                  </span>
-                </div>
-
-                <div className="grid-cols-12" style={{ gap: '14px' }}>
-                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Console URL</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="https://chat.my-domain.com"
-                      value={config.chatwootUrl}
-                      onChange={(e) => setConfig({ ...config, chatwootUrl: e.target.value })}
-                      disabled={currentRole === 'tenant'}
-                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
-                    />
-                    {currentRole === 'tenant' && (
-                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
-                    )}
-                  </div>
-                  
-                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot API Access Token</label>
-                    <input
-                      type="password"
-                      className="form-input"
-                      placeholder="User API token for this Chatwoot account"
-                      value={config.chatwootApiAccessToken}
-                      onChange={(e) => setConfig({ ...config, chatwootApiAccessToken: e.target.value })}
-                      disabled={currentRole === 'tenant'}
-                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
-                    />
-                    {currentRole === 'tenant' ? (
-                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
-                    ) : (
-                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Get this from your Chatwoot Profile Settings</span>
-                    )}
-                  </div>
-
-                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Account ID</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="123"
-                      value={config.chatwootAccountId}
-                      onChange={(e) => setConfig({ ...config, chatwootAccountId: e.target.value })}
-                      disabled={currentRole === 'tenant'}
-                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
-                    />
-                    {currentRole === 'tenant' ? (
-                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
-                    ) : (
-                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Found in your Chatwoot URL (e.g. /accounts/1)</span>
-                    )}
-                  </div>
-
-                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Inbox Token (Default)</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="inbox_token_xxxxxxxx"
-                      value={config.chatwootInboxToken}
-                      onChange={(e) => setConfig({ ...config, chatwootInboxToken: e.target.value })}
-                      disabled={currentRole === 'tenant'}
-                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
-                    />
-                    {currentRole === 'tenant' ? (
-                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
-                    ) : (
-                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Inbox Token routing general platform inquiries</span>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {/* Section 1: Chatwoot Helpdesk Integration (Removed) */}
 
               {/* Section 2: WhatsApp Cloud Platform Integration */}
               <div style={{ border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255,255,255,0.01)' }}>
@@ -972,14 +863,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
 
               {currentRole === 'tenant' && (
                 <div className="grid-cols-12" style={{ gap: '12px' }}>
-                  <div className="col-span-12" style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', borderRadius: '8px', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '8px' }}>
-                    ℹ️ <strong>Existing Chatwoot Inbox ID (Optional):</strong>
-                    <ul style={{ margin: '4px 0 0 16px', padding: 0, listStyleType: 'disc' }}>
-                      <li>If you provide it: AiraOS will bind directly to your existing Chatwoot inbox.</li>
-                      <li>If you leave it empty (recommended): AiraOS will automatically auto-provision a brand new inbox in your Chatwoot account for that channel during the "Connect Channel" setup.</li>
-                      <li style={{ color: 'var(--text-muted)' }}>To locate your existing inbox ID: Open Chatwoot settings, click Inboxes, choose your inbox, and copy the number at the end of the URL (e.g. <code>.../inbox/15</code>).</li>
-                    </ul>
-                  </div>
                   {channels.map((channel) => {
                     const draft = channelDrafts[channel.type] || {};
                     return (
@@ -990,13 +873,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                             {channel.status.replace(/_/g, ' ')}
                           </span>
                         </div>
-                        <input
-                          className="form-input"
-                          placeholder="Existing Chatwoot inbox ID (optional)"
-                          value={draft.chatwootInboxId || channel.chatwootInboxId || ''}
-                          onChange={(event) => handleChannelDraftChange(channel.type, 'chatwootInboxId', event.target.value)}
-                          style={{ fontSize: '0.7rem', padding: '7px 9px' }}
-                        />
                         {channel.type === 'website' && (
                           <input
                             className="form-input"

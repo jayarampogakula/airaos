@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   LayoutDashboard, Brain, UserCheck, MessageSquare, Users, Calendar, 
   GitBranch, PhoneCall, Database, Settings, Code, ShieldAlert,
-  ChevronDown, ChevronRight, AlertCircle, ShoppingBag, Globe, Link, CreditCard
+  ChevronDown, ChevronRight, AlertCircle, ShoppingBag, Globe, Link, CreditCard,
+  Key
 } from 'lucide-react';
 import { Tenant, User } from '../types';
 
@@ -92,6 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'tenants', label: 'Manage Tenants', icon: Users },
     { id: 'plans', label: 'Billing & Plans', icon: Settings },
     { id: 'infrastructure', label: 'Infrastructure status', icon: Database },
+    { id: 'settings', label: 'API & LLM Settings', icon: Key },
     { id: 'marketplace', label: 'Marketplace templates', icon: ShoppingBag },
     { id: 'support_bot', label: 'Platform Support Bot', icon: MessageSquare }
   ];

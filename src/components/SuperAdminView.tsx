@@ -27,8 +27,6 @@ interface SuperAdminViewProps {
 export interface IntegrationSettings {
   difyUrl: string;
   difyApiKey: string;
-  chatwootUrl: string;
-  chatwootInboxToken: string;
   n8nUrl: string;
   n8nApiKey: string;
   calUrl: string;
@@ -46,6 +44,11 @@ export interface IntegrationSettings {
   phonepeSaltIndex: string;
   razorpayKeyId: string;
   razorpayKeySecret: string;
+  geminiApiKey: string;
+  deepseekApiKey: string;
+  anthropicApiKey: string;
+  openSourceApiKey: string;
+  openSourceProviderUrl: string;
 }
 
 export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
@@ -152,8 +155,6 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
         return {
           difyUrl: parsed.difyUrl || 'https://dify.my-agency.com',
           difyApiKey: parsed.difyApiKey || '',
-          chatwootUrl: parsed.chatwootUrl || 'https://chatwoot.my-agency.com',
-          chatwootInboxToken: parsed.chatwootInboxToken || '',
           n8nUrl: parsed.n8nUrl || 'https://n8n.my-agency.com',
           n8nApiKey: parsed.n8nApiKey || '',
           calUrl: parsed.calUrl || 'https://cal.my-agency.com/agency/30min',
@@ -170,15 +171,18 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
           phonepeSaltKey: parsed.phonepeSaltKey || '',
           phonepeSaltIndex: parsed.phonepeSaltIndex || '1',
           razorpayKeyId: parsed.razorpayKeyId || '',
-          razorpayKeySecret: parsed.razorpayKeySecret || ''
+          razorpayKeySecret: parsed.razorpayKeySecret || '',
+          geminiApiKey: parsed.geminiApiKey || '',
+          deepseekApiKey: parsed.deepseekApiKey || '',
+          anthropicApiKey: parsed.anthropicApiKey || '',
+          openSourceApiKey: parsed.openSourceApiKey || '',
+          openSourceProviderUrl: parsed.openSourceProviderUrl || ''
         };
       } catch (e) {}
     }
     return {
       difyUrl: 'https://dify.my-agency.com',
       difyApiKey: '',
-      chatwootUrl: 'https://chatwoot.my-agency.com',
-      chatwootInboxToken: '',
       n8nUrl: 'https://n8n.my-agency.com',
       n8nApiKey: '',
       calUrl: 'https://cal.my-agency.com/agency/30min',
@@ -195,7 +199,12 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       phonepeSaltKey: '',
       phonepeSaltIndex: '1',
       razorpayKeyId: '',
-      razorpayKeySecret: ''
+      razorpayKeySecret: '',
+      geminiApiKey: '',
+      deepseekApiKey: '',
+      anthropicApiKey: '',
+      openSourceApiKey: '',
+      openSourceProviderUrl: ''
     };
   });
 
@@ -711,7 +720,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       )}
 
       {activeTab === 'infrastructure' && (
-        /* Infrastructure Gauges + Coolify Configuration & Setup Guides */
+        /* Infrastructure Gauges & Setup Guides */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Section 1: Docker Containers health metrics (The existing ones) */}
@@ -866,7 +875,6 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   <p>In the Coolify dashboard, select <strong>"Create New Resource" &rarr; "Service"</strong> and deploy the following marketplace items:</p>
                   <ul style={{ paddingLeft: '20px', listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <li><strong>Dify AI Platform:</strong> Deploy Dify (includes API, Webapp, Sandbox, VectorDB, Redis). Map custom domain (e.g. <code>https://dify.myagency.com</code>).</li>
-                    <li><strong>Chatwoot Live Chat:</strong> Deploy Chatwoot. Setup PostgreSQL DB. Map domain (e.g. <code>https://chatwoot.myagency.com</code>).</li>
                     <li><strong>Workflow Automation:</strong> Deploy the workflow engine. Add environment variable <code>ENCRYPTION_KEY</code>. Map domain (e.g. <code>https://workflows.myagency.com</code>).</li>
                     <li><strong>Calendar Scheduler:</strong> Deploy postgres and NextJS app container, configure booking endpoints. Map domain (e.g. <code>https://scheduler.myagency.com</code>).</li>
                     <li><strong>Twenty CRM:</strong> Deploy Twenty CRM container. Setup database credentials. Map domain (e.g. <code>https://twenty.myagency.com</code>).</li>
@@ -875,266 +883,326 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
                 <div>
                   <h4 style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>Step 3: Connect Services in Integration Settings</h4>
-                  <p>Once deployed, copy the individual service API tokens (e.g. Dify app tokens, Workflow Automator api key, Chatwoot widget snippet tokens) and input them in the <strong>Coolify Integration Manager</strong> below. The frontend dashboard will instantly swap from mockup simulations to connecting and loading your real endpoints.</p>
+                  <p>Once deployed, copy the individual service API tokens (e.g. Dify app tokens, Workflow Automator api key, CRM connection keys) and input them in the <strong>Coolify Integration Manager</strong> below. The frontend dashboard will instantly swap from mockup simulations to connecting and loading your real endpoints.</p>
                 </div>
               </div>
             </div>
           )}
+        </div>
+      )}
 
-          {/* Section 2: Integrations Settings Form */}
-          <form onSubmit={handleSaveIntegrations} className="glass-panel" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Globe size={18} style={{ color: 'var(--accent-color)' }} /> Coolify Integration Manager (VPS Service Mapping)
-              </h3>
-              <button type="submit" className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Save size={14} /> Save Integration Mapping
-              </button>
+      {activeTab === 'settings' && (
+        /* Section 2: Integrations Settings Form */
+        <form onSubmit={handleSaveIntegrations} className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px', marginBottom: '10px' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Globe size={18} style={{ color: 'var(--accent-color)' }} /> API & LLM Settings Manager (Global Integrations)
+            </h3>
+            <button type="submit" className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Save size={14} /> Save API Settings
+            </button>
+          </div>
+
+          {saveSuccess === 'integrations' && (
+            <div style={{ padding: '10px', background: 'rgba(16,185,129,0.1)', border: '1px solid var(--success-color)', borderRadius: '6px', color: '#6ee7b7', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CheckCircle2 size={14} /> Global integration keys and endpoints stored successfully!
             </div>
+          )}
 
-            {saveSuccess === 'integrations' && (
-              <div style={{ padding: '10px', background: 'rgba(16,185,129,0.1)', border: '1px solid var(--success-color)', borderRadius: '6px', color: '#6ee7b7', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '20px' }}>
-                <CheckCircle2 size={14} /> VPS microservice endpoints stored in localStorage. Dynamic layout views updated!
-              </div>
-            )}
-
-            <div className="grid-cols-12" style={{ gap: '20px' }}>
+          <div className="grid-cols-12" style={{ gap: '20px' }}>
+            
+            {/* AI & LLM Provider API Integration */}
+            <div className="col-span-12 glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(99, 102, 241, 0.25)', background: 'rgba(99, 102, 241, 0.01)' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🧠</span> Global AI & LLM Model Integrations
+              </h4>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0 }}>
+                Configure your API keys for multiple LLM providers. Once configured, your tenants can switch their AI Employees and chatbot agents to leverage these models.
+              </p>
               
-              {/* Chatwoot Mapping */}
-              <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>💬</span> Chatwoot Live Chat & Inbox
-                </h4>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Chatwoot Console URL</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={integrations.chatwootUrl} 
-                    onChange={(e) => setIntegrations({ ...integrations, chatwootUrl: e.target.value })} 
-                    placeholder="https://chatwoot.yourdomain.com"
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Website Channel Inbox Token</label>
+              <div style={{ height: '1px', background: 'var(--border-glass)', margin: '4px 0' }} />
+
+              <div className="grid-cols-12" style={{ gap: '16px' }}>
+                {/* OpenAI Key */}
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.72rem', fontWeight: '600' }}>OpenAI API Key</label>
                   <div style={{ position: 'relative' }}>
                     <Key size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
                     <input 
                       type="password" 
                       className="form-input" 
                       style={{ paddingLeft: '28px' }}
-                      value={integrations.chatwootInboxToken} 
-                      onChange={(e) => setIntegrations({ ...integrations, chatwootInboxToken: e.target.value })} 
-                      placeholder="token-xxxxxxxxxxxxxxxxxxxx"
+                      value={integrations.openaiApiKey || ''} 
+                      onChange={(e) => setIntegrations({ ...integrations, openaiApiKey: e.target.value })} 
+                      placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Workflow Automation Mapping */}
-              <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>⚙️</span> Workflow Automation
-                </h4>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Workflow Webhook base URL</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={integrations.n8nUrl} 
-                    onChange={(e) => setIntegrations({ ...integrations, n8nUrl: e.target.value })} 
-                    placeholder="https://workflows.yourdomain.com"
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Engine API Key</label>
-                  <input 
-                    type="password" 
-                    className="form-input" 
-                    value={integrations.n8nApiKey} 
-                    onChange={(e) => setIntegrations({ ...integrations, n8nApiKey: e.target.value })} 
-                    placeholder="api_key_xxxxxxxxxxxxxxxx"
-                  />
-                </div>
-              </div>
-
-              {/* SIP Gateway Mapping */}
-              <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>🎙️</span> Voice AI Gateway (SIP)
-                </h4>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Voice Server URL</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={integrations.dograhUrl} 
-                    onChange={(e) => setIntegrations({ ...integrations, dograhUrl: e.target.value })} 
-                    placeholder="http://localhost:3010"
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Voice API / JWT Key</label>
-                  <input 
-                    type="password" 
-                    className="form-input" 
-                    value={integrations.dograhApiKey} 
-                    onChange={(e) => setIntegrations({ ...integrations, dograhApiKey: e.target.value })} 
-                    placeholder="auth_xxxxxxxx"
-                  />
-                </div>
-              </div>
-
-              {/* Twilio Carrier Integration */}
-              <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0ea5e9', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>📞</span> Twilio Voice Integration
-                </h4>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.65rem' }}>Twilio Account SID</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={integrations.twilioAccountSid} 
-                    onChange={(e) => setIntegrations({ ...integrations, twilioAccountSid: e.target.value })} 
-                    placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.65rem' }}>Twilio Auth Token</label>
-                  <input 
-                    type="password" 
-                    className="form-input" 
-                    value={integrations.twilioAuthToken} 
-                    onChange={(e) => setIntegrations({ ...integrations, twilioAuthToken: e.target.value })} 
-                    placeholder="auth_token_xxxxxxxxxxxxxxxxxx"
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.65rem' }}>Linked Twilio Phone Number</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={integrations.twilioPhoneNumber} 
-                    onChange={(e) => setIntegrations({ ...integrations, twilioPhoneNumber: e.target.value })} 
-                    placeholder="+15550192834"
-                  />
-                </div>
-              </div>
-
-              {/* Payment Gateways Config */}
-              <div className="col-span-12 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.02)' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>💳</span> Payment Gateway Configuration (PhonePe / Razorpay)
-                </h4>
-                <div className="grid-cols-12" style={{ gap: '16px' }}>
-                  <div className="col-span-4 form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.7rem' }}>Active Payment Gateway</label>
-                    <select 
+                {/* Google Gemini Key */}
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.72rem', fontWeight: '600' }}>Google Gemini API Key</label>
+                  <div style={{ position: 'relative' }}>
+                    <Key size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+                    <input 
+                      type="password" 
                       className="form-input" 
-                      value={integrations.activePaymentGateway || 'none'}
-                      onChange={(e) => setIntegrations({ ...integrations, activePaymentGateway: e.target.value as any })}
-                    >
-                      <option value="none">Disabled / Simulation Mode</option>
-                      <option value="phonepe">PhonePe API Gateway</option>
-                      <option value="razorpay">Razorpay API Gateway</option>
-                    </select>
-                  </div>
-                  <div className="col-span-8" style={{ display: 'flex', alignItems: 'center', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                    Choose which payment gateway to enable. When active, billing upgrades and credit transactions will route through the selected provider.
+                      style={{ paddingLeft: '28px' }}
+                      value={integrations.geminiApiKey || ''} 
+                      onChange={(e) => setIntegrations({ ...integrations, geminiApiKey: e.target.value })} 
+                      placeholder="AIzaSyxxxxxxxxxxxxxxxxxxxxxxxx"
+                    />
                   </div>
                 </div>
 
-                {integrations.activePaymentGateway === 'phonepe' && (
-                  <div className="grid-cols-12" style={{ gap: '12px', borderTop: '1px solid var(--border-glass)', paddingTop: '12px' }}>
-                    <div className="col-span-4 form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.65rem' }}>PhonePe Merchant ID</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={integrations.phonepeMerchantId || ''} 
-                        onChange={(e) => setIntegrations({ ...integrations, phonepeMerchantId: e.target.value })} 
-                        placeholder="PGMERCHANTID"
-                      />
-                    </div>
-                    <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.65rem' }}>PhonePe Salt Key (API Key)</label>
-                      <input 
-                        type="password" 
-                        className="form-input" 
-                        value={integrations.phonepeSaltKey || ''} 
-                        onChange={(e) => setIntegrations({ ...integrations, phonepeSaltKey: e.target.value })} 
-                        placeholder="099eb0cd-02cf-4e2a-8aca-xxxxxxxxxxxx"
-                      />
-                    </div>
-                    <div className="col-span-2 form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Salt Index</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={integrations.phonepeSaltIndex || '1'} 
-                        onChange={(e) => setIntegrations({ ...integrations, phonepeSaltIndex: e.target.value })} 
-                        placeholder="1"
-                      />
-                    </div>
+                {/* DeepSeek Key */}
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.72rem', fontWeight: '600' }}>DeepSeek API Key</label>
+                  <div style={{ position: 'relative' }}>
+                    <Key size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+                    <input 
+                      type="password" 
+                      className="form-input" 
+                      style={{ paddingLeft: '28px' }}
+                      value={integrations.deepseekApiKey || ''} 
+                      onChange={(e) => setIntegrations({ ...integrations, deepseekApiKey: e.target.value })} 
+                      placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx"
+                    />
                   </div>
-                )}
+                </div>
 
-                {integrations.activePaymentGateway === 'razorpay' && (
-                  <div className="grid-cols-12" style={{ gap: '12px', borderTop: '1px solid var(--border-glass)', paddingTop: '12px' }}>
+                {/* Anthropic Claude Key */}
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.72rem', fontWeight: '600' }}>Anthropic Claude API Key</label>
+                  <div style={{ position: 'relative' }}>
+                    <Key size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+                    <input 
+                      type="password" 
+                      className="form-input" 
+                      style={{ paddingLeft: '28px' }}
+                      value={integrations.anthropicApiKey || ''} 
+                      onChange={(e) => setIntegrations({ ...integrations, anthropicApiKey: e.target.value })} 
+                      placeholder="sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx"
+                    />
+                  </div>
+                </div>
+
+                {/* Open Source / Cloud Models */}
+                <div className="col-span-12" style={{ marginTop: '8px', borderTop: '1px dashed var(--border-glass)', paddingTop: '16px' }}>
+                  <h5 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                    Open Source Cloud Models (Groq / OpenRouter)
+                  </h5>
+                  
+                  <div className="grid-cols-12" style={{ gap: '16px' }}>
                     <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Razorpay Key ID</label>
+                      <label className="form-label" style={{ fontSize: '0.7rem' }}>API Endpoint Provider URL</label>
                       <input 
                         type="text" 
                         className="form-input" 
-                        value={integrations.razorpayKeyId || ''} 
-                        onChange={(e) => setIntegrations({ ...integrations, razorpayKeyId: e.target.value })} 
-                        placeholder="rzp_live_xxxxxxxxxxxxxx"
+                        value={integrations.openSourceProviderUrl || ''} 
+                        onChange={(e) => setIntegrations({ ...integrations, openSourceProviderUrl: e.target.value })} 
+                        placeholder="https://openrouter.ai/api/v1 or https://api.groq.com/openai/v1"
                       />
                     </div>
+                    
                     <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.65rem' }}>Razorpay Key Secret</label>
-                      <input 
-                        type="password" 
-                        className="form-input" 
-                        value={integrations.razorpayKeySecret || ''} 
-                        onChange={(e) => setIntegrations({ ...integrations, razorpayKeySecret: e.target.value })} 
-                        placeholder="xxxxxxxxxxxxxxxxxxxxxxxx"
-                      />
+                      <label className="form-label" style={{ fontSize: '0.7rem' }}>Provider API Key</label>
+                      <div style={{ position: 'relative' }}>
+                        <Key size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
+                        <input 
+                          type="password" 
+                          className="form-input" 
+                          style={{ paddingLeft: '28px' }}
+                          value={integrations.openSourceApiKey || ''} 
+                          onChange={(e) => setIntegrations({ ...integrations, openSourceApiKey: e.target.value })} 
+                          placeholder="sk-or-v1-xxxxxxxxxxxxxxxxxxxx or gsk_xxxxxxxxxxxxxxxxxxxx"
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* OpenAI API Key Integration */}
-              <div className="col-span-12 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(99, 102, 241, 0.2)', background: 'rgba(99, 102, 241, 0.02)' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>🧠</span> OpenAI API Integration (AI Services & Website Builder Engine)
-                </h4>
-                <div className="grid-cols-12" style={{ gap: '16px' }}>
-                  <div className="col-span-8 form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.7rem' }}>OpenAI API Key (Required for AI generation & background microservices)</label>
-                    <div style={{ position: 'relative' }}>
-                      <Key size={12} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                      <input 
-                        type="password" 
-                        className="form-input" 
-                        style={{ paddingLeft: '28px' }}
-                        value={integrations.openaiApiKey || ''} 
-                        onChange={(e) => setIntegrations({ ...integrations, openaiApiKey: e.target.value })} 
-                        placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-span-4" style={{ display: 'flex', alignItems: 'flex-end', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                    Used globally to generate custom business layouts, index vector catalogs, and orchestrate client chatbot agents.
                   </div>
                 </div>
               </div>
-
             </div>
-          </form>
-        </div>
+
+
+
+            {/* Workflow Automation Mapping */}
+            <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>⚙️</span> Workflow Automation
+              </h4>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.7rem' }}>Workflow Webhook base URL</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={integrations.n8nUrl} 
+                  onChange={(e) => setIntegrations({ ...integrations, n8nUrl: e.target.value })} 
+                  placeholder="https://workflows.yourdomain.com"
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.7rem' }}>Engine API Key</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={integrations.n8nApiKey} 
+                  onChange={(e) => setIntegrations({ ...integrations, n8nApiKey: e.target.value })} 
+                  placeholder="api_key_xxxxxxxxxxxxxxxx"
+                />
+              </div>
+            </div>
+
+            {/* SIP Gateway Mapping */}
+            <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🎙️</span> Voice AI Gateway (SIP)
+              </h4>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.7rem' }}>Voice Server URL</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={integrations.dograhUrl} 
+                  onChange={(e) => setIntegrations({ ...integrations, dograhUrl: e.target.value })} 
+                  placeholder="http://localhost:3010"
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.7rem' }}>Voice API / JWT Key</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={integrations.dograhApiKey} 
+                  onChange={(e) => setIntegrations({ ...integrations, dograhApiKey: e.target.value })} 
+                  placeholder="auth_xxxxxxxx"
+                />
+              </div>
+            </div>
+
+            {/* Twilio Carrier Integration */}
+            <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0ea5e9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>📞</span> Twilio Voice Integration
+              </h4>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.65rem' }}>Twilio Account SID</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={integrations.twilioAccountSid} 
+                  onChange={(e) => setIntegrations({ ...integrations, twilioAccountSid: e.target.value })} 
+                  placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.65rem' }}>Twilio Auth Token</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={integrations.twilioAuthToken} 
+                  onChange={(e) => setIntegrations({ ...integrations, twilioAuthToken: e.target.value })} 
+                  placeholder="auth_token_xxxxxxxxxxxxxxxxxx"
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.65rem' }}>Linked Twilio Phone Number</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={integrations.twilioPhoneNumber} 
+                  onChange={(e) => setIntegrations({ ...integrations, twilioPhoneNumber: e.target.value })} 
+                  placeholder="+15550192834"
+                />
+              </div>
+            </div>
+
+            {/* Payment Gateways Config */}
+            <div className="col-span-12 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(16, 185, 129, 0.2)', background: 'rgba(16, 185, 129, 0.02)' }}>
+              <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>💳</span> Payment Gateway Configuration (PhonePe / Razorpay)
+              </h4>
+              <div className="grid-cols-12" style={{ gap: '16px' }}>
+                <div className="col-span-4 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Active Payment Gateway</label>
+                  <select 
+                    className="form-input" 
+                    value={integrations.activePaymentGateway || 'none'}
+                    onChange={(e) => setIntegrations({ ...integrations, activePaymentGateway: e.target.value as any })}
+                  >
+                    <option value="none">Disabled / Simulation Mode</option>
+                    <option value="phonepe">PhonePe API Gateway</option>
+                    <option value="razorpay">Razorpay API Gateway</option>
+                  </select>
+                </div>
+                <div className="col-span-8" style={{ display: 'flex', alignItems: 'center', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                  Choose which payment gateway to enable. When active, billing upgrades and credit transactions will route through the selected provider.
+                </div>
+              </div>
+
+              {integrations.activePaymentGateway === 'phonepe' && (
+                <div className="grid-cols-12" style={{ gap: '12px', borderTop: '1px solid var(--border-glass)', paddingTop: '12px' }}>
+                  <div className="col-span-4 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.65rem' }}>PhonePe Merchant ID</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={integrations.phonepeMerchantId || ''} 
+                      onChange={(e) => setIntegrations({ ...integrations, phonepeMerchantId: e.target.value })} 
+                      placeholder="PGMERCHANTID"
+                    />
+                  </div>
+                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.65rem' }}>PhonePe Salt Key (API Key)</label>
+                    <input 
+                      type="password" 
+                      className="form-input" 
+                      value={integrations.phonepeSaltKey || ''} 
+                      onChange={(e) => setIntegrations({ ...integrations, phonepeSaltKey: e.target.value })} 
+                      placeholder="099eb0cd-02cf-4e2a-8aca-xxxxxxxxxxxx"
+                    />
+                  </div>
+                  <div className="col-span-2 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.65rem' }}>Salt Index</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={integrations.phonepeSaltIndex || '1'} 
+                      onChange={(e) => setIntegrations({ ...integrations, phonepeSaltIndex: e.target.value })} 
+                      placeholder="1"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {integrations.activePaymentGateway === 'razorpay' && (
+                <div className="grid-cols-12" style={{ gap: '12px', borderTop: '1px solid var(--border-glass)', paddingTop: '12px' }}>
+                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.65rem' }}>Razorpay Key ID</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={integrations.razorpayKeyId || ''} 
+                      onChange={(e) => setIntegrations({ ...integrations, razorpayKeyId: e.target.value })} 
+                      placeholder="rzp_live_xxxxxxxxxxxxxx"
+                    />
+                  </div>
+                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.65rem' }}>Razorpay Key Secret</label>
+                    <input 
+                      type="password" 
+                      className="form-input" 
+                      value={integrations.razorpayKeySecret || ''} 
+                      onChange={(e) => setIntegrations({ ...integrations, razorpayKeySecret: e.target.value })} 
+                      placeholder="xxxxxxxxxxxxxxxxxxxxxxxx"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </form>
       )}
 
       {activeTab === 'marketplace' && (

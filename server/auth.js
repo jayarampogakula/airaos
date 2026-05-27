@@ -142,18 +142,8 @@ export function createTenantRecord({ companyName }) {
     primaryColor: '#0ea5e9',
     secondaryColor: '#0f172a',
     settings: {
-      chatwootUrl: '',
-      chatwootAccountId: '',
-      chatwootApiAccessToken: '',
       n8nUrl: '',
       timezone: 'Asia/Calcutta'
-    },
-    chatwootMapping: {
-      accountId: '',
-      accountName: companyName,
-      status: 'not_provisioned',
-      inboxIds: [],
-      channelIds: []
     },
     emailTemplates: {
       welcome: `Hello {contact_name}, welcome to ${companyName}!`,

@@ -116,7 +116,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
   const faqs = [
     {
       q: 'Do I need to install dependencies or setup databases?',
-      a: 'AiraOS features a fully preconfigured client dashboard out-of-the-box. When deploying in production, platform operators can link their own self-hosted VPS microservice containers (Dify, Chatwoot, Workflow Automator, Calendar Scheduler, Twenty CRM) using the Super Admin Integrations Panel to direct live connections.'
+      a: 'AiraOS features a fully preconfigured client dashboard out-of-the-box. When deploying in production, platform operators can link their own self-hosted VPS microservice containers (Dify, Workflow Automator, Calendar Scheduler, Twenty CRM) using the Super Admin Integrations Panel to direct live connections.'
     },
     {
       q: 'What is Coolify and how does it manage the infrastructure?',

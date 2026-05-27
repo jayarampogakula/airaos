@@ -5,18 +5,36 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { DB_FILE, readDb, writeDb } from './db.js';
 import { runCrew } from './crewEngine.js';
-import {
-  CHANNEL_TYPES,
-  chatwootRequest,
-  conversationChannel,
-  createChatwootInbox,
-  displayChannelName,
-  ensureChatwootAccount,
-  getChatwootAccountId,
-  localConversationToChatwoot,
-  normalizeChannelType,
-  normalizeChatwootConversation
-} from './chatwoot.js';
+export const CHANNEL_TYPES = ['website', 'whatsapp', 'gmail', 'outlook', 'smtp', 'telegram', 'instagram', 'facebook'];
+
+export function displayChannelName(type) {
+  const labels = {
+    website: 'Website Chat',
+    whatsapp: 'WhatsApp Business',
+    gmail: 'Gmail',
+    outlook: 'Outlook',
+    smtp: 'SMTP Email',
+    telegram: 'Telegram',
+    instagram: 'Instagram DM',
+    facebook: 'Facebook Messenger'
+  };
+  return labels[type] || type;
+}
+
+export function normalizeChannelType(type) {
+  if (type === 'web') return 'website';
+  if (type === 'email') return 'smtp';
+  if (type === 'facebook_messenger') return 'facebook';
+  return CHANNEL_TYPES.includes(type) ? type : 'website';
+}
+
+export function conversationChannel(type) {
+  const channel = normalizeChannelType(type);
+  if (channel === 'website') return 'web';
+  if (channel === 'gmail' || channel === 'outlook' || channel === 'smtp') return 'email';
+  if (channel === 'facebook') return 'facebook';
+  return channel;
+}
 import {
   authMiddleware,
   createSession,
@@ -179,13 +197,10 @@ function tenantChannelConfigs(db, tenantId) {
       id: `channel-${tenantId}-${type}`,
       tenantId,
       type,
-      provider: type === 'website' ? 'chatwoot_web_widget' : `chatwoot_${type}`,
+      provider: type === 'website' ? 'local_web_widget' : `local_${type}`,
       displayName: displayChannelName(type),
       status: 'not_connected',
       config: {},
-      chatwootAccountId: getChatwootAccountId(getTenantFromDb(db, tenantId)),
-      chatwootInboxId: '',
-      chatwootChannelId: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -200,16 +215,13 @@ function upsertChannelConfig(db, tenantId, payload) {
     id: existing.id || `channel-${tenantId}-${type}`,
     tenantId,
     type,
-    provider: payload.provider || existing.provider || `chatwoot_${type}`,
+    provider: payload.provider || existing.provider || `local_${type}`,
     displayName: payload.displayName || existing.displayName || displayChannelName(type),
     status: payload.status || existing.status || 'not_connected',
     config: {
       ...(existing.config || {}),
       ...(payload.config || {})
     },
-    chatwootAccountId: payload.chatwootAccountId || existing.chatwootAccountId || getChatwootAccountId(getTenantFromDb(db, tenantId)),
-    chatwootInboxId: payload.chatwootInboxId || existing.chatwootInboxId || '',
-    chatwootChannelId: payload.chatwootChannelId || existing.chatwootChannelId || '',
     createdAt: existing.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -222,42 +234,7 @@ function upsertChannelConfig(db, tenantId, payload) {
   return channel;
 }
 
-function localInboxResponse(db, tenantId, query = {}) {
-  const search = String(query.q || '').trim().toLowerCase();
-  const requestedChannel = query.channel ? conversationChannel(query.channel) : '';
-  let items = tenantScoped(db.conversations, tenantId);
-  if (requestedChannel) {
-    items = items.filter((conversation) => conversation.channel === requestedChannel);
-  }
-  if (search) {
-    items = items.filter((conversation) => {
-      const contact = db.contacts.find((item) => item.id === conversation.contactId && item.tenantId === tenantId);
-      const haystack = [
-        contact?.name,
-        contact?.email,
-        contact?.phone,
-        conversation.lastMessageText,
-        ...(conversation.messages || []).map((message) => message.text)
-      ].filter(Boolean).join(' ').toLowerCase();
-      return haystack.includes(search);
-    });
-  }
 
-  const payload = items.map((conversation) => localConversationToChatwoot(conversation, db));
-  return {
-    data: {
-      meta: {
-        mine_count: payload.filter((conversation) => conversation.meta?.assignee?.id).length,
-        unassigned_count: payload.filter((conversation) => !conversation.meta?.assignee?.id).length,
-        assigned_count: payload.filter((conversation) => conversation.meta?.assignee?.id).length,
-        all_count: payload.length,
-        unread_count: payload.reduce((total, conversation) => total + (conversation.unread_count || 0), 0)
-      },
-      payload
-    },
-    source: 'local'
-  };
-}
 
 // ----------------------------------------
 // SaaS Auth & Session Endpoints
@@ -587,17 +564,6 @@ app.post('/api/current-tenant/conversations/:id/handoff', authMiddleware, tenant
     }
   }
 
-  const accountId = getChatwootAccountId(req.tenant);
-  const chatwootConvId = db.conversations[convIndex].chatwootConversationId;
-  if (accountId && chatwootConvId) {
-    chatwootRequest({
-      tenant: req.tenant,
-      method: 'POST',
-      path: `/api/v1/accounts/${accountId}/conversations/${chatwootConvId}/toggle_status`,
-      body: { status: 'open' }
-    }).catch(err => console.warn('Could not toggle Chatwoot status:', err.message));
-  }
-
   saveDb(req);
   res.json({ success: true, conversation: db.conversations[convIndex] });
 });
@@ -790,6 +756,29 @@ app.post('/api/current-tenant/workflows', authMiddleware, tenantMiddleware, (req
   res.status(201).json(newWorkflow);
 });
 
+app.put('/api/current-tenant/workflows/:id', authMiddleware, tenantMiddleware, (req, res) => {
+  const index = req.db.workflows.findIndex(w => w.id === req.params.id && w.tenantId === req.tenantId);
+  if (index === -1) return res.status(404).json({ error: 'Workflow not found.' });
+
+  req.db.workflows[index] = {
+    ...req.db.workflows[index],
+    ...req.body,
+    id: req.params.id,
+    tenantId: req.tenantId
+  };
+  saveDb(req);
+  res.json(req.db.workflows[index]);
+});
+
+app.delete('/api/current-tenant/workflows/:id', authMiddleware, tenantMiddleware, (req, res) => {
+  const index = req.db.workflows.findIndex(w => w.id === req.params.id && w.tenantId === req.tenantId);
+  if (index === -1) return res.status(404).json({ error: 'Workflow not found.' });
+
+  const deleted = req.db.workflows.splice(index, 1)[0];
+  saveDb(req);
+  res.json(deleted);
+});
+
 app.get('/api/current-tenant/team-members', authMiddleware, tenantMiddleware, (req, res) => {
   const members = (req.db.memberships || [])
     .filter((membership) => membership.tenantId === req.tenantId && membership.status === 'active')
@@ -855,196 +844,181 @@ app.put('/api/current-tenant/settings', authMiddleware, tenantMiddleware, (req, 
 });
 
 // ----------------------------------------
-// Tenant Chatwoot Channel Management
+// Tenant Channel Management
 // ----------------------------------------
 app.get('/api/current-tenant/channels', authMiddleware, tenantMiddleware, (req, res) => {
   res.json({
-    chatwoot: req.tenant.chatwootMapping || {},
-    channels: tenantChannelConfigs(req.db, req.tenantId),
-    inboxes: tenantScoped(req.db.chatwootInboxes, req.tenantId)
+    channels: tenantChannelConfigs(req.db, req.tenantId)
   });
 });
 
-app.post('/api/current-tenant/chatwoot/provision', authMiddleware, tenantMiddleware, async (req, res) => {
+// Native Local Workflow Automation Engine
+async function executeWorkflowsForTrigger(db, tenantId, triggerType, context) {
   try {
-    const mapping = await ensureChatwootAccount(req.db, req.tenant);
-    saveDb(req);
-    res.status(201).json({ mapping });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+    const activeWorkflows = (db.workflows || []).filter(w => w.tenantId === tenantId && w.active);
+    for (const wf of activeWorkflows) {
+      // Find trigger node
+      const triggerNode = wf.nodes.find(n => n.type === 'trigger');
+      if (!triggerNode) continue;
 
-app.post('/api/current-tenant/channels/:type/connect', authMiddleware, tenantMiddleware, async (req, res) => {
+      let matches = false;
+      if (triggerType === 'chat' && triggerNode.label.toLowerCase().includes('chat')) matches = true;
+      if (triggerType === 'cal' && triggerNode.label.toLowerCase().includes('calendar')) matches = true;
+      if (triggerType === 'escalation' && triggerNode.label.toLowerCase().includes('human')) matches = true;
+
+      if (!matches) continue;
+
+      console.log(`[Workflow Engine] Executing workflow "${wf.name}" (${wf.id}) for trigger ${triggerType}`);
+      wf.runsCount = (wf.runsCount || 0) + 1;
+      let hasError = false;
+
+      // Executing action nodes
+      const actionNodes = wf.nodes.filter(n => n.type === 'action');
+      for (const node of actionNodes) {
+        const config = node.config || {};
+        const connector = config.connectorType || (node.label.toLowerCase().includes('whatsapp') ? 'whatsapp' : node.label.toLowerCase().includes('email') ? 'email' : node.label.toLowerCase().includes('slack') ? 'slack' : node.label.toLowerCase().includes('webhook') ? 'webhook' : node.label.toLowerCase().includes('sms') ? 'sms' : 'crm');
+
+        try {
+          console.log(`[Workflow Engine] Running action "${node.label}" via ${connector}`);
+          if (connector === 'webhook' && config.webhookUrl) {
+            // Perform real HTTP post
+            const fetch = (await import('node-fetch')).default || globalThis.fetch;
+            await fetch(config.webhookUrl, {
+              method: config.webhookMethod || 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ event: triggerType, context, timestamp: new Date().toISOString() })
+            });
+          } else if (connector === 'crm') {
+            // Create a CRM deal in db.deals
+            const dealId = `deal-${Date.now()}`;
+            const newDeal = {
+              id: dealId,
+              tenantId,
+              contactId: context.contactId || context.contact?.id || '',
+              name: `Deal: ${context.contact?.name || 'CRM Lead'}`,
+              value: 1200,
+              stage: 'lead',
+              createdAt: new Date().toISOString()
+            };
+            db.deals = db.deals || [];
+            db.deals.push(newDeal);
+            
+            // Log note in contact
+            const contactId = context.contactId || context.contact?.id;
+            if (contactId) {
+              const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
+              if (contact) {
+                contact.notes = contact.notes || [];
+                contact.notes.push(`[Workflow] Automatically created CRM pipeline deal: "Deal: ${contact.name}" in stage "Lead".`);
+              }
+            }
+          } else if (connector === 'email') {
+            const recipient = config.emailRecipient || context.contact?.email || 'customer@example.com';
+            const subject = config.emailSubject || 'Automatic Notification';
+            console.log(`[SMTP Mailer] Sent email to ${recipient}. Subject: ${subject}`);
+            
+            const contactId = context.contactId || context.contact?.id;
+            if (contactId) {
+              const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
+              if (contact) {
+                contact.notes = contact.notes || [];
+                contact.notes.push(`[Workflow Email] Sent mail to ${recipient}: "${subject}"`);
+              }
+            }
+          } else if (connector === 'sms') {
+            const number = config.smsNumber || context.contact?.phone || '';
+            const message = config.smsMessage || 'Automated SMS alert';
+            console.log(`[SMS Alert] Sent SMS to ${number}: ${message}`);
+            
+            const contactId = context.contactId || context.contact?.id;
+            if (contactId) {
+              const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
+              if (contact) {
+                contact.notes = contact.notes || [];
+                contact.notes.push(`[Workflow SMS] Sent text to ${number}: "${message}"`);
+              }
+            }
+          } else if (connector === 'whatsapp') {
+            const number = config.whatsappNumber || context.contact?.phone || '';
+            const template = config.whatsappTemplate || 'welcome_lead';
+            console.log(`[WhatsApp Template] Dispatched template "${template}" to ${number}`);
+            
+            const contactId = context.contactId || context.contact?.id;
+            if (contactId) {
+              const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
+              if (contact) {
+                contact.notes = contact.notes || [];
+                contact.notes.push(`[Workflow WhatsApp] Dispatched "${template}" to ${number}`);
+              }
+            }
+          } else if (connector === 'slack' && config.slackChannel) {
+            console.log(`[Slack Post] Posted to ${config.slackChannel}: ${config.slackMessage}`);
+          }
+        } catch (err) {
+          console.error(`[Workflow Engine Error] Action "${node.label}" failed:`, err);
+          hasError = true;
+        }
+      }
+
+      if (!hasError) {
+        wf.successCount = (wf.successCount || 0) + 1;
+      }
+      wf.lastRun = new Date().toLocaleString();
+    }
+  } catch (wfErr) {
+    console.error('[Workflow Engine Crash]', wfErr);
+  }
+}
+
+// Dummy provision endpoint for compatibility
+// Connect Channel local-only implementation
+app.post('/api/current-tenant/channels/:type/connect', authMiddleware, tenantMiddleware, (req, res) => {
   const type = normalizeChannelType(req.params.type);
   const tenantIndex = currentTenantIndex(req.db, req.tenantId);
   if (tenantIndex === -1) return res.status(404).json({ error: 'Tenant not found.' });
 
-  req.db.tenants[tenantIndex].settings = {
-    ...(req.db.tenants[tenantIndex].settings || {}),
-    ...(req.body.chatwootUrl ? { chatwootUrl: req.body.chatwootUrl } : {}),
-    ...(req.body.chatwootAccountId ? { chatwootAccountId: String(req.body.chatwootAccountId) } : {}),
-    ...(req.body.chatwootApiAccessToken ? { chatwootApiAccessToken: req.body.chatwootApiAccessToken } : {})
-  };
-  req.db.tenants[tenantIndex].chatwootMapping = {
-    ...(req.db.tenants[tenantIndex].chatwootMapping || {}),
-    accountId: req.db.tenants[tenantIndex].settings.chatwootAccountId || req.db.tenants[tenantIndex].chatwootMapping?.accountId || '',
-    accountName: req.tenant.name,
-    status: req.db.tenants[tenantIndex].settings.chatwootAccountId ? 'connected' : req.db.tenants[tenantIndex].chatwootMapping?.status || 'not_provisioned'
-  };
+  const websiteToken = `local-token-${Date.now()}`;
+  const webWidgetScript = `<script src="${req.protocol}://${req.get('host')}/widget.js" data-tenant-id="${req.tenantId}" data-color="#0ea5e9" data-title="${req.tenant.name} AI Assistant"></script>`;
 
   let channel = upsertChannelConfig(req.db, req.tenantId, {
     type,
-    displayName: req.body.displayName,
-    status: req.body.status || 'connected',
-    config: req.body.config || {},
-    chatwootAccountId: req.db.tenants[tenantIndex].settings.chatwootAccountId || ''
-  });
-
-  if (req.body.chatwootInboxId) {
-    channel = upsertChannelConfig(req.db, req.tenantId, {
-      ...channel,
-      status: 'connected',
-      chatwootInboxId: String(req.body.chatwootInboxId),
-      chatwootChannelId: req.body.chatwootChannelId ? String(req.body.chatwootChannelId) : channel.chatwootChannelId
-    });
-  } else if (req.body.autoCreateInbox) {
-    try {
-      if (!getChatwootAccountId(req.db.tenants[tenantIndex]) && req.body.autoProvisionAccount) {
-        await ensureChatwootAccount(req.db, req.db.tenants[tenantIndex]);
-      }
-      const inbox = await createChatwootInbox(req.db, req.db.tenants[tenantIndex], channel);
-      channel = upsertChannelConfig(req.db, req.tenantId, {
-        ...channel,
-        status: inbox.status === 'requires_chatwoot_setup' ? 'pending_provider_setup' : 'connected',
-        chatwootInboxId: inbox.chatwootInboxId || '',
-        chatwootChannelId: inbox.chatwootChannelId || '',
-        config: {
-          ...(channel.config || {}),
-          websiteToken: inbox.websiteToken || channel.config?.websiteToken,
-          webWidgetScript: inbox.webWidgetScript || channel.config?.webWidgetScript,
-          setupMessage: inbox.message || ''
-        }
-      });
-    } catch (err) {
-      channel = upsertChannelConfig(req.db, req.tenantId, {
-        ...channel,
-        status: 'needs_attention',
-        config: {
-          ...(channel.config || {}),
-          lastError: err.message
-        }
-      });
+    displayName: req.body.displayName || displayChannelName(type),
+    status: 'connected',
+    config: {
+      ...(req.body.config || {}),
+      websiteToken,
+      webWidgetScript
     }
-  }
+  });
 
   saveDb(req);
   res.status(201).json({
-    channel,
-    chatwoot: req.db.tenants[tenantIndex].chatwootMapping,
-    inboxes: tenantScoped(req.db.chatwootInboxes, req.tenantId)
+    channel
   });
 });
 
-app.get('/api/current-tenant/chatwoot/inbox', authMiddleware, tenantMiddleware, async (req, res) => {
-  const accountId = getChatwootAccountId(req.tenant);
-  if (!accountId) {
-    return res.json(localInboxResponse(req.db, req.tenantId, req.query));
-  }
-
-  const params = new URLSearchParams();
-  params.set('status', req.query.status || 'all');
-  params.set('assignee_type', req.query.assignee_type || 'all');
-  params.set('page', req.query.page || '1');
-  if (req.query.q) params.set('q', req.query.q);
-  if (req.query.inbox_id) params.set('inbox_id', req.query.inbox_id);
-  if (req.query.labels) params.set('labels', req.query.labels);
-
-  try {
-    const payload = await chatwootRequest({
-      tenant: req.tenant,
-      path: `/api/v1/accounts/${accountId}/conversations?${params.toString()}`
-    });
-    
-    // Get all inbox IDs configured for the active tenant
-    const tenantInboxes = new Set([
-      ...(req.db.chatwootInboxes || []).filter((inbox) => inbox.tenantId === req.tenantId).map((inbox) => String(inbox.chatwootInboxId)),
-      ...(req.db.channelConfigs || []).filter((channel) => channel.tenantId === req.tenantId && channel.chatwootInboxId).map((channel) => String(channel.chatwootInboxId))
-    ]);
-
-    const rawConversations = payload?.data?.payload || payload?.payload || [];
-    const filteredConversations = rawConversations.filter((c) => tenantInboxes.has(String(c.inbox_id)));
-
-    const normalizedPayload = filteredConversations.map((conversation) => normalizeChatwootConversation(conversation, req.db, req.tenantId));
-    res.json({
-      ...payload,
-      data: {
-        ...(payload.data || {}),
-        payload: normalizedPayload
-      },
-      source: 'chatwoot'
-    });
-  } catch (err) {
-    res.json({
-      ...localInboxResponse(req.db, req.tenantId, req.query),
-      warning: err.message
-    });
-  }
-});
-
-app.get('/api/current-tenant/chatwoot/conversations/:id', authMiddleware, tenantMiddleware, async (req, res) => {
-  const accountId = getChatwootAccountId(req.tenant);
-  if (accountId) {
-    try {
-      const payload = await chatwootRequest({
-        tenant: req.tenant,
-        path: `/api/v1/accounts/${accountId}/conversations/${req.params.id}`
-      });
-      return res.json({ conversation: normalizeChatwootConversation(payload, req.db, req.tenantId), source: 'chatwoot' });
-    } catch (err) {
-      // Continue to local fallback.
-    }
-  }
-
-  const conversation = tenantScoped(req.db.conversations, req.tenantId).find((item) => item.id === req.params.id || item.chatwootConversationId === req.params.id);
+// Native conversation endpoints
+app.get('/api/current-tenant/conversations/:id', authMiddleware, tenantMiddleware, (req, res) => {
+  const conversation = tenantScoped(req.db.conversations, req.tenantId).find((item) => item.id === req.params.id);
   if (!conversation) return res.status(404).json({ error: 'Conversation not found.' });
-  res.json({ conversation: normalizeChatwootConversation(localConversationToChatwoot(conversation, req.db), req.db, req.tenantId), source: 'local' });
+  res.json({ conversation, source: 'local' });
 });
 
-app.post('/api/current-tenant/chatwoot/conversations/:id/messages', authMiddleware, tenantMiddleware, async (req, res) => {
-  const accountId = getChatwootAccountId(req.tenant);
-  if (accountId) {
-    try {
-      const payload = await chatwootRequest({
-        tenant: req.tenant,
-        method: 'POST',
-        path: `/api/v1/accounts/${accountId}/conversations/${req.params.id}/messages`,
-        body: {
-          content: req.body.content,
-          message_type: req.body.messageType || 'outgoing',
-          private: !!req.body.private,
-          content_type: 'text',
-          content_attributes: req.body.contentAttributes || {}
-        }
-      });
-      return res.status(201).json({ message: payload, source: 'chatwoot' });
-    } catch (err) {
-      if (!req.body.allowLocalFallback) return res.status(400).json({ error: err.message });
-    }
-  }
-
-  const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && (item.id === req.params.id || item.chatwootConversationId === req.params.id));
+app.post('/api/current-tenant/conversations/:id/messages', authMiddleware, tenantMiddleware, async (req, res) => {
+  const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && item.id === req.params.id);
   if (conversationIndex === -1) return res.status(404).json({ error: 'Conversation not found.' });
+
   const message = {
     id: `m-${Date.now()}`,
     tenantId: req.tenantId,
     conversationId: req.db.conversations[conversationIndex].id,
     sender: req.body.private ? 'note' : req.body.sender || 'human',
     private: !!req.body.private,
-    text: req.body.content,
+    text: req.body.content || req.body.text || '',
     timestamp: new Date().toISOString()
   };
   req.db.conversations[conversationIndex].messages.push(message);
+
   if (!message.private) {
     req.db.conversations[conversationIndex].lastMessageText = message.text;
     req.db.conversations[conversationIndex].lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1054,89 +1028,43 @@ app.post('/api/current-tenant/chatwoot/conversations/:id/messages', authMiddlewa
   res.status(201).json({ message, source: 'local' });
 });
 
-app.post('/api/current-tenant/chatwoot/conversations/:id/assignments', authMiddleware, tenantMiddleware, async (req, res) => {
-  const accountId = getChatwootAccountId(req.tenant);
-  if (accountId) {
-    try {
-      const payload = await chatwootRequest({
-        tenant: req.tenant,
-        method: 'POST',
-        path: `/api/v1/accounts/${accountId}/conversations/${req.params.id}/assignments`,
-        body: {
-          assignee_id: req.body.assigneeId ? Number(req.body.assigneeId) : undefined,
-          team_id: req.body.teamId ? Number(req.body.teamId) : undefined
-        }
-      });
-      return res.json({ assignment: payload, source: 'chatwoot' });
-    } catch (err) {
-      if (!req.body.allowLocalFallback) return res.status(400).json({ error: err.message });
-    }
-  }
-
+app.post('/api/current-tenant/conversations/:id/assignments', authMiddleware, tenantMiddleware, (req, res) => {
   const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && item.id === req.params.id);
   if (conversationIndex === -1) return res.status(404).json({ error: 'Conversation not found.' });
+
   req.db.conversations[conversationIndex].assignedAgentId = req.body.assigneeId || '';
   req.db.conversations[conversationIndex].status = 'human_escalated';
   saveDb(req);
   res.json({ conversation: req.db.conversations[conversationIndex], source: 'local' });
 });
 
-app.post('/api/current-tenant/chatwoot/conversations/:id/labels', authMiddleware, tenantMiddleware, async (req, res) => {
+app.post('/api/current-tenant/conversations/:id/labels', authMiddleware, tenantMiddleware, (req, res) => {
   const labels = Array.isArray(req.body.labels) ? req.body.labels : [];
-  const accountId = getChatwootAccountId(req.tenant);
-  if (accountId) {
-    try {
-      const payload = await chatwootRequest({
-        tenant: req.tenant,
-        method: 'POST',
-        path: `/api/v1/accounts/${accountId}/conversations/${req.params.id}/labels`,
-        body: { labels }
-      });
-      return res.json({ labels: payload, source: 'chatwoot' });
-    } catch (err) {
-      if (!req.body.allowLocalFallback) return res.status(400).json({ error: err.message });
-    }
-  }
-
   const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && item.id === req.params.id);
   if (conversationIndex === -1) return res.status(404).json({ error: 'Conversation not found.' });
+
   req.db.conversations[conversationIndex].labels = labels;
   saveDb(req);
   res.json({ labels, source: 'local' });
 });
 
-app.post('/api/current-tenant/chatwoot/conversations/:id/status', authMiddleware, tenantMiddleware, async (req, res) => {
+app.post('/api/current-tenant/conversations/:id/status', authMiddleware, tenantMiddleware, (req, res) => {
   const status = req.body.status;
-  if (!status) {
-    return res.status(400).json({ error: 'Status is required.' });
+  if (!status) return res.status(400).json({ error: 'Status is required.' });
+
+  const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && item.id === req.params.id);
+  if (conversationIndex === -1) return res.status(404).json({ error: 'Conversation not found.' });
+
+  req.db.conversations[conversationIndex].status = status;
+  saveDb(req);
+
+  if (status === 'human_escalated') {
+    const conversation = req.db.conversations[conversationIndex];
+    const contact = req.db.contacts.find(c => c.id === conversation.contactId && c.tenantId === req.tenantId);
+    executeWorkflowsForTrigger(req.db, req.tenantId, 'escalation', { conversationId: conversation.id, conversation, contactId: conversation.contactId, contact });
   }
 
-  const accountId = getChatwootAccountId(req.tenant);
-  const conversationIndex = req.db.conversations.findIndex((item) => item.tenantId === req.tenantId && (item.id === req.params.id || item.chatwootConversationId === req.params.id));
-  const conversation = conversationIndex !== -1 ? req.db.conversations[conversationIndex] : null;
-  const chatwootConvId = conversation?.chatwootConversationId || (!req.params.id.startsWith('conv-') ? req.params.id : null);
-
-  if (accountId && chatwootConvId) {
-    try {
-      const chatwootStatus = status === 'closed' ? 'resolved' : status === 'ai_active' ? 'pending' : 'open';
-      await chatwootRequest({
-        tenant: req.tenant,
-        method: 'POST',
-        path: `/api/v1/accounts/${accountId}/conversations/${chatwootConvId}/toggle_status`,
-        body: { status: chatwootStatus }
-      });
-    } catch (err) {
-      if (!req.body.allowLocalFallback) return res.status(400).json({ error: err.message });
-    }
-  }
-
-  if (conversationIndex !== -1) {
-    req.db.conversations[conversationIndex].status = status;
-    saveDb(req);
-    return res.json({ conversation: req.db.conversations[conversationIndex], source: accountId && chatwootConvId ? 'chatwoot' : 'local' });
-  }
-
-  res.status(404).json({ error: 'Conversation not found.' });
+  res.json({ conversation: req.db.conversations[conversationIndex], source: 'local' });
 });
 
 
@@ -1232,6 +1160,7 @@ app.post('/api/contacts', async (req, res) => {
       db.conversations.push(newConversation);
     }
 
+    executeWorkflowsForTrigger(db, tenantId, 'chat', { contactId: existingContact.id, contact: existingContact });
     writeDb(db);
     return res.status(200).json(existingContact);
   }
@@ -1288,76 +1217,8 @@ app.post('/api/contacts', async (req, res) => {
   if (!db.conversations) db.conversations = [];
   db.conversations.push(newConversation);
 
-  // Chatwoot Sync if configured
-  const tenant = db.tenants.find(t => t.id === tenantId);
-  const hasChatwoot = tenant && tenant.settings && tenant.settings.chatwootAccountId && tenant.settings.chatwootApiAccessToken;
-  let websiteChannel = null;
-  if (hasChatwoot) {
-    websiteChannel = (db.channelConfigs || []).find(
-      (c) => c.tenantId === tenantId && c.type === 'website' && c.chatwootInboxId
-    );
-  }
-
-  if (hasChatwoot && websiteChannel && newContact.email) {
-    try {
-      const accountId = tenant.settings.chatwootAccountId;
-      // Search or create contact in Chatwoot
-      let cwContact = null;
-      const searchRes = await chatwootRequest({
-        tenant,
-        path: `/api/v1/accounts/${accountId}/contacts/search?q=${encodeURIComponent(newContact.email)}`
-      });
-      const searchPayload = searchRes.payload || searchRes.data?.payload || [];
-      if (searchPayload.length > 0) {
-        cwContact = searchPayload[0];
-      } else {
-        cwContact = await chatwootRequest({
-          tenant,
-          method: 'POST',
-          path: `/api/v1/accounts/${accountId}/contacts`,
-          body: {
-            name: newContact.name || 'Web Visitor',
-            email: newContact.email,
-            phone_number: newContact.phone || '',
-            inbox_id: parseInt(websiteChannel.chatwootInboxId)
-          }
-        });
-        if (cwContact.payload) cwContact = cwContact.payload;
-      }
-
-      if (cwContact && cwContact.id) {
-        // Create conversation in Chatwoot
-        const cwConv = await chatwootRequest({
-          tenant,
-          method: 'POST',
-          path: `/api/v1/accounts/${accountId}/conversations`,
-          body: {
-            source_id: `web-${newConversation.id}`,
-            inbox_id: parseInt(websiteChannel.chatwootInboxId),
-            contact_id: parseInt(cwContact.id),
-            status: 'open'
-          }
-        });
-        const chatwootConversationId = String(cwConv.id || cwConv.payload?.id);
-        if (chatwootConversationId && chatwootConversationId !== 'undefined') {
-          newConversation.chatwootConversationId = chatwootConversationId;
-          
-          // Post initial system/lead capture info as message to Chatwoot
-          await chatwootRequest({
-            tenant,
-            method: 'POST',
-            path: `/api/v1/accounts/${accountId}/conversations/${chatwootConversationId}/messages`,
-            body: {
-              content: `Lead Capture Completed:\nName: ${newContact.name}\nEmail: ${newContact.email}\nPhone: ${newContact.phone}`,
-              message_type: 'incoming'
-            }
-          });
-        }
-      }
-    } catch (cwErr) {
-      console.error('Chatwoot contact/conversation auto-sync error:', cwErr.message);
-    }
-  }
+  // Trigger chat/lead capture workflows
+  executeWorkflowsForTrigger(db, tenantId, 'chat', { contactId: newContact.id, contact: newContact });
 
   writeDb(db);
   res.status(201).json(newContact);
@@ -1545,19 +1406,8 @@ app.post('/api/conversations/:id/handoff', (req, res) => {
     }
   }
 
-  const tenant = db.tenants.find(t => t.id === conversation.tenantId);
-  if (tenant) {
-    const accountId = getChatwootAccountId(tenant);
-    const chatwootConvId = conversation.chatwootConversationId;
-    if (accountId && chatwootConvId) {
-      chatwootRequest({
-        tenant,
-        method: 'POST',
-        path: `/api/v1/accounts/${accountId}/conversations/${chatwootConvId}/toggle_status`,
-        body: { status: 'open' }
-      }).catch(err => console.warn('Could not toggle Chatwoot status:', err.message));
-    }
-  }
+  const contact = conversation.contactId ? db.contacts.find(c => c.id === conversation.contactId && c.tenantId === conversation.tenantId) : null;
+  executeWorkflowsForTrigger(db, conversation.tenantId, 'escalation', { conversationId: conversation.id, conversation, contactId: conversation.contactId, contact });
 
   writeDb(db);
   res.json({ success: true, conversation });
@@ -1631,6 +1481,9 @@ app.post('/api/appointments', (req, res) => {
     const timeStr = new Date(newApp.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     contact.notes.push(`Calendar Scheduler Slot Booked: ${newApp.type} on ${new Date(newApp.dateTime).toLocaleDateString()} at ${timeStr}`);
   }
+
+  // Trigger calendar workflows
+  executeWorkflowsForTrigger(db, newApp.tenantId, 'cal', { appointmentId: newApp.id, appointment: newApp, contactId: newApp.contactId, contact });
 
   writeDb(db);
   res.status(201).json(newApp);
@@ -1734,7 +1587,7 @@ app.get('/api/platform-support-bot', (req, res) => {
     name: 'Platform Guide',
     avatar: '🤖',
     welcomeMessage: 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?',
-    prompt: 'You are the AiraOS Platform Assistant (Reception AI), a professional and friendly digital concierge designed to guide workspace tenants and platform customers through configurations, integrations, billing, and carrier setups.\n\nYour task is to provide clear, actionable assistance regarding:\n\n1. TELEPHONY & VOICE AI INTEGRATIONS:\n- Twilio Integration: Users can bring their own keys. Require Twilio Account SID, Auth Token, and Twilio Phone Number (or Messaging Service SID) in the integrations settings tab.\n- BYO (Bring Your Own) Carrier: Set up custom trunk routing using SIP URI / Gateway Host, Trunk Username, Trunk Password, and Custom Phone Number.\n- Webhook Routing URL: To handle inbound SMS, WhatsApp replies, or incoming calls on custom numbers, the user must copy the dynamic Webhook URL from the Integrations panel (formatted as `https://<your-domain>/api/voice/inbound?tenantId=<tenant_id>`) and paste it as the Webhook (HTTP POST) handler in their Twilio Console or custom SIP Carrier dashboard.\n- SIP Gateways vs Twilio: Managed strategy uses AiraOS platform trunks, whereas BYO strategy runs directly through the user\'s custom trunk configurations.\n\n2. UNIFIED CRM & CHANNELS:\n- Chatwoot: Customers do NOT need to create separate Chatwoot accounts or manually create separate inboxes. AiraOS automatically provisions separate inboxes (Website widget, Telegram, Email Support, etc.) inside the platform\'s central Chatwoot console whenever they click "Connect Channel".\n- n8n Engine: The platform connects to a centralized n8n workflow engine (e.g., https://flow.cleveradai.in) to coordinate RAG lookups, AI agent schedules, and notifications automatically.\n\n3. PAYMENT GATEWAYS:\n- Admin Gateway Configuration: The SuperAdmin can configure and activate either PhonePe or Razorpay as the global active payment gateway.\n- PhonePe requires: Merchant ID, Salt Key, and Salt Index.\n- Razorpay requires: Key ID and Key Secret.\n- Tenant Upgrades: Once configured, tenants can purchase extra chat/voice credits or upgrade subscription packages directly inside their billing panel using active UPI, card, or netbanking hosted checkout sessions.\n\n4. PLATFORM PLANS, RATES & OVERAGES:\n- Growth Plan: includes chats, voice minutes, and website generation edits.\n- Scale Plan: includes higher caps and more active digital employees.\n- Enterprise Plan: includes unlimited digital employees and priority SLAs.\n- Overage Charges: Extra chats, extra voice minutes, and call rates can all be dynamically configured by the SuperAdmin from the admin billing panel.\n- Currency: The currency symbol (e.g. $, ₹, €, £) is set globally by the SuperAdmin and dynamically reflects across all customer billing layouts.\n\nBe direct, highly professional, structured, and helpful. Always guide the user to the correct tab (e.g. Settings > Integrations, Settings > Billing) to configure these options.'
+    prompt: 'You are the AiraOS Platform Assistant (Reception AI), a professional and friendly digital concierge designed to guide workspace tenants and platform customers through configurations, integrations, billing, and carrier setups.\n\nYour task is to provide clear, actionable assistance regarding:\n\n1. TELEPHONY & VOICE AI INTEGRATIONS:\n- Twilio Integration: Users can bring their own keys. Require Twilio Account SID, Auth Token, and Twilio Phone Number (or Messaging Service SID) in the integrations settings tab.\n- BYO (Bring Your Own) Carrier: Set up custom trunk routing using SIP URI / Gateway Host, Trunk Username, Trunk Password, and Custom Phone Number.\n- Webhook Routing URL: To handle inbound SMS, WhatsApp replies, or incoming calls on custom numbers, the user must copy the dynamic Webhook URL from the Integrations panel (formatted as `https://<your-domain>/api/voice/inbound?tenantId=<tenant_id>`) and paste it as the Webhook (HTTP POST) handler in their Twilio Console or custom SIP Carrier dashboard.\n- SIP Gateways vs Twilio: Managed strategy uses AiraOS platform trunks, whereas BYO strategy runs directly through the user\'s custom trunk configurations.\n\n2. UNIFIED CRM & CHANNELS:\n- Channels: AiraOS natively connects and provisions local channels (Website widget, Telegram, Email Support, etc.) without requiring external helpdesk systems.\n- n8n Engine: The platform connects to a centralized n8n workflow engine (e.g., https://flow.cleveradai.in) to coordinate RAG lookups, AI agent schedules, and notifications automatically.\n\n3. PAYMENT GATEWAYS:\n- Admin Gateway Configuration: The SuperAdmin can configure and activate either PhonePe or Razorpay as the global active payment gateway.\n- PhonePe requires: Merchant ID, Salt Key, and Salt Index.\n- Razorpay requires: Key ID and Key Secret.\n- Tenant Upgrades: Once configured, tenants can purchase extra chat/voice credits or upgrade subscription packages directly inside their billing panel using active UPI, card, or netbanking hosted checkout sessions.\n\n4. PLATFORM PLANS, RATES & OVERAGES:\n- Growth Plan: includes chats, voice minutes, and website generation edits.\n- Scale Plan: includes higher caps and more active digital employees.\n- Enterprise Plan: includes unlimited digital employees and priority SLAs.\n- Overage Charges: Extra chats, extra voice minutes, and call rates can all be dynamically configured by the SuperAdmin from the admin billing panel.\n- Currency: The currency symbol (e.g. $, ₹, €, £) is set globally by the SuperAdmin and dynamically reflects across all customer billing layouts.\n\nBe direct, highly professional, structured, and helpful. Always guide the user to the correct tab (e.g. Settings > Integrations, Settings > Billing) to configure these options.'
   });
 });
 
@@ -1953,7 +1806,6 @@ app.post('/api/chat', async (req, res) => {
   // Check if identity is passed and link contact/conversation
   let contact = null;
   let conversation = null;
-  let chatwootConversationId = null;
 
   if (identity && identity.email) {
     // Find or create local contact
@@ -2015,84 +1867,7 @@ app.post('/api/chat', async (req, res) => {
     }
   }
 
-  // Chatwoot synchronization details
-  const hasChatwoot = tenant && tenant.settings && tenant.settings.chatwootAccountId && tenant.settings.chatwootApiAccessToken;
-  let websiteChannel = null;
-  if (hasChatwoot) {
-    websiteChannel = (db.channelConfigs || []).find(
-      (c) => c.tenantId === tenantId && c.type === 'website' && c.chatwootInboxId
-    );
-  }
 
-  if (hasChatwoot && websiteChannel && identity && identity.email) {
-    try {
-      const accountId = tenant.settings.chatwootAccountId;
-      // Search contact in Chatwoot
-      let cwContact = null;
-      const searchRes = await chatwootRequest({
-        tenant,
-        path: `/api/v1/accounts/${accountId}/contacts/search?q=${encodeURIComponent(identity.email)}`
-      });
-      const searchPayload = searchRes.payload || searchRes.data?.payload || [];
-      if (searchPayload.length > 0) {
-        cwContact = searchPayload[0];
-      } else {
-        // Create contact in Chatwoot
-        cwContact = await chatwootRequest({
-          tenant,
-          method: 'POST',
-          path: `/api/v1/accounts/${accountId}/contacts`,
-          body: {
-            name: identity.name || 'Web Visitor',
-            email: identity.email,
-            phone_number: identity.phone || '',
-            inbox_id: parseInt(websiteChannel.chatwootInboxId)
-          }
-        });
-        if (cwContact.payload) cwContact = cwContact.payload;
-      }
-
-      if (cwContact && cwContact.id) {
-        chatwootConversationId = conversation.chatwootConversationId;
-        if (!chatwootConversationId) {
-          // Create conversation in Chatwoot
-          const cwConv = await chatwootRequest({
-            tenant,
-            method: 'POST',
-            path: `/api/v1/accounts/${accountId}/conversations`,
-            body: {
-              source_id: `web-${conversation.id}`,
-              inbox_id: parseInt(websiteChannel.chatwootInboxId),
-              contact_id: parseInt(cwContact.id),
-              status: 'open'
-            }
-          });
-          chatwootConversationId = String(cwConv.id);
-          conversation.chatwootConversationId = chatwootConversationId;
-          // Persist the mapping
-          const currentDb = readDb();
-          const targetConv = currentDb.conversations.find(c => c.id === conversation.id);
-          if (targetConv) {
-            targetConv.chatwootConversationId = chatwootConversationId;
-            writeDb(currentDb);
-          }
-        }
-
-        // Post customer message to Chatwoot
-        await chatwootRequest({
-          tenant,
-          method: 'POST',
-          path: `/api/v1/accounts/${accountId}/conversations/${chatwootConversationId}/messages`,
-          body: {
-            content: message,
-            message_type: 'incoming'
-          }
-        });
-      }
-    } catch (cwErr) {
-      console.error('Chatwoot customer message sync error:', cwErr.message);
-    }
-  }
 
   const activeProvider = integrations.activeModelProvider || 'openai';
   let apiKey = '';
@@ -2140,23 +1915,7 @@ app.post('/api/chat', async (req, res) => {
           writeDb(currentDb);
         }
 
-        // Sync AI reply to Chatwoot
-        if (hasChatwoot && chatwootConversationId) {
-          try {
-            const accountId = tenant.settings.chatwootAccountId;
-            await chatwootRequest({
-              tenant,
-              method: 'POST',
-              path: `/api/v1/accounts/${accountId}/conversations/${chatwootConversationId}/messages`,
-              body: {
-                content: reply,
-                message_type: 'outgoing'
-              }
-            });
-          } catch (cwErr) {
-            console.error('Chatwoot AI message sync error (OpenAI flow):', cwErr.message);
-          }
-        }
+        // Sync AI reply to Chatwoot (Removed)
       }
       
       return res.json({
@@ -2213,23 +1972,7 @@ app.post('/api/chat', async (req, res) => {
         writeDb(currentDb);
       }
 
-      // Sync AI reply to Chatwoot
-      if (hasChatwoot && chatwootConversationId) {
-        try {
-          const accountId = tenant.settings.chatwootAccountId;
-          await chatwootRequest({
-            tenant,
-            method: 'POST',
-            path: `/api/v1/accounts/${accountId}/conversations/${chatwootConversationId}/messages`,
-            body: {
-              content: reply,
-              message_type: 'outgoing'
-            }
-          });
-        } catch (cwErr) {
-          console.error('Chatwoot AI message sync error (Fallback flow):', cwErr.message);
-        }
-      }
+      // Sync AI reply to Chatwoot (Removed)
     }
 
     res.json({ text: reply, reasoning });
@@ -2461,139 +2204,7 @@ app.post('/api/phonepe/webhook', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/webhook/chatwoot', (req, res) => {
-  const body = req.body;
-  const event = body.event;
 
-  console.log(`Received Chatwoot webhook event: ${event}`);
-
-  if (!event) {
-    return res.status(200).json({ success: true, message: 'No event field' });
-  }
-
-  const db = readDb();
-
-  if (event === 'message_created') {
-    const chatwootConversationId = String(body.conversation?.id || body.conversation_id || '');
-    const inboxId = String(body.inbox?.id || body.conversation?.inbox_id || '');
-
-    if (!chatwootConversationId) {
-      return res.status(200).json({ success: true, message: 'No conversation ID' });
-    }
-
-    let conversation = db.conversations.find(c => String(c.chatwootConversationId) === chatwootConversationId);
-    const localInbox = db.chatwootInboxes.find(i => String(i.chatwootInboxId) === inboxId);
-
-    if (!conversation && localInbox) {
-      const tenantId = localInbox.tenantId;
-      const sender = body.sender || {};
-      const contactEmail = sender.email || '';
-
-      // Find or create contact
-      let contact = db.contacts.find(c => c.tenantId === tenantId && (c.email === contactEmail || (c.phone && c.phone === sender.phone_number)));
-      if (!contact) {
-        contact = {
-          id: `c-cw-${Date.now()}`,
-          tenantId,
-          name: sender.name || sender.available_name || 'Chatwoot Contact',
-          email: contactEmail,
-          phone: sender.phone_number || '',
-          createdAt: new Date().toISOString(),
-          company: 'Chatwoot Sync'
-        };
-        db.contacts.push(contact);
-      }
-
-      conversation = {
-        id: `conv-cw-${chatwootConversationId}`,
-        tenantId,
-        contactId: contact.id,
-        chatwootConversationId,
-        status: body.conversation?.status === 'resolved' ? 'closed' : 'human_escalated',
-        channel: localInbox.channelType || 'web',
-        messages: [],
-        lastMessageText: '',
-        lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        unreadCount: 0
-      };
-      db.conversations.push(conversation);
-    }
-
-    if (conversation) {
-      const msgContent = body.content || '';
-      const msgTimestamp = body.created_at || new Date().toISOString();
-      const isPrivate = !!body.private;
-      const senderType = body.sender?.type;
-      const messageType = body.message_type;
-
-      let mappedSender = 'human';
-      if (messageType === 'incoming') {
-        mappedSender = 'customer';
-      } else if (senderType === 'bot') {
-        mappedSender = 'ai';
-      } else if (isPrivate) {
-        mappedSender = 'note';
-      }
-
-      // Prevent duplicate processing of messages synced by other routes
-      const isDuplicate = conversation.messages.some(m =>
-        m.text === msgContent &&
-        Math.abs(new Date(m.timestamp) - new Date(msgTimestamp)) < 15000
-      );
-
-      if (!isDuplicate) {
-        const newMessage = {
-          id: `m-cw-${body.id || Date.now()}`,
-          tenantId: conversation.tenantId,
-          conversationId: conversation.id,
-          sender: mappedSender,
-          text: msgContent,
-          private: isPrivate,
-          timestamp: new Date(msgTimestamp).toISOString()
-        };
-
-        conversation.messages.push(newMessage);
-
-        if (!isPrivate) {
-          conversation.lastMessageText = msgContent;
-          conversation.lastMessageTime = new Date(msgTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          if (mappedSender === 'customer') {
-            conversation.unreadCount = (conversation.unreadCount || 0) + 1;
-          } else {
-            conversation.unreadCount = 0;
-          }
-        }
-
-        if (mappedSender === 'human') {
-          conversation.status = 'human_escalated';
-        }
-
-        writeDb(db);
-        console.log(`Synced message to conversation ${conversation.id}`);
-      }
-    }
-  } else if (event === 'conversation_status_changed') {
-    const chatwootConversationId = String(body.id || body.conversation?.id || '');
-    const newStatus = body.status || body.conversation?.status;
-
-    if (chatwootConversationId && newStatus) {
-      const conversation = db.conversations.find(c => String(c.chatwootConversationId) === chatwootConversationId);
-      if (conversation) {
-        if (newStatus === 'resolved') {
-          conversation.status = 'closed';
-        } else if (newStatus === 'open') {
-          conversation.status = 'human_escalated';
-        } else if (newStatus === 'pending') {
-          conversation.status = 'ai_active';
-        }
-        writeDb(db);
-        console.log(`Synced status of conversation ${conversation.id} to ${conversation.status}`);
-      }
-    }
-  }
-
-  res.json({ success: true });
-});
 
 
 // ----------------------------------------

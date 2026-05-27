@@ -90,11 +90,11 @@ function App() {
 
   useEffect(() => {
     if (currentRole === 'superadmin') {
-      if (!['tenants', 'plans', 'infrastructure', 'marketplace', 'support_bot'].includes(activeTab)) {
+      if (!['tenants', 'plans', 'infrastructure', 'settings', 'marketplace', 'support_bot'].includes(activeTab)) {
         setActiveTab('tenants');
       }
     } else {
-      if (['tenants', 'plans', 'infrastructure', 'marketplace', 'support_bot'].includes(activeTab)) {
+      if (['tenants', 'plans', 'infrastructure', 'settings', 'marketplace', 'support_bot'].includes(activeTab)) {
         setActiveTab('dashboard');
       }
     }
@@ -346,7 +346,7 @@ function App() {
 
   // Adjust active tabs when switching between Roles
   useEffect(() => {
-    const superadminTabs = ['tenants', 'plans', 'infrastructure', 'marketplace', 'support_bot'];
+    const superadminTabs = ['tenants', 'plans', 'infrastructure', 'settings', 'marketplace', 'support_bot'];
     const tenantTabs = [
       'dashboard', 'brain', 'employees', 'inbox', 'crm', 
       'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations', 'crew', 'billing'
@@ -474,7 +474,7 @@ function App() {
       return c;
     }));
 
-    apiFetch(`/api/current-tenant/chatwoot/conversations/${convId}/status`, {
+    apiFetch(`/api/current-tenant/conversations/${convId}/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, allowLocalFallback: true })

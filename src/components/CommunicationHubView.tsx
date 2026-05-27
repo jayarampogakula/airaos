@@ -25,8 +25,6 @@ interface CommunicationHubViewProps {
   tenantId: string;
 }
 
-type InboxSource = 'chatwoot' | 'local';
-
 export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
   conversations,
   contacts,
@@ -44,42 +42,9 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
   const [noteText, setNoteText] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [chatwootUrl, setChatwootUrl] = useState('');
   const [searchText, setSearchText] = useState('');
   const [channelFilter, setChannelFilter] = useState('all');
-  const [inboxSource, setInboxSource] = useState<InboxSource>('local');
-  const [inboxWarning, setInboxWarning] = useState('');
   const [isLoadingInbox, setIsLoadingInbox] = useState(false);
-
-  const normalizeInboxConversation = (item: any): Conversation => {
-    const contactId = String(item.contactId || item.contact?.id || item.meta?.sender?.id || item.contact_id || '');
-    const rawMessages = item.messages || [];
-    const channel = item.channel || item.source || 'web';
-    return {
-      id: String(item.localId || item.id),
-      chatwootConversationId: String(item.id),
-      chatwootInboxId: item.inbox_id ? String(item.inbox_id) : item.chatwootInboxId,
-      tenantId,
-      contactId,
-      contact: item.contact,
-      status: item.status === 'resolved' ? 'closed' : item.status === 'pending' ? 'ai_active' : 'human_escalated',
-      channel: channel as Conversation['channel'],
-      messages: rawMessages.map((message: any) => ({
-        id: String(message.id),
-        tenantId,
-        conversationId: String(item.localId || item.id),
-        sender: (message.sender || (message.private ? 'note' : message.message_type === 0 ? 'customer' : 'human')) as ChatMessage['sender'],
-        private: !!message.private,
-        text: message.text || message.content || '',
-        timestamp: message.timestamp || (message.created_at ? new Date(message.created_at * 1000).toISOString() : new Date().toISOString())
-      })),
-      lastMessageText: item.lastMessageText || item.last_non_activity_message?.content || rawMessages[rawMessages.length - 1]?.content || '',
-      lastMessageTime: item.lastMessageTime || (item.last_activity_at ? new Date(item.last_activity_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''),
-      assignedAgentId: item.assignedAgentId || item.meta?.assignee?.id || '',
-      unreadCount: item.unreadCount || item.unread_count || 0,
-      labels: item.labels || item.label_list || []
-    };
-  };
 
   const loadInbox = async () => {
     setIsLoadingInbox(true);
@@ -89,36 +54,18 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
     if (channelFilter !== 'all') params.set('channel', channelFilter);
 
     try {
-      const res = await apiFetch(`/api/current-tenant/chatwoot/inbox?${params.toString()}`);
+      const res = await apiFetch(`/api/current-tenant/conversations?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        const payload = data.data?.payload || data.payload || [];
-        const normalized = payload.map(normalizeInboxConversation);
-        setLiveConversations(normalized);
-        setInboxSource(data.source || 'local');
-        setInboxWarning(data.warning || '');
-        if (!activeConvId && normalized[0]) setActiveConvId(normalized[0].id);
+        setLiveConversations(data);
+        if (!activeConvId && data[0]) setActiveConvId(data[0].id);
       }
     } catch {
-      setInboxWarning('Chatwoot inbox could not be loaded. Showing local tenant conversations.');
       setLiveConversations([]);
-      setInboxSource('local');
     } finally {
       setIsLoadingInbox(false);
     }
   };
-
-  useEffect(() => {
-    const stored = localStorage.getItem('coolify_integrations');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed.chatwootUrl) setChatwootUrl(parsed.chatwootUrl);
-      } catch {
-        // Ignore malformed local settings.
-      }
-    }
-  }, []);
 
   useEffect(() => {
     loadInbox();
@@ -127,7 +74,7 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
   }, [tenantId, searchText, channelFilter]);
 
 
-  const visibleConversations = liveConversations.length || inboxSource === 'chatwoot' ? liveConversations : conversations;
+  const visibleConversations = liveConversations.length ? liveConversations : conversations;
 
   useEffect(() => {
     if (!activeConvId && visibleConversations[0]) {
@@ -141,7 +88,7 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
 
   const postConversationMessage = async (content: string, privateNote = false, sender: ChatMessage['sender'] = 'human') => {
     if (!activeConv) return;
-    await apiFetch(`/api/current-tenant/chatwoot/conversations/${activeConv.chatwootConversationId || activeConv.id}/messages`, {
+    await apiFetch(`/api/current-tenant/conversations/${activeConv.id}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -201,7 +148,7 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
     const label = tagInput.trim();
     const labels = Array.from(new Set([...(activeConv.labels || []), label]));
     onAddContactTag(activeContact.id, label);
-    apiFetch(`/api/current-tenant/chatwoot/conversations/${activeConv.chatwootConversationId || activeConv.id}/labels`, {
+    apiFetch(`/api/current-tenant/conversations/${activeConv.id}/labels`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ labels, allowLocalFallback: true })
@@ -211,7 +158,7 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
 
   const handleAssignConversation = (agentId: string) => {
     if (!activeConv) return;
-    apiFetch(`/api/current-tenant/chatwoot/conversations/${activeConv.chatwootConversationId || activeConv.id}/assignments`, {
+    apiFetch(`/api/current-tenant/conversations/${activeConv.id}/assignments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assigneeId: agentId, allowLocalFallback: true })
@@ -255,11 +202,6 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
             <h3 style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
               <MessageSquare size={16} /> Unified Inbox
             </h3>
-            {chatwootUrl && (
-              <a href={chatwootUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ fontSize: '0.7rem', padding: '3px 8px', textDecoration: 'none' }}>
-                Live Console
-              </a>
-            )}
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: 1 }}>
@@ -276,8 +218,8 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
               <option value="facebook">Facebook</option>
             </select>
           </div>
-          <span style={{ fontSize: '0.7rem', color: inboxWarning ? 'var(--warning-color)' : 'var(--text-secondary)' }}>
-            {isLoadingInbox ? 'Loading inbox...' : inboxWarning || `${inboxSource === 'chatwoot' ? 'Live Chatwoot' : 'Local fallback'} unified inbox.`}
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+            {isLoadingInbox ? 'Loading inbox...' : 'Local unified inbox.'}
           </span>
         </div>
 
@@ -342,7 +284,7 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
               <UserCheck size={14} style={{ color: 'var(--text-secondary)' }} />
               <select className="form-input" value={activeConv.assignedAgentId || ''} onChange={(event) => handleAssignConversation(event.target.value)} style={{ maxWidth: '220px', padding: '6px 8px', fontSize: '0.75rem' }}>
                 <option value="">Unassigned</option>
-                {agents.map((agent) => <option key={agent.id} value={(agent as any).chatwootUserId || agent.id}>{agent.name}</option>)}
+                {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
               </select>
               {(activeConv.labels || []).map((label) => (
                 <span key={label} className="badge badge-cyan" style={{ fontSize: '0.65rem', display: 'inline-flex', gap: '4px', alignItems: 'center' }}><Tag size={10} /> {label}</span>

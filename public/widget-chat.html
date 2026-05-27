@@ -420,6 +420,123 @@
       color: #10b981;
     }
 
+    /* Voice Panel Styles */
+    .call-btn {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 14px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(255,255,255,0.1);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .call-btn:hover {
+      background: rgba(255,255,255,0.28);
+      transform: scale(1.03);
+    }
+    .call-btn:active {
+      transform: scale(0.97);
+    }
+
+    .voice-avatar-pulse {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      border: 2px solid rgba(255,255,255,0.1);
+      animation: avatarPulse 2s infinite;
+      box-shadow: 0 0 15px var(--primary-color);
+    }
+
+    @keyframes avatarPulse {
+      0% {
+        box-shadow: 0 0 0 0 var(--primary-color);
+      }
+      70% {
+        box-shadow: 0 0 0 12px rgba(255, 255, 255, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+      }
+    }
+
+    .sound-wave-container {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      height: 24px;
+      margin-top: 14px;
+      align-items: center;
+    }
+
+    .wave-bar {
+      width: 3px;
+      height: 100%;
+      background: var(--primary-color);
+      border-radius: 2px;
+      animation: soundWaveAnim 0.8s infinite ease-in-out;
+    }
+
+    .bar-1 { animation-delay: 0.15s; }
+    .bar-2 { animation-delay: 0.3s; }
+    .bar-3 { animation-delay: 0.45s; }
+    .bar-4 { animation-delay: 0.6s; }
+    .bar-5 { animation-delay: 0.75s; }
+
+    @keyframes soundWaveAnim {
+      0%, 100% { height: 20%; }
+      50% { height: 100%; }
+    }
+
+    .voice-transcript-container {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 12px;
+      overflow-y: auto;
+      margin: 16px 0;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .voice-triggers-container {
+      margin-bottom: 12px;
+    }
+
+    .voice-trigger-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-glass);
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 0.68rem;
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s ease;
+      margin-bottom: 4px;
+    }
+
+    .voice-trigger-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--primary-color);
+    }
+
     /* Welcome screen layout */
     .welcome-container {
       padding: 16px;
@@ -514,6 +631,7 @@
       </div>
     </div>
     <div style="display: flex; align-items: center; gap: 12px;">
+      <button id="call-agent-btn" class="call-btn" onclick="startVoiceCall()" title="Call Agent" style="display: none;">📞 Call Agent</button>
       <button class="email-btn" onclick="openEmailModal()" title="Email Chat Transcript">📧</button>
       <button class="close-btn" onclick="closeWidget()">✕</button>
     </div>
@@ -523,6 +641,47 @@
   <div class="tabs">
     <div id="tab-chat" class="tab active" onclick="switchTab('chat')">AI Chat</div>
     <div id="tab-book" class="tab" onclick="switchTab('book')">Book Slot</div>
+  </div>
+
+  <!-- Voice Call Panel -->
+  <div id="panel-voice" class="panel" style="background: radial-gradient(circle at center, #111827 0%, #030712 100%);">
+    <div style="text-align: center; margin-top: 10px;">
+      <!-- Pulsing visualizer avatar -->
+      <div id="voice-pulse-avatar" class="voice-avatar-pulse">
+        🎙️
+      </div>
+      <h3 style="font-size: 0.95rem; color: white; font-weight: bold; margin-top: 10px;">Active Voice Stream</h3>
+      <div id="voice-call-status" style="font-size: 0.65rem; color: #10b981; display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 2px;">
+        <span class="status-dot" style="background:#10b981;"></span> Connecting SIP Gateway...
+      </div>
+
+      <!-- Sound Wave Visualizer -->
+      <div id="voice-sound-wave" class="sound-wave-container" style="display: none;">
+        <div class="wave-bar bar-1"></div>
+        <div class="wave-bar bar-2"></div>
+        <div class="wave-bar bar-3"></div>
+        <div class="wave-bar bar-4"></div>
+        <div class="wave-bar bar-5"></div>
+      </div>
+    </div>
+
+    <!-- Speech Transcription Viewer -->
+    <div id="voice-transcript" class="voice-transcript-container">
+      <!-- Dynamic Transcription Logs -->
+    </div>
+
+    <!-- Quick speech triggers -->
+    <div id="voice-triggers" class="voice-triggers-container" style="display: none;">
+      <div style="font-size: 0.65rem; color: var(--text-secondary); font-weight: bold; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Simulate speaking out loud:</div>
+      <div id="voice-triggers-list" style="display: flex; flex-direction: column; gap: 6px;">
+        <!-- Dynamic triggers based on tenant -->
+      </div>
+    </div>
+
+    <!-- End Call Button -->
+    <button class="btn-action" style="background: #ef4444; margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="endVoiceCall()">
+      🛑 End AI Voice Call
+    </button>
   </div>
 
   <!-- Chat Panel -->
@@ -622,6 +781,7 @@
     const widgetColor = params.get('color') || '#0ea5e9';
     const widgetTitle = params.get('title') || 'AI Assistant';
     const agentId = params.get('agentId') || '';
+    const mode = params.get('mode') || 'hybrid';
 
     // Isolate platform guide storage keys from tenant-specific chatbot keys
     const isPlatformSupport = (agentId === 'platform-support');
@@ -866,6 +1026,18 @@
       tomorrow.setDate(tomorrow.getDate() + 1);
       document.getElementById('booking-date').value = tomorrow.toISOString().substring(0, 10);
       loadAvailability();
+
+      // Show voice button if hybrid or voice mode is enabled
+      const callBtn = document.getElementById('call-agent-btn');
+      if (callBtn) {
+        if (mode === 'hybrid' || mode === 'voice') {
+          callBtn.style.display = 'inline-flex';
+          const agentName = activeAgent ? activeAgent.name : 'Agent';
+          callBtn.innerText = `📞 Call ${agentName}`;
+        } else {
+          callBtn.style.display = 'none';
+        }
+      }
     }
 
     function loadWelcomeGreeting() {
@@ -931,6 +1103,7 @@
       document.getElementById('tab-book').classList.remove('active');
       document.getElementById('panel-chat').classList.remove('active');
       document.getElementById('panel-book').classList.remove('active');
+      document.getElementById('panel-voice').classList.remove('active');
       document.getElementById('footer-chat').style.display = 'none';
 
       document.getElementById(`tab-${tabName}`).classList.add('active');
@@ -1349,6 +1522,444 @@
         alert("Simulated transcript email sent. Please check your developer console logs.");
         closeEmailModal();
       }
+    }
+
+    // Voice AI production-ready functions
+    let audioContext = null;
+    let analyser = null;
+    let microphoneStream = null;
+    let webrtcPeerConnection = null;
+    let browserRecognition = null;
+    let callActive = false;
+    let isAiTalking = false;
+    let callTranscript = [];
+
+    // Start real voice recording and capture
+    async function startVoiceCall() {
+      callActive = true;
+      isAiTalking = false;
+      
+      // Hide other panels
+      document.getElementById('panel-chat').classList.remove('active');
+      document.getElementById('panel-book').classList.remove('active');
+      document.getElementById('footer-chat').style.display = 'none';
+      
+      const voicePanel = document.getElementById('panel-voice');
+      voicePanel.classList.add('active');
+      
+      // Set call status to connecting
+      const statusEl = document.getElementById('voice-call-status');
+      statusEl.innerHTML = '<span class="status-dot" style="background:#f59e0b;"></span> Initializing production voice stream...';
+      
+      // Initialize transcript
+      callTranscript = ['System: Requesting microphone permission and WebRTC handshake...'];
+      renderVoiceTranscript();
+      
+      document.getElementById('voice-sound-wave').style.display = 'none';
+      document.getElementById('voice-triggers').style.display = 'none';
+      
+      try {
+        // 1. Get user media (microphone)
+        microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // 2. Setup AudioContext Analyser for real-time soundwave animation
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContextClass();
+        const sourceNode = audioContext.createMediaStreamSource(microphoneStream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 64;
+        sourceNode.connect(analyser);
+        
+        // Animate the sound wave bars using real mic frequency data
+        animateRealMicWaves();
+        
+        // 3. Fetch integrations to check for real WebRTC server
+        let integrationsConfig = {};
+        try {
+          const intRes = await fetch('/api/integrations');
+          if (intRes.ok) {
+            integrationsConfig = await intRes.json();
+          }
+        } catch(e){}
+        
+        const dograhUrl = integrationsConfig.dograhUrl || '';
+        const dograhApiKey = integrationsConfig.dograhApiKey || '';
+        
+        if (dograhUrl) {
+          // Attempt Live WebRTC connection
+          statusEl.innerHTML = '<span class="status-dot" style="background:#f59e0b;"></span> Negotiating WebRTC PeerConnection...';
+          const pc = await connectLiveWebRTC(dograhUrl, dograhApiKey);
+          if (pc) {
+            webrtcPeerConnection = pc;
+            statusEl.innerHTML = '<span class="status-dot" style="background:#10b981;"></span> WebRTC Connected (Live)';
+            document.getElementById('voice-sound-wave').style.display = 'flex';
+            callTranscript.push('System: Secure WebRTC link negotiated successfully with Voxfra/Dograh Voice Gateway.');
+            renderVoiceTranscript();
+            return;
+          }
+        }
+        
+        // 4. WebRTC unavailable or failed -> Fallback to client-side STT + Backend LLM + Client-side TTS
+        statusEl.innerHTML = '<span class="status-dot" style="background:#10b981;"></span> Connected (Speech Attendant Active)';
+        document.getElementById('voice-sound-wave').style.display = 'flex';
+        document.getElementById('voice-triggers').style.display = 'block';
+        
+        callTranscript.push('System: Microphones online. Local speech-to-text (STT) and voice synthesis (TTS) engines engaged.');
+        
+        const agentName = activeAgent ? activeAgent.name : 'Sarah';
+        const businessNameClean = tenantId === 't-1' ? 'Smile Dentals' : tenantId === 't-2' ? 'KP Real Estates' : tenantId === 't-3' ? 'ABC Coaching' : 'AiraOS';
+        const welcomeMsg = `AI (${agentName}): Welcome to ${businessNameClean}. This is your AI digital assistant. How can I help you today?`;
+        callTranscript.push(welcomeMsg);
+        renderVoiceTranscript();
+        
+        // Read out loud welcome greeting
+        speakTextResponse(welcomeMsg.replace(`AI (${agentName}):`, ''));
+        
+        // Start speech recognition
+        initSpeechRecognition();
+        
+      } catch (err) {
+        console.error("Mic access or audio context setup failed:", err);
+        statusEl.innerHTML = '<span class="status-dot" style="background:#ef4444;"></span> Connection Error';
+        callTranscript.push('System Error: Microphone access is required. Please check browser permissions.');
+        renderVoiceTranscript();
+      }
+    }
+
+    // WebRTC connection negotiator
+    async function connectLiveWebRTC(dograhUrl, dograhApiKey) {
+      try {
+        const pc = new RTCPeerConnection({
+          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        });
+        
+        microphoneStream.getTracks().forEach(track => pc.addTrack(track, microphoneStream));
+        
+        pc.ontrack = (event) => {
+          const remoteAudio = document.createElement('audio');
+          remoteAudio.srcObject = event.streams[0];
+          remoteAudio.autoplay = true;
+          document.body.appendChild(remoteAudio);
+        };
+        
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        
+        const sdpResponse = await fetch(`${dograhUrl}/api/webrtc/connect`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${dograhApiKey}`
+          },
+          body: JSON.stringify({ sdp: pc.localDescription.sdp, tenantId, agentId: activeAgent?.id })
+        });
+        
+        if (sdpResponse.ok) {
+          const answer = await sdpResponse.json();
+          await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer.sdp }));
+          return pc;
+        }
+      } catch (err) {
+        console.warn("WebRTC handshake failed, rolling back to local web speech API flow:", err);
+      }
+      return null;
+    }
+
+    // Setup speech recognition (STT)
+    function initSpeechRecognition() {
+      const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognitionClass) {
+        console.warn("SpeechRecognition not supported in this browser.");
+        return;
+      }
+      
+      browserRecognition = new SpeechRecognitionClass();
+      browserRecognition.continuous = false;
+      browserRecognition.interimResults = false;
+      browserRecognition.lang = 'en-US';
+      
+      browserRecognition.onstart = () => {
+        // Optionally flash avatar
+      };
+      
+      browserRecognition.onresult = async (event) => {
+        const userText = event.results[0][0].transcript;
+        if (userText && userText.trim()) {
+          handleUserVoiceInput(userText);
+        }
+      };
+      
+      browserRecognition.onerror = (event) => {
+        if (event.error !== 'no-speech') {
+          console.warn("Recognition error:", event.error);
+        }
+      };
+      
+      browserRecognition.onend = () => {
+        // Loop listening as long as call is active and AI isn't talking
+        if (callActive && !isAiTalking && browserRecognition) {
+          try {
+            browserRecognition.start();
+          } catch(e){}
+        }
+      };
+      
+      try {
+        browserRecognition.start();
+      } catch(e){}
+      
+      // Load trigger fallback suggestions
+      loadVoiceTriggers();
+    }
+
+    // Process user speaking input
+    async function handleUserVoiceInput(inquiryText) {
+      callTranscript.push(`Customer: "${inquiryText}"`);
+      renderVoiceTranscript();
+      
+      // Stop listening while AI thinks/speaks
+      isAiTalking = true;
+      if (browserRecognition) {
+        try { browserRecognition.stop(); } catch(e){}
+      }
+      
+      // Fetch response from LLM Backend
+      try {
+        const savedIdentityStr = localStorage.getItem(identityKey);
+        let identity = null;
+        if (savedIdentityStr) {
+          try { identity = JSON.parse(savedIdentityStr); } catch(e){}
+        }
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: inquiryText,
+            tenantId: tenantId,
+            agentId: activeAgent ? activeAgent.id : 'a-1',
+            history: chatHistory.slice(-6),
+            identity: identity
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const reply = data.text;
+          
+          const agentName = activeAgent ? activeAgent.name : 'Sarah';
+          callTranscript.push(`AI (${agentName}): "${reply}"`);
+          renderVoiceTranscript();
+          
+          // Check if booking is needed
+          const isBookingIntent = inquiryText.toLowerCase().includes('book') || inquiryText.toLowerCase().includes('appointment') || inquiryText.toLowerCase().includes('schedule') || reply.toLowerCase().includes('choose') || reply.toLowerCase().includes('slot');
+          if (isBookingIntent) {
+            let bookType = tenantId === 't-1' ? 'Teeth Cleaning' : tenantId === 't-2' ? 'Penthouse Tour' : 'General Sync';
+            setTimeout(() => {
+              autoBookAppointmentFromVoice(bookType);
+            }, 1000);
+          }
+          
+          // Speak response
+          speakTextResponse(reply);
+        } else {
+          speakTextResponse("I am having trouble processing your query. Could you please repeat that?");
+        }
+      } catch(err) {
+        speakTextResponse("Connection error. Please try again.");
+      }
+    }
+
+    // Book appointment from voice intent
+    async function autoBookAppointmentFromVoice(bookSlotType) {
+      const appointmentDate = new Date();
+      appointmentDate.setDate(appointmentDate.getDate() + 1); // tomorrow
+      const chosenHour = bookSlotType.includes('Cleaning') || bookSlotType.includes('2:30') ? 14 : bookSlotType.includes('Tour') || bookSlotType.includes('10:00') ? 10 : 11;
+      const chosenMin = bookSlotType.includes('Cleaning') || bookSlotType.includes('2:30') ? 30 : 0;
+      appointmentDate.setHours(chosenHour, chosenMin, 0, 0);
+      
+      const contactId = 'c-101'; 
+      try {
+        await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenantId: tenantId,
+            contactId: contactId,
+            agentId: activeAgent ? activeAgent.id : 'a-1',
+            dateTime: appointmentDate.toISOString(),
+            duration: 30,
+            location: tenantId === 't-1' ? 'Suite 200, Main Clinic' : tenantId === 't-2' ? 'Penthouse A, Apex Heights' : 'ByteTech Conference Room',
+            type: bookSlotType,
+            status: 'scheduled'
+          })
+        });
+        callTranscript.push(`System: Slot Booked [${bookSlotType} tomorrow at ${chosenHour}:${chosenMin === 0 ? '00' : chosenMin}]`);
+        renderVoiceTranscript();
+      } catch (e){}
+    }
+
+    // Play text out loud using browser speech synthesis (TTS)
+    function speakTextResponse(text) {
+      if (!window.speechSynthesis) return;
+      
+      isAiTalking = true;
+      window.speechSynthesis.cancel(); // Stop any pending speech
+      
+      const cleanText = text.replace(/[\*\#\_\-]/g, '').trim();
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      
+      const voices = window.speechSynthesis.getVoices();
+      const engVoice = voices.find(v => v.lang.startsWith('en-US')) || voices.find(v => v.lang.startsWith('en'));
+      if (engVoice) {
+        utterance.voice = engVoice;
+      }
+      
+      utterance.onend = () => {
+        isAiTalking = false;
+        // Resume speech recognition
+        if (callActive && browserRecognition) {
+          try { browserRecognition.start(); } catch(e){}
+        }
+      };
+      
+      utterance.onerror = () => {
+        isAiTalking = false;
+        if (callActive && browserRecognition) {
+          try { browserRecognition.start(); } catch(e){}
+        }
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Animate sound waves based on real microsecond microphone volume
+    function animateRealMicWaves() {
+      if (!callActive || !analyser) return;
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      const bars = [
+        document.querySelector('.wave-bar.bar-1'),
+        document.querySelector('.wave-bar.bar-2'),
+        document.querySelector('.wave-bar.bar-3'),
+        document.querySelector('.wave-bar.bar-4'),
+        document.querySelector('.wave-bar.bar-5')
+      ];
+      
+      function draw() {
+        if (!callActive) return;
+        requestAnimationFrame(draw);
+        
+        analyser.getByteFrequencyData(dataArray);
+        
+        for (let i = 0; i < 5; i++) {
+          const bar = bars[i];
+          if (bar) {
+            const index = Math.floor(i * (bufferLength / 5));
+            const val = dataArray[index];
+            const heightPercent = Math.max(15, Math.min(100, (val / 150) * 100));
+            bar.style.height = `${heightPercent}%`;
+            
+            if (isAiTalking) {
+              bar.style.background = '#67e8f9'; // AI cyan wave
+            } else {
+              bar.style.background = 'var(--primary-color)'; // User primary color wave
+            }
+          }
+        }
+      }
+      
+      draw();
+    }
+
+    function renderVoiceTranscript() {
+      const container = document.getElementById('voice-transcript');
+      container.innerHTML = '';
+      callTranscript.forEach(log => {
+        const div = document.createElement('div');
+        div.style.lineHeight = '1.3';
+        div.style.textAlign = 'left';
+        if (log.startsWith('Customer:')) {
+          div.style.color = 'var(--text-primary)';
+        } else if (log.startsWith('System:')) {
+          div.style.color = '#ef4444';
+        } else {
+          div.style.color = '#67e8f9';
+        }
+        div.innerText = log;
+        container.appendChild(div);
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function loadVoiceTriggers() {
+      const triggerListEl = document.getElementById('voice-triggers-list');
+      triggerListEl.innerHTML = '';
+      
+      let triggers = [];
+      if (tenantId === 't-1') {
+        triggers = [
+          { phrase: 'I need to book a dentist visit.', response: 'Certainly! I have a slot tomorrow at 2:30 PM. I will book that for you.', bookSlot: 'Teeth Cleaning' },
+          { phrase: 'What are your opening hours?', response: 'Smile Dental is open Monday through Friday from 9AM to 6PM.' }
+        ];
+      } else if (tenantId === 't-2') {
+        triggers = [
+          { phrase: 'I want to schedule a penthouse tour.', response: 'Great! We have showing slots tomorrow at 10:00 AM. Let me reserve that for you.', bookSlot: 'Penthouse Tour' },
+          { phrase: 'How much are the penthouse units?', response: 'Pricing starts at $850,000 for penthouse units with rooftop decks.' }
+        ];
+      } else {
+        triggers = [
+          { phrase: 'I need developer technical support.', response: 'Sure. I have mapped a sync tomorrow at 11:00 AM. I will create a schedule booking.', bookSlot: 'Dev Support Sync' },
+          { phrase: 'What is your developer platform setup?', response: 'We deploy isolated Docker containers on Ubuntu VPS nodes managed by Coolify.' }
+        ];
+      }
+      
+      triggers.forEach(trig => {
+        const btn = document.createElement('button');
+        btn.className = 'voice-trigger-btn';
+        btn.innerText = `🗣️ "${trig.phrase}"`;
+        btn.onclick = () => simulateSpeechOption(trig.phrase, trig.response, trig.bookSlot);
+        triggerListEl.appendChild(btn);
+      });
+    }
+
+    async function simulateSpeechOption(phrase, response, bookSlot) {
+      handleUserVoiceInput(phrase);
+    }
+
+    function endVoiceCall() {
+      callActive = false;
+      isAiTalking = false;
+      
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      
+      if (browserRecognition) {
+        try { browserRecognition.stop(); } catch(e){}
+        browserRecognition = null;
+      }
+      
+      if (microphoneStream) {
+        microphoneStream.getTracks().forEach(track => track.stop());
+        microphoneStream = null;
+      }
+      
+      if (webrtcPeerConnection) {
+        webrtcPeerConnection.close();
+        webrtcPeerConnection = null;
+      }
+      
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+      
+      const voicePanel = document.getElementById('panel-voice');
+      voicePanel.classList.remove('active');
+      switchTab('chat');
     }
 
     // Run on startup

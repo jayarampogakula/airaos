@@ -47,18 +47,8 @@ function createTenant(id, name, plan = 'Growth', primaryColor = '#0ea5e9', logo 
     primaryColor,
     secondaryColor: '#0f172a',
     settings: {
-      chatwootUrl: 'https://chat.cleveradai.in',
-      chatwootAccountId: '1',
-      chatwootApiAccessToken: 'GC8whkYToqKKV9kW98gdDntX',
       n8nUrl: '',
       timezone: 'Asia/Calcutta'
-    },
-    chatwootMapping: {
-      accountId: '1',
-      accountName: name,
-      status: 'connected',
-      inboxIds: [],
-      channelIds: []
     },
     emailTemplates: {
       welcome: `Hello {contact_name}, welcome to ${name}!`,
@@ -92,10 +82,6 @@ export function ensureSaasSchema(data) {
     knowledge_sources: [],
     integrations: {},
     channelConfigs: [],
-    chatwootAccounts: [],
-    chatwootInboxes: [],
-    chatwootChannels: [],
-    chatwootConversationMappings: [],
     sessions: [],
     users: [],
     memberships: [],
@@ -151,9 +137,6 @@ export function ensureSaasSchema(data) {
   } else {
     db.tenants = db.tenants.map((tenant) => {
       const settings = {
-        chatwootUrl: 'https://chat.cleveradai.in',
-        chatwootAccountId: '1',
-        chatwootApiAccessToken: 'GC8whkYToqKKV9kW98gdDntX',
         n8nUrl: tenant.settings?.n8nUrl || '',
         timezone: tenant.settings?.timezone || 'Asia/Calcutta',
         ...(tenant.settings || {})
@@ -161,15 +144,7 @@ export function ensureSaasSchema(data) {
       return {
         ...tenant,
         slug: tenant.slug || slugify(tenant.name),
-        settings,
-        chatwootMapping: {
-          accountId: '1',
-          accountName: tenant.name,
-          status: 'connected',
-          inboxIds: tenant.chatwootMapping?.inboxIds || [],
-          channelIds: tenant.chatwootMapping?.channelIds || [],
-          ...(tenant.chatwootMapping || {})
-        }
+        settings
       };
     });
   }
@@ -359,10 +334,7 @@ export function ensureSaasSchema(data) {
   db.teamMembers = withTenantId(db.teamMembers, () => defaultTenantId);
   db.notifications = withTenantId(db.notifications, () => defaultTenantId);
   db.channelConfigs = withTenantId(db.channelConfigs, () => defaultTenantId);
-  db.chatwootAccounts = withTenantId(db.chatwootAccounts, () => defaultTenantId);
-  db.chatwootInboxes = withTenantId(db.chatwootInboxes, () => defaultTenantId);
-  db.chatwootChannels = withTenantId(db.chatwootChannels, () => defaultTenantId);
-  db.chatwootConversationMappings = withTenantId(db.chatwootConversationMappings, () => defaultTenantId);
+
   db.knowledge_sources = withTenantId(db.knowledge_sources || [], () => defaultTenantId);
   db.knowledge_chunks = withTenantId(db.knowledge_chunks || [], () => defaultTenantId);
 
@@ -395,13 +367,10 @@ export function ensureSaasSchema(data) {
       id: `channel-${tenant.id}-${type}`,
       tenantId: tenant.id,
       type,
-      provider: type === 'website' ? 'chatwoot_web_widget' : `chatwoot_${type}`,
+      provider: type === 'website' ? 'local_web_widget' : `local_${type}`,
       displayName: type === 'website' ? 'Website Chat' : type.charAt(0).toUpperCase() + type.slice(1),
       status: 'not_connected',
       config: {},
-      chatwootAccountId: tenant.chatwootMapping?.accountId || tenant.settings?.chatwootAccountId || '',
-      chatwootInboxId: '',
-      chatwootChannelId: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     })));

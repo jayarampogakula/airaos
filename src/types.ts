@@ -134,8 +134,6 @@ export interface Conversation {
   unreadCount?: number;
   labels?: string[];
   notes?: string[];
-  chatwootConversationId?: string;
-  chatwootInboxId?: string;
   contact?: Partial<Contact>;
 }
 
@@ -149,9 +147,6 @@ export interface ChannelConfig {
   displayName: string;
   status: 'not_connected' | 'connected' | 'pending_provider_setup' | 'needs_attention';
   config: Record<string, any>;
-  chatwootAccountId?: string;
-  chatwootInboxId?: string;
-  chatwootChannelId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
