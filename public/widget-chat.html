@@ -466,17 +466,17 @@
     }
 
     .voice-avatar-pulse {
-      width: 68px;
-      height: 68px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       background: var(--primary-color);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.6rem;
+      font-size: 0.8rem;
       border: 2px solid rgba(255,255,255,0.1);
       animation: avatarPulse 2s infinite;
-      box-shadow: 0 0 15px var(--primary-color);
+      box-shadow: 0 0 6px var(--primary-color);
     }
 
     @keyframes avatarPulse {
@@ -484,7 +484,7 @@
         box-shadow: 0 0 0 0 var(--primary-color);
       }
       70% {
-        box-shadow: 0 0 0 12px rgba(255, 255, 255, 0);
+        box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
       }
       100% {
         box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
@@ -494,14 +494,14 @@
     .sound-wave-container {
       display: flex;
       justify-content: center;
-      gap: 4px;
-      height: 24px;
-      margin-top: 14px;
+      gap: 3px;
+      height: 18px;
+      margin-top: 0px;
       align-items: center;
     }
 
     .wave-bar {
-      width: 3px;
+      width: 2px;
       height: 100%;
       background: var(--primary-color);
       border-radius: 2px;
@@ -524,18 +524,18 @@
       background: rgba(0,0,0,0.3);
       border: 1px solid var(--border-glass);
       border-radius: 8px;
-      padding: 12px;
+      padding: 10px;
       overflow-y: auto;
-      margin: 16px 0;
+      margin: 8px 0;
       font-size: 0.75rem;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       text-align: left;
     }
 
     .voice-triggers-container {
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .voice-trigger-btn {
@@ -664,15 +664,19 @@
   </div>
 
   <!-- Voice Call Panel -->
-  <div id="panel-voice" class="panel" style="background: radial-gradient(circle at center, #111827 0%, #030712 100%);">
-    <div style="text-align: center; margin-top: 10px;">
-      <!-- Pulsing visualizer avatar -->
-      <div id="voice-pulse-avatar" class="voice-avatar-pulse">
-        🎙️
-      </div>
-      <h3 style="font-size: 0.95rem; color: white; font-weight: bold; margin-top: 10px;">Active Voice Stream</h3>
-      <div id="voice-call-status" style="font-size: 0.65rem; color: #10b981; display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 2px;">
-        <span class="status-dot" style="background:#10b981;"></span> Connecting SIP Gateway...
+  <div id="panel-voice" class="panel" style="background: radial-gradient(circle at center, #111827 0%, #030712 100%); padding: 8px 12px; gap: 6px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border-glass);">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <!-- Pulsing visualizer avatar -->
+        <div id="voice-pulse-avatar" class="voice-avatar-pulse">
+          🎙️
+        </div>
+        <div style="text-align: left;">
+          <h3 style="font-size: 0.78rem; color: white; font-weight: bold; margin: 0;">Active Voice Stream</h3>
+          <div id="voice-call-status" style="font-size: 0.62rem; color: #10b981; display: flex; align-items: center; gap: 4px; margin-top: 1px;">
+            <span class="status-dot" style="background:#10b981;"></span> Connecting SIP Gateway...
+          </div>
+        </div>
       </div>
 
       <!-- Sound Wave Visualizer -->

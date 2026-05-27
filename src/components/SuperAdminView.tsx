@@ -45,6 +45,11 @@ export interface IntegrationSettings {
   anthropicApiKey: string;
   openSourceApiKey: string;
   openSourceProviderUrl: string;
+  deepgramApiKey?: string;
+  cartesiaApiKey?: string;
+  cartesiaVoiceId?: string;
+  elevenLabsApiKey?: string;
+  elevenLabsVoiceId?: string;
 }
 
 export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
@@ -168,7 +173,12 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
           deepseekApiKey: parsed.deepseekApiKey || '',
           anthropicApiKey: parsed.anthropicApiKey || '',
           openSourceApiKey: parsed.openSourceApiKey || '',
-          openSourceProviderUrl: parsed.openSourceProviderUrl || ''
+          openSourceProviderUrl: parsed.openSourceProviderUrl || '',
+          deepgramApiKey: parsed.deepgramApiKey || '',
+          cartesiaApiKey: parsed.cartesiaApiKey || '',
+          cartesiaVoiceId: parsed.cartesiaVoiceId || '',
+          elevenLabsApiKey: parsed.elevenLabsApiKey || '',
+          elevenLabsVoiceId: parsed.elevenLabsVoiceId || ''
         };
       } catch (e) {}
     }
@@ -192,7 +202,12 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       deepseekApiKey: '',
       anthropicApiKey: '',
       openSourceApiKey: '',
-      openSourceProviderUrl: ''
+      openSourceProviderUrl: '',
+      deepgramApiKey: '',
+      cartesiaApiKey: '',
+      cartesiaVoiceId: '',
+      elevenLabsApiKey: '',
+      elevenLabsVoiceId: ''
     };
   });
 
@@ -1050,6 +1065,67 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   onChange={(e) => setIntegrations({ ...integrations, twilioPhoneNumber: e.target.value })} 
                   placeholder="+15550192834"
                 />
+              </div>
+            </div>
+
+            {/* Production Audio & Voice AI Engines (Deepgram, Cartesia, ElevenLabs) */}
+            <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🎙️</span> Production Audio & Voice AI Engines
+              </h4>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.65rem' }}>Deepgram Streaming API Key (Speech-To-Text)</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={integrations.deepgramApiKey || ''} 
+                  onChange={(e) => setIntegrations({ ...integrations, deepgramApiKey: e.target.value })} 
+                  placeholder="Enter Deepgram Streaming API Key"
+                />
+              </div>
+              <div className="grid-cols-12" style={{ gap: '10px' }}>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.65rem' }}>Cartesia API Key (Text-To-Speech)</label>
+                  <input 
+                    type="password" 
+                    className="form-input" 
+                    value={integrations.cartesiaApiKey || ''} 
+                    onChange={(e) => setIntegrations({ ...integrations, cartesiaApiKey: e.target.value })} 
+                    placeholder="Enter Cartesia API Key"
+                  />
+                </div>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.65rem' }}>Cartesia Voice ID</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={integrations.cartesiaVoiceId || ''} 
+                    onChange={(e) => setIntegrations({ ...integrations, cartesiaVoiceId: e.target.value })} 
+                    placeholder="e58c8ca2-5959-450f-90e8-6af5d99f7a62"
+                  />
+                </div>
+              </div>
+              <div className="grid-cols-12" style={{ gap: '10px' }}>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.65rem' }}>ElevenLabs API Key (TTS Fallback)</label>
+                  <input 
+                    type="password" 
+                    className="form-input" 
+                    value={integrations.elevenLabsApiKey || ''} 
+                    onChange={(e) => setIntegrations({ ...integrations, elevenLabsApiKey: e.target.value })} 
+                    placeholder="Enter ElevenLabs API Key"
+                  />
+                </div>
+                <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.65rem' }}>ElevenLabs Voice ID</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={integrations.elevenLabsVoiceId || ''} 
+                    onChange={(e) => setIntegrations({ ...integrations, elevenLabsVoiceId: e.target.value })} 
+                    placeholder="21m00Tcm4TlvDq8ikWAM"
+                  />
+                </div>
               </div>
             </div>
 

@@ -1935,6 +1935,29 @@ app.post('/api/chat', async (req, res) => {
     let reasoning = `Retrieved ${groundingContext.length} knowledge chunks.\nSimulated offline fallback.`;
 
     const textLower = message.toLowerCase();
+
+    // Check conversation history context first!
+    let isReplyingToSlots = false;
+    let lastAiMsgText = '';
+    
+    if (history && history.length > 0) {
+      const lastAi = [...history].reverse().find(m => m.sender === 'ai' || m.role === 'assistant');
+      if (lastAi) {
+        lastAiMsgText = lastAi.text || lastAi.content || '';
+        if (lastAiMsgText.toLowerCase().includes('open slots') || lastAiMsgText.toLowerCase().includes('works for you')) {
+          isReplyingToSlots = true;
+        }
+      }
+    } else if (conversation && conversation.messages && conversation.messages.length > 0) {
+      const lastAi = [...conversation.messages].reverse().find(m => m.sender === 'ai');
+      if (lastAi) {
+        lastAiMsgText = lastAi.text || '';
+        if (lastAiMsgText.toLowerCase().includes('open slots') || lastAiMsgText.toLowerCase().includes('works for you')) {
+          isReplyingToSlots = true;
+        }
+      }
+    }
+
     if (agentId === 'platform-support') {
       if (/\b(sip|byo|carrier|trunk)\b/i.test(message)) {
         reply = `To integrate SIP or Bring Your Own (BYO) carrier in AiraOS, go to **Settings > Integrations**. Under the **BYO Carrier Settings** section, input your custom SIP server host address, username, password, and the phone number. Click **Save Settings** to persist the details to the system.`;
@@ -1946,6 +1969,48 @@ app.post('/api/chat', async (req, res) => {
         reply = `Hello! I am the Platform Assistant. I am here to help you resolve doubts on integrating SIP trunking, connecting Twilio API keys, configuring BYO Carriers, or reviewing plan packages and rates. How can I help you today?`;
       } else {
         reply = `I understand your concern about "${message}". To set up integrations (like Twilio, BYO SIP Carrier, PhonePe API keys, or CRM sync channels), navigate to **Settings > Integrations**. You can configure billing limits under **Settings > Billing & Subscriptions**. Let me know if you need more details!`;
+      }
+    } else if (isReplyingToSlots && (/\b(10|morning|2|afternoon|pm|am|tomorrow|yes|sure|work|one)\b/i.test(textLower))) {
+      let chosenTime = "10:00 AM";
+      if (/\b(2|afternoon|30)\b/i.test(textLower)) {
+        chosenTime = "2:30 PM";
+      }
+      reply = `I have successfully booked your appointment for tomorrow at ${chosenTime}. We look forward to seeing you!`;
+      
+      // Persist to actual database
+      try {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dateStr = tomorrow.toISOString().substring(0, 10);
+        const timeStr = chosenTime === '2:30 PM' ? '14:30' : '10:00';
+        const dateTimeStr = `${dateStr}T${timeStr}`;
+
+        const currentDb = readDb();
+        const newApp = {
+          id: `app-chat-${Date.now()}`,
+          tenantId,
+          contactId: (contact && contact.id) || 'c-default',
+          agentId: agentId || 'a-1',
+          dateTime: dateTimeStr,
+          duration: 30,
+          location: 'Smile Dental Clinic Office',
+          type: 'Web Chat AI Booking',
+          status: 'scheduled'
+        };
+        if (!currentDb.appointments) currentDb.appointments = [];
+        currentDb.appointments.push(newApp);
+        
+        // Save note to contact
+        if (contact) {
+          const contactIdx = currentDb.contacts.findIndex(c => c.id === contact.id);
+          if (contactIdx !== -1) {
+            if (!currentDb.contacts[contactIdx].notes) currentDb.contacts[contactIdx].notes = [];
+            currentDb.contacts[contactIdx].notes.push(`Booked slot via Web Chat: tomorrow at ${chosenTime}`);
+          }
+        }
+        writeDb(currentDb);
+      } catch (err) {
+        console.error('Error adding mock appointment:', err);
       }
     } else if (/\b(hour|hours|open|time|times)\b/i.test(message)) {
       reply = `We are open Monday to Friday, 9:00 AM to 6:00 PM. Would you like to schedule a slot during these hours?`;

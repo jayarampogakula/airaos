@@ -234,7 +234,14 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
       byoPhoneNumber: config.byoPhoneNumber,
       byoPhoneNum: config.byoPhoneNumber,
       phonepeMerchantId: config.phonepeMerchantId,
-      phonepeSaltKey: config.phonepeSaltKey
+      phonepeSaltKey: config.phonepeSaltKey,
+      ...(currentRole === 'superadmin' ? {
+        deepgramApiKey: config.deepgramApiKey,
+        cartesiaApiKey: config.cartesiaApiKey,
+        elevenLabsApiKey: config.elevenLabsApiKey,
+        cartesiaVoiceId: config.cartesiaVoiceId,
+        elevenLabsVoiceId: config.elevenLabsVoiceId
+      } : {})
     };
 
     const storageKey = currentRole === 'tenant' ? `tenant_integrations_${tenant.id}` : 'coolify_integrations';
@@ -784,69 +791,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                     </div>
                   </div>
 
-                  {/* Realtime Production Audio & Voice AI (Deepgram, Cartesia, ElevenLabs) */}
-                  <div className="col-span-12" style={{ border: '1px solid var(--border-glass)', padding: '14px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--accent-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      🎙️ Production Audio & Voice AI Engines (Deepgram, Cartesia, ElevenLabs)
-                    </span>
-                    <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', margin: 0 }}>
-                      Configure the real-time Speech-to-Text and Text-to-Speech engines for low-latency voice conversations.
-                    </p>
-                    <div className="grid-cols-12" style={{ gap: '12px', marginTop: '6px' }}>
-                      <div className="col-span-12 form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.65rem' }}>Deepgram Streaming API Key (Speech-To-Text)</label>
-                        <input 
-                          type="password" 
-                          className="form-input" 
-                          placeholder="Enter Deepgram Streaming API Key"
-                          value={config.deepgramApiKey}
-                          onChange={(e) => setConfig({ ...config, deepgramApiKey: e.target.value })}
-                        />
-                      </div>
-                      
-                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.65rem' }}>Cartesia API Key (Text-To-Speech)</label>
-                        <input 
-                          type="password" 
-                          className="form-input" 
-                          placeholder="Enter Cartesia API Key"
-                          value={config.cartesiaApiKey}
-                          onChange={(e) => setConfig({ ...config, cartesiaApiKey: e.target.value })}
-                        />
-                      </div>
-                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.65rem' }}>Cartesia Voice ID</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          placeholder="e58c8ca2-5959-450f-90e8-6af5d99f7a62"
-                          value={config.cartesiaVoiceId}
-                          onChange={(e) => setConfig({ ...config, cartesiaVoiceId: e.target.value })}
-                        />
-                      </div>
 
-                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.65rem' }}>ElevenLabs API Key (Text-To-Speech Fallback)</label>
-                        <input 
-                          type="password" 
-                          className="form-input" 
-                          placeholder="Enter ElevenLabs API Key"
-                          value={config.elevenLabsApiKey}
-                          onChange={(e) => setConfig({ ...config, elevenLabsApiKey: e.target.value })}
-                        />
-                      </div>
-                      <div className="col-span-6 form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.65rem' }}>ElevenLabs Voice ID</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          placeholder="21m00Tcm4TlvDq8ikWAM"
-                          value={config.elevenLabsVoiceId}
-                          onChange={(e) => setConfig({ ...config, elevenLabsVoiceId: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  </div>
 
                 </div>
               )}
