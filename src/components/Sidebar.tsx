@@ -29,6 +29,9 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
+// @ts-ignore
+const appVersionString = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'v0.3.8';
+
 export const Sidebar: React.FC<SidebarProps> = ({
   user,
   currentRole,
@@ -166,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             AiraOS
             <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: 'var(--text-secondary)' }}>
-              v1.0
+              {appVersionString}
             </span>
           </h1>
         </div>

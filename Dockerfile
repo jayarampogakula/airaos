@@ -2,6 +2,9 @@
 FROM node:22-alpine
 WORKDIR /app
 
+# Install git for dynamic version calculation
+RUN apk add --no-cache git
+
 # Copy dependency files
 COPY package*.json ./
 
