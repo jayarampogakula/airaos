@@ -5,6 +5,7 @@ import {
   AlertTriangle, Layers, Info, Check, MessageSquare 
 } from 'lucide-react';
 import { Agent, Contact, Appointment, ChatMessage } from '../types';
+import { useAuth } from '../auth/AuthProvider';
 
 interface VoiceAIViewProps {
   agents: Agent[];
@@ -36,6 +37,7 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
   tenantName,
   onSwitchTab
 }) => {
+  const { apiFetch } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'inbound' | 'outbound' | 'settings'>('inbound');
   const [selectedAgentId, setSelectedAgentId] = useState(agents[0]?.id || '');
 
@@ -97,23 +99,28 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
 
   // Load Config on Mount & Tenant Switch
   useEffect(() => {
-    try {
-      // 1. Load coolify_integrations
-      const stored = localStorage.getItem('coolify_integrations');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.twilioAccountSid) setTwilioSid(parsed.twilioAccountSid);
-        if (parsed.twilioAuthToken) setTwilioToken(parsed.twilioAuthToken);
-        if (parsed.twilioPhoneNumber) setTwilioNum(parsed.twilioPhoneNumber);
-        
-        if (parsed.inboundRouting) setInboundRouting(parsed.inboundRouting);
-        if (parsed.outboundRouting) setOutboundRouting(parsed.outboundRouting);
-        
-        if (parsed.byoSipServer) setByoSipServer(parsed.byoSipServer);
-        if (parsed.byoSipUsername) setByoSipUsername(parsed.byoSipUsername);
-        if (parsed.byoSipPassword) setByoSipPassword(parsed.byoSipPassword);
-        if (parsed.byoPhoneNumber) setByoPhoneNum(parsed.byoPhoneNumber);
+    const fetchSettings = async () => {
+      try {
+        const res = await apiFetch(`/api/tenants/${tenantId}/integrations`);
+        if (res.ok) {
+          const parsed = await res.json();
+          if (parsed.twilioAccountSid) setTwilioSid(parsed.twilioAccountSid);
+          if (parsed.twilioAuthToken) setTwilioToken(parsed.twilioAuthToken);
+          if (parsed.twilioPhoneNumber) setTwilioNum(parsed.twilioPhoneNumber);
+          
+          if (parsed.inboundRouting) setInboundRouting(parsed.inboundRouting);
+          if (parsed.outboundRouting) setOutboundRouting(parsed.outboundRouting);
+          
+          if (parsed.byoSipServer) setByoSipServer(parsed.byoSipServer);
+          if (parsed.byoSipUsername) setByoSipUsername(parsed.byoSipUsername);
+          if (parsed.byoSipPassword) setByoSipPassword(parsed.byoSipPassword);
+          if (parsed.byoPhoneNumber) setByoPhoneNum(parsed.byoPhoneNumber);
+        }
+      } catch (err) {
+        console.error('Failed to load credentials from backend', err);
       }
+    };
+    fetchSettings();
 
       // 2. Load voice_company_profile partitioned by tenantId
       const profileKey = `voice_profile_${tenantId}`;
@@ -173,26 +180,35 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
         setSavedCalls(seedHistory);
         localStorage.setItem(`voice_history_${tenantId}`, JSON.stringify(seedHistory));
       }
-    } catch (e) {}
-  }, [tenantId]);
+  }, [tenantId, apiFetch]);
 
-  const handleSaveVoiceSettings = (e: React.FormEvent) => {
+  const handleSaveVoiceSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const stored = localStorage.getItem('coolify_integrations') || '{}';
-      const parsed = JSON.parse(stored);
-      parsed.twilioAccountSid = twilioSid;
-      parsed.twilioAuthToken = twilioToken;
-      parsed.twilioPhoneNumber = twilioNum;
-      
-      parsed.inboundRouting = inboundRouting;
-      parsed.outboundRouting = outboundRouting;
-      
-      parsed.byoSipServer = byoSipServer;
-      parsed.byoSipUsername = byoSipUsername;
-      parsed.byoSipPassword = byoSipPassword;
-      parsed.byoPhoneNumber = byoPhoneNum;
-      localStorage.setItem('coolify_integrations', JSON.stringify(parsed));
+      const payload = {
+        twilioAccountSid: twilioSid,
+        twilioAuthToken: twilioToken,
+        twilioPhoneNumber: twilioNum,
+        inboundRouting,
+        outboundRouting,
+        byoSipServer,
+        byoSipUsername,
+        byoSipPassword,
+        byoPhoneNumber: byoPhoneNum
+      };
+
+      const res = await apiFetch(`/api/tenants/${tenantId}/integrations`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+      }
 
       // Save Voice Profile
       const profileKey = `voice_profile_${tenantId}`;
@@ -205,10 +221,9 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
       };
       localStorage.setItem(profileKey, JSON.stringify(profileObj));
       localStorage.setItem(`voice_require_leadcapture_${tenantId}`, String(voiceRequireLeadCapture));
-
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to save settings to backend:', e);
+    }
   };
 
 

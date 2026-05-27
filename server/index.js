@@ -5,6 +5,8 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { DB_FILE, readDb, writeDb } from './db.js';
 import { runCrew } from './crewEngine.js';
+import { initTelephonyService } from './telephonyService.js';
+import { encryptCredentials, decryptCredentials } from './vault.js';
 export const CHANNEL_TYPES = ['website', 'whatsapp', 'gmail', 'outlook', 'smtp', 'telegram', 'instagram', 'facebook'];
 
 export function displayChannelName(type) {
@@ -1566,17 +1568,17 @@ app.put('/api/working-shift/:tenantId', (req, res) => {
 // ----------------------------------------
 app.get('/api/integrations', (req, res) => {
   const db = readDb();
-  res.json(db.integrations || {});
+  res.json(decryptCredentials(db.integrations || {}));
 });
 
 app.put('/api/integrations', (req, res) => {
   const db = readDb();
-  db.integrations = {
+  db.integrations = encryptCredentials({
     ...(db.integrations || {}),
     ...req.body
-  };
+  });
   writeDb(db);
-  res.json(db.integrations);
+  res.json(decryptCredentials(db.integrations));
 });
 
 // Platform Support Bot endpoints
@@ -1647,7 +1649,7 @@ app.get('/api/tenants/:id/integrations', authMiddleware, (req, res) => {
   if (!tenant) {
     return res.status(404).json({ error: 'Tenant not found' });
   }
-  res.json(tenant.integrations || {});
+  res.json(decryptCredentials(tenant.integrations || {}));
 });
 
 app.put('/api/tenants/:id/integrations', authMiddleware, (req, res) => {
@@ -1658,12 +1660,12 @@ app.put('/api/tenants/:id/integrations', authMiddleware, (req, res) => {
   if (tenantIndex === -1) {
     return res.status(404).json({ error: 'Tenant not found' });
   }
-  db.tenants[tenantIndex].integrations = {
+  db.tenants[tenantIndex].integrations = encryptCredentials({
     ...(db.tenants[tenantIndex].integrations || {}),
     ...req.body
-  };
+  });
   writeDb(db);
-  res.json(db.tenants[tenantIndex].integrations);
+  res.json(decryptCredentials(db.tenants[tenantIndex].integrations));
 });
 
 // Helper to call OpenAI, Gemini, or DeepSeek chat completion models
@@ -2258,12 +2260,17 @@ app.post('/api/voice/inbound', (req, res) => {
   db.conversations.push(newConv);
   writeDb(db);
 
-  // Return welcome TwiML response
+  // Return Connect Stream TwiML response
+  const host = req.get('host');
+  const wsProtocol = req.headers['x-forwarded-proto'] === 'https' || req.secure ? 'wss' : 'ws';
+  const streamUrl = `${wsProtocol}://${host}/api/voice/stream?tenantId=${tenantId}&agentId=a-1&contactId=${contact.id}&convId=${convId}`;
+
   res.type('text/xml');
   res.send(`
     <Response>
-      <Say voice="Polly.Kimberly">${welcomeText}</Say>
-      <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contact.id}&amp;tenantId=${tenantId}" timeout="3" speechModel="phone_call" />
+      <Connect>
+        <Stream url="${streamUrl}" />
+      </Connect>
     </Response>
   `);
 });
@@ -2472,11 +2479,17 @@ app.post('/api/voice/outbound-connect', (req, res) => {
   db.conversations.push(newConv);
   writeDb(db);
 
+  // Return Connect Stream TwiML response
+  const host = req.get('host');
+  const wsProtocol = req.headers['x-forwarded-proto'] === 'https' || req.secure ? 'wss' : 'ws';
+  const streamUrl = `${wsProtocol}://${host}/api/voice/stream?tenantId=${tenantId}&agentId=${agentId}&contactId=${contact.id}&convId=${convId}`;
+
   res.type('text/xml');
   res.send(`
     <Response>
-      <Say voice="Polly.Kimberly">${welcomeText}</Say>
-      <Gather input="speech" action="/api/voice/gather?convId=${convId}&amp;contactId=${contact.id}&amp;tenantId=${tenantId}" timeout="3" speechModel="phone_call" />
+      <Connect>
+        <Stream url="${streamUrl}" />
+      </Connect>
     </Response>
   `);
 });
@@ -2579,7 +2592,7 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`AiraOS custom production backend running on port ${PORT}`);
   try {
     const db = readDb();
@@ -2590,3 +2603,4 @@ app.listen(PORT, () => {
     console.error('Error verifying database on startup:', err);
   }
 });
+initTelephonyService(server);

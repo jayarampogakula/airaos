@@ -18,11 +18,14 @@
   "dependencies": {
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^4.21.2",
     "lucide-react": "^1.16.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "twilio": "latest"
+    "redis": "^5.12.1",
+    "twilio": "latest",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
