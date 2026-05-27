@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Sparkles, MessageSquare, Phone, Globe, Layers, ArrowUpRight, Plus, History, Check } from 'lucide-react';
+import { ShieldCheck, Sparkles, MessageSquare, Phone, Globe, Layers, ArrowUpRight, Plus, History, Check, Shield } from 'lucide-react';
 import { Tenant } from '../types';
 
 interface BillingUpgradeViewProps {
@@ -23,24 +23,24 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
   const billingHistory = tenant.billingHistory || [];
 
   const settings = platformBillingSettings || {
-    growthPrice: 499,
-    growthChats: 2000,
-    growthVoice: 500,
+    growthPrice: 2499,
+    growthChats: 5000,
+    growthVoice: 300,
     growthWebsites: 2,
-    scalePrice: 1200,
-    scaleChats: 5000,
-    scaleVoice: 1000,
+    scalePrice: 6999,
+    scaleChats: 25000,
+    scaleVoice: 2000,
     scaleWebsites: 5,
-    enterprisePrice: 2500,
-    enterpriseChats: 10000,
-    enterpriseVoice: 2500,
+    enterprisePrice: 19999,
+    enterpriseChats: 999999,
+    enterpriseVoice: 999999,
     enterpriseWebsites: 999,
-    currency: '$',
+    currency: '₹',
     chatAddonPrice: 250,
     voiceAddonPrice: 400
   };
 
-  const currency = settings.currency || '$';
+  const currency = settings.currency || '₹';
 
   const handleCheckout = async (amount: number, type: 'plan_upgrade' | 'buy_credits', planName?: string, creditsCount?: number) => {
     setLoading(type === 'plan_upgrade' ? planName || 'upgrade' : `credits-${creditsCount}`);
@@ -61,7 +61,6 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
       const data = await response.json();
 
       if (data.success && data.redirectUrl) {
-        // Redirect user to payment gateway (or simulator)
         window.location.href = data.redirectUrl;
       }
     } catch (err) {
@@ -77,6 +76,62 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
     return Math.min(100, Math.round((used / limit) * 100));
   };
 
+  // Checklist configuration mapping
+  const planDetails = [
+    {
+      name: 'Growth',
+      price: settings.growthPrice,
+      color: '#6366f1',
+      includes: [
+        'AI Receptionist',
+        'CRM & Pipeline',
+        'Website Builder',
+        'Unified Inbox',
+        'Appointment Scheduler',
+        'Voice AI',
+        'Automation Workflows'
+      ],
+      usage: [
+        `${(settings.growthChats).toLocaleString()} AI Conversations`,
+        `${settings.growthVoice} Voice Minutes`
+      ]
+    },
+    {
+      name: 'Scale',
+      price: settings.scalePrice,
+      color: '#f59e0b',
+      includes: [
+        '5 AI Employees',
+        'CrewAI Orchestrator',
+        'Multi-channel Inbox',
+        'Voice Campaigns',
+        'Outbound Dialer',
+        'CRM',
+        'Website Builder'
+      ],
+      usage: [
+        `${(settings.scaleChats).toLocaleString()} AI Conversations`,
+        `${settings.scaleVoice} Voice Minutes`
+      ]
+    },
+    {
+      name: 'Enterprise',
+      price: settings.enterprisePrice,
+      color: '#ef4444',
+      isEnterprise: true,
+      includes: [
+        'Unlimited AI Employees',
+        'White Label',
+        'Dedicated Infrastructure',
+        'Custom Integrations',
+        'SLA Support'
+      ],
+      usage: [
+        'Fair Use Limit'
+      ]
+    }
+  ];
+
   return (
     <div className="animate-fade-in" style={{ height: '100%', overflowY: 'auto', paddingBottom: '40px' }}>
       {/* Header */}
@@ -91,7 +146,7 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
 
       <div className="grid-cols-12" style={{ gap: '20px' }}>
         {/* Left Column: Resource Quota & Buy Extra Credits */}
-        <div className="col-span-7" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="col-span-6" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Quota Progress */}
           <div className="glass-panel" style={{ padding: '24px' }}>
@@ -108,18 +163,20 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
                     <MessageSquare size={14} style={{ color: 'var(--primary-color)' }} /> Text AI Chat Messages
                   </span>
                   <span>
-                    <strong>{usageLimits.conversationsUsed}</strong> / {usageLimits.conversationsLimit} used
+                    <strong>{usageLimits.conversationsUsed}</strong> / {usageLimits.conversationsLimit >= 999999 ? 'Unlimited' : usageLimits.conversationsLimit} used
                   </span>
                 </div>
-                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${getPercent(usageLimits.conversationsUsed, usageLimits.conversationsLimit)}%`,
-                    height: '100%',
-                    background: 'var(--primary-color)',
-                    borderRadius: '4px',
-                    transition: 'width 0.3s ease'
-                  }}></div>
-                </div>
+                {usageLimits.conversationsLimit < 999999 && (
+                  <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${getPercent(usageLimits.conversationsUsed, usageLimits.conversationsLimit)}%`,
+                      height: '100%',
+                      background: 'var(--primary-color)',
+                      borderRadius: '4px',
+                      transition: 'width 0.3s ease'
+                    }}></div>
+                  </div>
+                )}
                 {extraCredits > 0 && (
                   <div style={{ fontSize: '0.68rem', color: 'var(--success-color)', marginTop: '4px' }}>
                     * Includes +{extraCredits} extra purchased chat credits.
@@ -134,18 +191,20 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
                     <Phone size={14} style={{ color: 'var(--accent-color)' }} /> Voice AI Call Minutes
                   </span>
                   <span>
-                    <strong>{usageLimits.voiceUsed}</strong> / {usageLimits.voiceLimit} Mins
+                    <strong>{usageLimits.voiceUsed}</strong> / {usageLimits.voiceLimit >= 999999 ? 'Unlimited' : usageLimits.voiceLimit} Mins
                   </span>
                 </div>
-                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${getPercent(usageLimits.voiceUsed, usageLimits.voiceLimit)}%`,
-                    height: '100%',
-                    background: 'var(--accent-color)',
-                    borderRadius: '4px',
-                    transition: 'width 0.3s ease'
-                  }}></div>
-                </div>
+                {usageLimits.voiceLimit < 999999 && (
+                  <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${getPercent(usageLimits.voiceUsed, usageLimits.voiceLimit)}%`,
+                      height: '100%',
+                      background: 'var(--accent-color)',
+                      borderRadius: '4px',
+                      transition: 'width 0.3s ease'
+                    }}></div>
+                  </div>
+                )}
               </div>
 
               {/* Website Generation Quota */}
@@ -220,139 +279,103 @@ export const BillingUpgradeView: React.FC<BillingUpgradeViewProps> = ({ tenant, 
             </div>
           </div>
 
+          {/* What is Unlimited Callout */}
+          <div className="glass-panel" style={{ padding: '20px', borderColor: 'rgba(16,185,129,0.2)', background: 'rgba(16,185,129,0.01)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <Shield size={18} style={{ color: '#10b981' }} />
+              <h4 style={{ fontSize: '0.88rem', fontWeight: 'bold', color: 'white', margin: 0 }}>Uncapped Workspace Assets</h4>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
+              CRM Contacts, Deal Pipelines, Subtasks, transcribing Notes, Vector Knowledge Documents, and access Teams are completely unlimited on all plans.
+            </p>
+          </div>
+
         </div>
 
         {/* Right Column: Active Plan Status & Upgrade Options */}
-        <div className="col-span-5" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="col-span-6" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* Active plan status */}
-          <div className="glass-panel" style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
-            {/* Background glowing circle */}
-            <div style={{
-              position: 'absolute',
-              top: '-40px',
-              right: '-40px',
-              width: '120px',
-              height: '120px',
-              borderRadius: '50%',
-              background: 'var(--primary-glow)',
-              filter: 'blur(30px)'
-            }}></div>
+          <h4 style={{ fontSize: '0.85rem', fontWeight: 'bold', margin: '0 0 -5px 0', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Subscription Packages</h4>
 
-            <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--primary-color)', fontWeight: 'bold', border: '1px solid var(--primary-color)33', padding: '2px 8px', borderRadius: '12px', background: 'var(--primary-glow)' }}>
-              Active Plan
-            </span>
-            
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '800', margin: '8px 0 2px 0' }}>
-              {activePlan} Tier
-            </h3>
-            
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              Auto-renewing subscription via corporate billing.
-            </p>
-
-            <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '14px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              Need more capabilities? Upgrade to Scale or Enterprise plan below.
-            </div>
-          </div>
-
-          {/* Upgrades List */}
-          <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <h4 style={{ fontSize: '0.85rem', fontWeight: 'bold', margin: '0 0 4px 0', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Subscription Tiers</h4>
-            
-            {/* Growth Tier */}
-            <div style={{
-              padding: '12px 14px',
-              background: activePlan === 'Growth' ? 'rgba(99,102,241,0.03)' : 'transparent',
-              border: `1px solid ${activePlan === 'Growth' ? 'var(--primary-color)' : 'var(--border-glass)'}`,
-              borderRadius: '8px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <div>
-                <h5 style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  Growth Plan {activePlan === 'Growth' && <span style={{ color: 'var(--success-color)', fontSize: '0.65rem' }}>✓ Active</span>}
-                </h5>
-                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{(settings.growthChats).toLocaleString()} Chats • {settings.growthVoice} Voice Mins • {settings.growthWebsites} Sites</p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block' }}>{currency}{settings.growthPrice}/mo</span>
-                {activePlan !== 'Growth' && (
-                  <button
-                    onClick={() => handleCheckout(settings.growthPrice, 'plan_upgrade', 'Growth')}
-                    disabled={!!loading}
-                    style={{ fontSize: '0.65rem', padding: '2px 8px', border: 'none', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer', marginTop: '4px' }}
-                  >
-                    Downgrade
-                  </button>
+          {planDetails.map((plan) => {
+            const isActive = activePlan.toLowerCase() === plan.name.toLowerCase();
+            return (
+              <div 
+                key={plan.name}
+                className="glass-panel" 
+                style={{ 
+                  padding: '20px', 
+                  border: isActive ? `1px solid ${plan.color}` : '1px solid var(--border-glass)',
+                  background: isActive ? 'rgba(255,255,255,0.01)' : 'transparent',
+                  position: 'relative'
+                }}
+              >
+                {isActive && (
+                  <span style={{ 
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    fontSize: '0.65rem', 
+                    textTransform: 'uppercase', 
+                    color: plan.color, 
+                    fontWeight: 'bold', 
+                    border: `1px solid ${plan.color}33`, 
+                    padding: '2px 8px', 
+                    borderRadius: '12px', 
+                    background: `${plan.color}11` 
+                  }}>
+                    ✓ Active Plan
+                  </span>
                 )}
-              </div>
-            </div>
 
-            {/* Scale Tier */}
-            <div style={{
-              padding: '12px 14px',
-              background: activePlan === 'Scale' ? 'rgba(99,102,241,0.03)' : 'transparent',
-              border: `1px solid ${activePlan === 'Scale' ? 'var(--primary-color)' : 'var(--border-glass)'}`,
-              borderRadius: '8px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <div>
-                <h5 style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  Scale Plan {activePlan === 'Scale' && <span style={{ color: 'var(--success-color)', fontSize: '0.65rem' }}>✓ Active</span>}
-                </h5>
-                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{(settings.scaleChats).toLocaleString()} Chats • {settings.scaleVoice} Voice Mins • {settings.scaleWebsites} Sites</p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block' }}>{currency}{settings.scalePrice}/mo</span>
-                {activePlan !== 'Scale' && (
+                <div style={{ marginBottom: '14px' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {plan.name} Plan
+                  </h3>
+                  <span style={{ fontSize: '1.3rem', fontWeight: '800', color: 'white', display: 'block', marginTop: '4px' }}>
+                    {currency}{plan.price.toLocaleString()}{plan.isEnterprise ? '+' : ''}
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}> / month</span>
+                  </span>
+                </div>
+
+                <div className="grid-cols-12" style={{ gap: '14px', marginBottom: '16px' }}>
+                  <div className="col-span-6">
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>Includes:</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {plan.includes.map((feat, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                          <Check size={10} style={{ color: '#10b981', flexShrink: 0 }} />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="col-span-6">
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>Usage Included:</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {plan.usage.map((feat, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                          <Check size={10} style={{ color: '#10b981', flexShrink: 0 }} />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {!isActive && (
                   <button
-                    onClick={() => handleCheckout(settings.scalePrice, 'plan_upgrade', 'Scale')}
+                    onClick={() => handleCheckout(plan.price, 'plan_upgrade', plan.name)}
                     disabled={!!loading}
                     className="btn btn-primary"
-                    style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', marginTop: '4px' }}
+                    style={{ fontSize: '0.75rem', padding: '6px 16px', background: plan.color, border: 'none', color: plan.name === 'Scale' ? 'black' : 'white', fontWeight: 'bold' }}
                   >
-                    {loading === 'Scale' ? 'Redirecting...' : activePlan === 'Growth' ? 'Upgrade' : 'Downgrade'}
+                    {loading === plan.name ? 'Redirecting...' : activePlan === 'Enterprise' ? 'Downgrade' : plan.name === 'Growth' ? 'Downgrade' : 'Upgrade'}
                   </button>
                 )}
               </div>
-            </div>
-
-            {/* Enterprise Tier */}
-            <div style={{
-              padding: '12px 14px',
-              background: activePlan === 'Enterprise' ? 'rgba(99,102,241,0.03)' : 'transparent',
-              border: `1px solid ${activePlan === 'Enterprise' ? 'var(--primary-color)' : 'var(--border-glass)'}`,
-              borderRadius: '8px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <div>
-                <h5 style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  Enterprise {activePlan === 'Enterprise' && <span style={{ color: 'var(--success-color)', fontSize: '0.65rem' }}>✓ Active</span>}
-                </h5>
-                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{settings.enterpriseChats >= 99999 ? 'Unlimited' : (settings.enterpriseChats).toLocaleString()} Chats • {settings.enterpriseVoice} Mins • {settings.enterpriseWebsites >= 999 ? 'Unlimited' : settings.enterpriseWebsites} Sites</p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block' }}>{currency}{settings.enterprisePrice}/mo</span>
-                {activePlan !== 'Enterprise' && (
-                  <button
-                    onClick={() => handleCheckout(settings.enterprisePrice, 'plan_upgrade', 'Enterprise')}
-                    disabled={!!loading}
-                    className="btn btn-primary"
-                    style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', marginTop: '4px' }}
-                  >
-                    {loading === 'Enterprise' ? 'Redirecting...' : 'Upgrade'}
-                  </button>
-                )}
-              </div>
-            </div>
-
-          </div>
+            );
+          })}
 
         </div>
       </div>

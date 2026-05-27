@@ -1605,19 +1605,19 @@ app.put('/api/platform-support-bot', (req, res) => {
 app.get('/api/platform-billing-settings', (req, res) => {
   const db = readDb();
   res.json(db.platformSettings || {
-    growthPrice: 499,
-    growthChats: 2000,
-    growthVoice: 500,
+    growthPrice: 2499,
+    growthChats: 5000,
+    growthVoice: 300,
     growthWebsites: 2,
-    scalePrice: 1200,
-    scaleChats: 5000,
-    scaleVoice: 1000,
+    scalePrice: 6999,
+    scaleChats: 25000,
+    scaleVoice: 2000,
     scaleWebsites: 5,
-    enterprisePrice: 2500,
-    enterpriseChats: 10000,
-    enterpriseVoice: 2500,
+    enterprisePrice: 19999,
+    enterpriseChats: 999999,
+    enterpriseVoice: 999999,
     enterpriseWebsites: 999,
-    currency: '$',
+    currency: '₹',
     overageChatRate: 0.05,
     overageVoiceRate: 0.15,
     inboundCallRate: 0.10,
@@ -1939,7 +1939,7 @@ app.post('/api/chat', async (req, res) => {
       } else if (/\b(twilio)\b/i.test(message)) {
         reply = `To integrate Twilio, go to **Settings > Integrations** and expand **Twilio Settings**. Enter your Twilio Account SID, Auth Token, and Twilio Phone Number, then save the configuration. The platform routes outbound/inbound calls using these credentials.`;
       } else if (/\b(rate|rates|price|prices|pricing|package|packages|pack|tier|tiers|cost|costs|credit|credits|billing|subscribe|subscription)\b/i.test(message)) {
-        reply = `AiraOS has 3 subscription packages:\n- **Growth ($499/mo):** 2,000 chats, 500 voice minutes, 2 web edits.\n- **Scale ($1,200/mo):** 5,000 chats, 1,000 voice minutes, 5 web edits.\n- **Enterprise ($2,500/mo):** 10,000 chats, 2,500 voice minutes, unlimited web edits.\n\n**Overage fees:** $0.05 per extra chat, $0.15 per extra voice minute. Inbound calls are $0.10/min, and outbound calls are $0.20/min. Custom voice synthesis costs $0.02/min.`;
+        reply = `AiraOS has 3 subscription packages:\n- **Growth (₹2,499/mo):** 5,000 chats, 300 voice minutes.\n- **Scale (₹6,999/mo):** 25,000 chats, 2,000 voice minutes.\n- **Enterprise (₹19,999/mo+):** Unlimited chats/voice, unlimited digital employees.\n\n**Overage fees:** $0.05 per extra chat, $0.15 per extra voice minute. Inbound calls are $0.10/min, and outbound calls are $0.20/min. Custom voice synthesis costs $0.02/min.`;
       } else if (/\b(hi|hello|help|hey|greetings|support)\b/i.test(message)) {
         reply = `Hello! I am the Platform Assistant. I am here to help you resolve doubts on integrating SIP trunking, connecting Twilio API keys, configuring BYO Carriers, or reviewing plan packages and rates. How can I help you today?`;
       } else {

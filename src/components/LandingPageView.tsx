@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Sparkles, MessageSquare, Calendar, Users, GitBranch, PhoneCall, 
   ArrowRight, CheckCircle2, Lock, UserPlus, Info, HelpCircle, Server, Globe, Cpu,
-  ChevronDown
+  ChevronDown, Check, Mail, Building, Layers, Send, Shield
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 
@@ -38,6 +38,68 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
   // FAQ Accordion State
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
   const [activePersonaIdx, setActivePersonaIdx] = useState(0);
+
+  const [activeLandingSection, setActiveLandingSection] = useState<'home' | 'features' | 'pricing' | 'about' | 'contact'>('home');
+  const [billingSettings, setBillingSettings] = useState<any>(null);
+  
+  // Contact Us Form State
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactCompany, setContactCompany] = useState('');
+  const [contactNotes, setContactNotes] = useState('');
+  const [contactSuccess, setContactSuccess] = useState(false);
+  const [contactError, setContactError] = useState('');
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    fetch('/api/platform-billing-settings')
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error('Failed to load settings');
+      })
+      .then(data => {
+        setBillingSettings(data);
+      })
+      .catch(err => {
+        console.error('Failed to fetch billing settings:', err);
+      });
+  }, []);
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactSuccess(false);
+    setContactError('');
+    setContactSubmitting(true);
+    try {
+      const res = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tenant-id': 't-1' // Smile Dentals CRM
+        },
+        body: JSON.stringify({
+          name: contactName,
+          email: contactEmail,
+          phone: contactPhone,
+          company: contactCompany || 'Landing Page Lead',
+          notes: [contactNotes],
+          tags: ['Website Lead', 'Contact Form']
+        })
+      });
+      if (!res.ok) throw new Error('Failed to submit message');
+      setContactSuccess(true);
+      setContactName('');
+      setContactEmail('');
+      setContactPhone('');
+      setContactCompany('');
+      setContactNotes('');
+    } catch (err: any) {
+      setContactError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setContactSubmitting(false);
+    }
+  };
 
   const toggleFaq = (idx: number) => {
     setOpenFaqIdx(prev => prev === idx ? null : idx);
@@ -779,7 +841,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
           borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
           marginBottom: '40px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => setActiveLandingSection('home')}>
             <div style={{ 
               width: '38px', height: '38px', borderRadius: '10px', 
               background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
@@ -792,6 +854,36 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
               AiraOS
             </h1>
           </div>
+
+          {/* Navigation Links */}
+          <nav style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {[
+              { id: 'home', label: 'Home' },
+              { id: 'features', label: 'Features' },
+              { id: 'pricing', label: 'Pricing' },
+              { id: 'about', label: 'About Us' },
+              { id: 'contact', label: 'Contact Us' }
+            ].map(sec => (
+              <button
+                key={sec.id}
+                onClick={() => setActiveLandingSection(sec.id as any)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: activeLandingSection === sec.id ? '#6366f1' : '#94a3b8',
+                  fontWeight: activeLandingSection === sec.id ? '700' : '500',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  backgroundColor: activeLandingSection === sec.id ? 'rgba(99, 102, 241, 0.08)' : 'transparent'
+                }}
+              >
+                {sec.label}
+              </button>
+            ))}
+          </nav>
 
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <button 
@@ -811,265 +903,671 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
           </div>
         </header>
 
-        {/* Hero Section */}
-        <section style={{ textAlign: 'center', padding: '60px 0 80px 0', maxWidth: '800px', margin: '0 auto' }}>
-          <div style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: '8px', 
-            background: 'rgba(99, 102, 241, 0.1)', 
-            border: '1px solid rgba(99, 102, 241, 0.2)', 
-            padding: '6px 14px', 
-            borderRadius: '20px', 
-            fontSize: '0.75rem', 
-            color: '#a5b4fc',
-            marginBottom: '24px',
-            fontWeight: '600'
-          }}>
-            <Sparkles size={12} /> The Digital Employee Platform for Modern SMEs
-          </div>
-          
-          <h2 style={{ 
-            fontSize: '3.6rem', 
-            fontWeight: '800', 
-            lineHeight: '1.15', 
-            letterSpacing: '-0.02em', 
-            fontFamily: 'Space Grotesk, sans-serif',
-            background: 'linear-gradient(to right, #ffffff, #94a3b8)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '24px'
-          }}>
-            Deploy AI Employees to Automate Your Business operations
-          </h2>
-          
-          <p style={{ fontSize: '1.15rem', color: '#94a3b8', lineHeight: '1.6', marginBottom: '36px' }}>
-            Not just simple chat widgets. Hire fully autonomous receptionist, sales advisor, and customer support representatives. Integrates natively with calendar scheduling, CRM databases, vector knowledge bases, and automation workflows.
-          </p>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
-            <button 
-              onClick={() => setAuthMode('login')} 
-              className="btn btn-primary"
-              style={{ padding: '12px 32px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-            >
-              Sign In to Dashboard <ArrowRight size={16} />
-            </button>
-          </div>
-        </section>
-
-        {/* Feature Grid / Core Capabilities */}
-        <section style={{ padding: '60px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '-0.01em' }}>
-              Everything Your Business Needs In One Client Portal
-            </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginTop: '8px', maxWidth: '580px', margin: '8px auto 0 auto' }}>
-              Your clients login to their workspace and manage AI employees, vector documentation, pipeline stages, calendar bookings, and visual workflows.
-            </p>
-          </div>
-
-          <div className="grid-cols-12" style={{ gap: '20px' }}>
-            <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(99,102,241,0.1)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
-                🧠
+        {activeLandingSection === 'home' && (
+          <>
+            {/* Hero Section */}
+            <section style={{ textAlign: 'center', padding: '60px 0 80px 0', maxWidth: '800px', margin: '0 auto' }}>
+              <div style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                background: 'rgba(99, 102, 241, 0.1)', 
+                border: '1px solid rgba(99, 102, 241, 0.2)', 
+                padding: '6px 14px', 
+                borderRadius: '20px', 
+                fontSize: '0.75rem', 
+                color: '#a5b4fc',
+                marginBottom: '24px',
+                fontWeight: '600'
+              }}>
+                <Sparkles size={12} /> The Digital Employee Platform for Modern SMEs
               </div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>AI Reasoning Brain</h4>
-              <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
-                Tune background instructions, configure model layers (temperature, tokens), select engines, and test playground responses.
+              
+              <h2 style={{ 
+                fontSize: '3.6rem', 
+                fontWeight: '800', 
+                lineHeight: '1.15', 
+                letterSpacing: '-0.02em', 
+                fontFamily: 'Space Grotesk, sans-serif',
+                background: 'linear-gradient(to right, #ffffff, #94a3b8)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: '24px'
+              }}>
+                Deploy AI Employees to Automate Your Business operations
+              </h2>
+              
+              <p style={{ fontSize: '1.15rem', color: '#94a3b8', lineHeight: '1.6', marginBottom: '36px' }}>
+                Not just simple chat widgets. Hire fully autonomous receptionist, sales advisor, and customer support representatives. Integrates natively with calendar scheduling, CRM databases, vector knowledge bases, and automation workflows.
               </p>
-            </div>
 
-            <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
-                💬
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+                <button 
+                  onClick={() => setAuthMode('login')} 
+                  className="btn btn-primary"
+                  style={{ padding: '12px 32px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  Sign In to Dashboard <ArrowRight size={16} />
+                </button>
               </div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Unified Customer Inbox</h4>
-              <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
-                Monitor active chat sessions across SMS, WhatsApp, and Web. Switch autopilot to manual mode to reply live to clients.
-              </p>
-            </div>
+            </section>
 
-            <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
-                🔄
-              </div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Automation Workflows</h4>
-              <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
-                Design multi-node automation trees. Automatically fire webhook alerts, sync customer lists, and trigger alerts.
-              </p>
-            </div>
-
-            <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(56,189,248,0.1)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
-                📅
-              </div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Calendar Scheduler</h4>
-              <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
-                Let AI employees check calendar availability slots, reserve dentist cleanings or penthouses, and schedule outlook meetings.
-              </p>
-            </div>
-
-            <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(167,139,250,0.1)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
-                🏢
-              </div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Sales Pipeline CRM</h4>
-              <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
-                Record qualified deals, drag-and-drop kanban cards, store visitor profiles, and monitor contract metrics.
-              </p>
-            </div>
-
-            <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
-                📞
-              </div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Voice AI Simulator</h4>
-              <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
-                Provide automated SIP calling. Perform real-time speech-to-text transcriptions and playback AI audio waves.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* AI Agent Personas Showcase */}
-        <section style={{ padding: '60px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif' }}>
-              Meet Pre-Configured Digital Employees
-            </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginTop: '6px' }}>
-              Deploy specialized AI workforce roles equipped with distinct triggers and personalities.
-            </p>
-          </div>
-
-          <div className="grid-cols-12" style={{ gap: '24px' }}>
-            <div className="col-span-4" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {agentPersonas.map((persona, i) => {
-                const isActive = activePersonaIdx === i;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setActivePersonaIdx(i)}
-                    className="btn"
-                    style={{
-                      width: '100%',
-                      padding: '16px',
-                      textAlign: 'left',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      backgroundColor: isActive ? 'var(--primary-glow)' : 'rgba(255,255,255,0.01)',
-                      borderColor: isActive ? 'var(--primary-color)' : 'rgba(255,255,255,0.03)',
-                      borderWidth: '1px',
-                      borderStyle: 'solid',
-                      borderRadius: '8px',
-                      color: isActive ? 'white' : 'var(--text-secondary)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <img src={persona.avatar} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: '700' }}>{persona.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{persona.role}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="col-span-8 glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '14px' }}>
-                <h4 style={{ fontSize: '1.1rem', fontWeight: '700' }}>{agentPersonas[activePersonaIdx].name}</h4>
-                <span className="badge badge-primary">{agentPersonas[activePersonaIdx].role}</span>
-              </div>
-
-              <div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '6px' }}>SYSTEM BACKGROUND PROMPT</span>
-                <p style={{ fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.5', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '6px', fontFamily: 'monospace', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  "{agentPersonas[activePersonaIdx].prompt}"
+            {/* Feature Grid / Core Capabilities */}
+            <section style={{ padding: '60px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+              <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+                <h3 style={{ fontSize: '1.8rem', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '-0.01em' }}>
+                  Everything Your Business Needs In One Client Portal
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginTop: '8px', maxWidth: '580px', margin: '8px auto 0 auto' }}>
+                  Your clients login to their workspace and manage AI employees, vector documentation, pipeline stages, calendar bookings, and visual workflows.
                 </p>
               </div>
 
-              <div style={{ display: 'flex', gap: '20px' }}>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '6px' }}>ASSIGNED CHANNELS & TOOLS</span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {agentPersonas[activePersonaIdx].tools.map((t, idx) => (
-                      <span key={idx} style={{ fontSize: '0.7rem', padding: '4px 8px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '4px', color: '#a5b4fc' }}>
-                        {t}
-                      </span>
+              <div className="grid-cols-12" style={{ gap: '20px' }}>
+                <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(99,102,241,0.1)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
+                    🧠
+                  </div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>AI Reasoning Brain</h4>
+                  <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
+                    Tune background instructions, configure model layers (temperature, tokens), select engines, and test playground responses.
+                  </p>
+                </div>
+
+                <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
+                    💬
+                  </div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Unified Customer Inbox</h4>
+                  <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
+                    Monitor active chat sessions across SMS, WhatsApp, and Web. Switch autopilot to manual mode to reply live to clients.
+                  </p>
+                </div>
+
+                <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
+                    🔄
+                  </div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Automation Workflows</h4>
+                  <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
+                    Design multi-node automation trees. Automatically fire webhook alerts, sync customer lists, and trigger alerts.
+                  </p>
+                </div>
+
+                <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(56,189,248,0.1)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
+                    📅
+                  </div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Calendar Scheduler</h4>
+                  <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
+                    Let AI employees check calendar availability slots, reserve dentist cleanings or penthouses, and schedule outlook meetings.
+                  </p>
+                </div>
+
+                <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(167,139,250,0.1)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
+                    🏢
+                  </div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Sales Pipeline CRM</h4>
+                  <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
+                    Record qualified deals, drag-and-drop kanban cards, store visitor profiles, and monitor contract metrics.
+                  </p>
+                </div>
+
+                <div className="col-span-4 glass-card hover-glow" style={{ padding: '24px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', marginBottom: '16px' }}>
+                    📞
+                  </div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '8px' }}>Voice AI Simulator</h4>
+                  <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#94a3b8' }}>
+                    Provide automated SIP calling. Perform real-time speech-to-text transcriptions and playback AI audio waves.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* AI Agent Personas Showcase */}
+            <section style={{ padding: '60px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h3 style={{ fontSize: '1.8rem', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif' }}>
+                  Meet Pre-Configured Digital Employees
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginTop: '6px' }}>
+                  Deploy specialized AI workforce roles equipped with distinct triggers and personalities.
+                </p>
+              </div>
+
+              <div className="grid-cols-12" style={{ gap: '24px' }}>
+                <div className="col-span-4" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {agentPersonas.map((persona, i) => {
+                    const isActive = activePersonaIdx === i;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => setActivePersonaIdx(i)}
+                        className="btn"
+                        style={{
+                          width: '100%',
+                          padding: '16px',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          backgroundColor: isActive ? 'var(--primary-glow)' : 'rgba(255,255,255,0.01)',
+                          borderColor: isActive ? 'var(--primary-color)' : 'rgba(255,255,255,0.03)',
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          borderRadius: '8px',
+                          color: isActive ? 'white' : 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <img src={persona.avatar} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+                        <div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: '700' }}>{persona.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{persona.role}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="col-span-8 glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '14px' }}>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: '700' }}>{agentPersonas[activePersonaIdx].name}</h4>
+                    <span className="badge badge-primary">{agentPersonas[activePersonaIdx].role}</span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '6px' }}>SYSTEM BACKGROUND PROMPT</span>
+                    <p style={{ fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.5', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '6px', fontFamily: 'monospace', border: '1px solid rgba(255,255,255,0.03)' }}>
+                      "{agentPersonas[activePersonaIdx].prompt}"
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '20px' }}>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '6px' }}>ASSIGNED CHANNELS & TOOLS</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {agentPersonas[activePersonaIdx].tools.map((t, idx) => (
+                          <span key={idx} style={{ fontSize: '0.7rem', padding: '4px 8px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '4px', color: '#a5b4fc' }}>
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ width: '240px', borderLeft: '1px solid rgba(255,255,255,0.05)', paddingLeft: '20px' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '6px' }}>PERFORMANCE KPIs</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#94a3b8' }}>Load:</span>
+                          <strong style={{ color: 'white' }}>{agentPersonas[activePersonaIdx].stats.chats}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#94a3b8' }}>Auto-Resolution:</span>
+                          <strong style={{ color: 'var(--success-color)' }}>{agentPersonas[activePersonaIdx].stats.resolution}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#94a3b8' }}>Voice Traffic:</span>
+                          <strong style={{ color: 'white' }}>{agentPersonas[activePersonaIdx].stats.voiceMins}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Accordion FAQ Section */}
+            <section style={{ padding: '60px 0 100px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+              <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+                <h3 style={{ fontSize: '1.8rem', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif' }}>
+                  Frequently Asked Questions
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginTop: '6px' }}>
+                  Get answers about platform security, integrations, VPS hosting, and setup parameters.
+                </p>
+              </div>
+
+              <div style={{ maxWidth: '780px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {faqs.map((faq, i) => {
+                  const isOpen = openFaqIdx === i;
+                  return (
+                    <div 
+                      key={i} 
+                      className="glass-card" 
+                      style={{ 
+                        padding: '16px 20px', 
+                        cursor: 'pointer',
+                        borderColor: isOpen ? 'var(--primary-color)' : 'rgba(255,255,255,0.03)'
+                      }}
+                      onClick={() => toggleFaq(i)}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: '700', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                          <HelpCircle size={16} style={{ color: 'var(--primary-color)', flexShrink: 0 }} /> {faq.q}
+                        </h4>
+                        {isOpen ? <ChevronDown size={16} style={{ transform: 'rotate(180deg)' }} /> : <ChevronDown size={16} />}
+                      </div>
+                      
+                      {isOpen && (
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '12px', lineHeight: '1.5', paddingLeft: '24px', borderLeft: '1px solid var(--border-glass)' }}>
+                          {faq.a}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </>
+        )}
+
+        {activeLandingSection === 'features' && (
+          <section style={{ padding: '20px 0 100px 0' }} className="animate-fade-in">
+            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+              <h3 style={{ fontSize: '2.2rem', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif' }}>
+                Core Capabilities & Feature Breakdown
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '1rem', marginTop: '8px' }}>
+                Understand what is completely unlimited versus what is metered based on real-time execution costs.
+              </p>
+            </div>
+
+            <div className="grid-cols-12" style={{ gap: '30px', marginBottom: '50px' }}>
+              {/* Unlimited Box */}
+              <div className="col-span-6 glass-panel" style={{ padding: '32px', borderColor: 'rgba(16,185,129,0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Shield size={20} />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#10b981' }}>100% Unlimited Core Items</h4>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>We hate limits on your data. The following are always free & uncapped:</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {[
+                    { title: 'CRM Contacts', desc: 'Store as many clients, leads, and visitor records as your business requires.' },
+                    { title: 'Deals & Sales Pipelines', desc: 'Create multiple pipelines, deal columns, and manage visual sales progression cards.' },
+                    { title: 'Task Manager', desc: 'Create and assign unlimited operational tasks, checklists, and calendar reminders.' },
+                    { title: 'Conversation Notes', desc: 'Save transcripts, custom tags, summaries, and agent analysis notes without limits.' },
+                    { title: 'Knowledge Base Articles', desc: 'Upload unlimited context guidelines, documents, PDFs, or URL scrapers to your LLM.' },
+                    { title: 'Multi-agent Team Members', desc: 'Invite your whole operations crew to view metrics, log deals, or override assistant actions.' }
+                  ].map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '10px' }}>
+                      <CheckCircle2 size={16} style={{ color: '#10b981', flexShrink: 0, marginTop: '2px' }} />
+                      <div>
+                        <strong style={{ fontSize: '0.88rem', color: '#f8fafc', display: 'block' }}>{item.title}</strong>
+                        <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{item.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Metered Box */}
+              <div className="col-span-6 glass-panel" style={{ padding: '32px', borderColor: 'rgba(99,102,241,0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: 'rgba(99,102,241,0.1)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Cpu size={20} />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#6366f1' }}>Metered Resource Usage</h4>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>We only charge for expensive operations that incur direct API or compute costs:</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {[
+                    { title: 'AI Chat Conversations', desc: 'Interactive chat widget sessions powered by LLM Reasoning models.' },
+                    { title: 'Voice AI Minutes', desc: 'Real-time speech synthesis (TTS) and speech recognition (STT) calling durations.' },
+                    { title: 'Outbound Dialing campaigns', desc: 'SIP trunk connectivity connecting automated dialers to standard phone lines.' },
+                    { title: 'SMS Messaging alerts', desc: 'Sending verification tokens, invoice links, or appointment confirmations.' },
+                    { title: 'WhatsApp Conversations', desc: 'Routing client outreach campaigns via official Twilio or custom SIP endpoints.' }
+                  ].map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '10px' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#6366f1', marginTop: '7px', flexShrink: 0 }} />
+                      <div>
+                        <strong style={{ fontSize: '0.88rem', color: '#f8fafc', display: 'block' }}>{item.title}</strong>
+                        <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{item.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeLandingSection === 'pricing' && (
+          <section style={{ padding: '20px 0 100px 0' }} className="animate-fade-in">
+            <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+              <h3 style={{ fontSize: '2.2rem', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif' }}>
+                Simple Pricing Plans built for Growth
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '1rem', marginTop: '8px' }}>
+                Fully customizable settings managed by our administrators. Choose a package that matches your scale.
+              </p>
+            </div>
+
+            <div className="grid-cols-12" style={{ gap: '24px', alignItems: 'stretch', marginBottom: '50px' }}>
+              {/* Growth Plan Card */}
+              <div className="col-span-4 glass-panel hover-glow" style={{ padding: '32px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '520px', borderTop: '4px solid #6366f1' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#6366f1', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>GROWTH</span>
+                <h4 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', margin: '0 0 6px 0' }}>
+                  {billingSettings?.currency || '₹'}{(billingSettings?.growthPrice ?? 2499).toLocaleString()}
+                  <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 'normal' }}> / month</span>
+                </h4>
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '24px', lineHeight: '1.4' }}>
+                  Ideal for clinics, realtors, consultants, and local retail businesses starting their AI journey.
+                </p>
+
+                <div style={{ flexGrow: 1 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Includes:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                    {[
+                      'AI Receptionist',
+                      'CRM & Pipeline',
+                      'Website Builder',
+                      'Unified Inbox',
+                      'Appointment Scheduler',
+                      'Voice AI',
+                      'Automation Workflows'
+                    ].map((feat, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#e2e8f0' }}>
+                        <Check size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Usage Included:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[
+                      `${(billingSettings?.growthChats ?? 5000).toLocaleString()} AI Conversations`,
+                      `${billingSettings?.growthVoice ?? 300} Voice Minutes`
+                    ].map((feat, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#e2e8f0' }}>
+                        <Check size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+                        <span>{feat}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ width: '240px', borderLeft: '1px solid rgba(255,255,255,0.05)', paddingLeft: '20px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '6px' }}>PERFORMANCE KPIs</span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>Load:</span>
-                      <strong style={{ color: 'white' }}>{agentPersonas[activePersonaIdx].stats.chats}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>Auto-Resolution:</span>
-                      <strong style={{ color: 'var(--success-color)' }}>{agentPersonas[activePersonaIdx].stats.resolution}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>Voice Traffic:</span>
-                      <strong style={{ color: 'white' }}>{agentPersonas[activePersonaIdx].stats.voiceMins}</strong>
-                    </div>
+                <button 
+                  onClick={() => { setAuthMode('signup'); setCurrentStep(1); }} 
+                  className="btn btn-primary" 
+                  style={{ width: '100%', marginTop: '30px', padding: '10px 0', fontWeight: 'bold' }}
+                >
+                  Deploy Growth Node
+                </button>
+              </div>
+
+              {/* Scale Plan Card */}
+              <div className="col-span-4 glass-panel hover-glow" style={{ padding: '32px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '520px', borderTop: '4px solid #f59e0b', backgroundColor: 'rgba(245,158,11,0.01)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#f59e0b', textTransform: 'uppercase' }}>SCALE</span>
+                  <span style={{ fontSize: '0.65rem', background: '#f59e0b', color: 'black', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>POPULAR</span>
+                </div>
+                <h4 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', margin: '0 0 6px 0' }}>
+                  {billingSettings?.currency || '₹'}{(billingSettings?.scalePrice ?? 6999).toLocaleString()}
+                  <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 'normal' }}> / month</span>
+                </h4>
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '24px', lineHeight: '1.4' }}>
+                  Perfect for growing service agencies, multi-location clinics, and sales operations.
+                </p>
+
+                <div style={{ flexGrow: 1 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Includes:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                    {[
+                      '5 AI Employees',
+                      'CrewAI Orchestrator',
+                      'Multi-channel Inbox',
+                      'Voice Campaigns',
+                      'Outbound Dialer',
+                      'CRM',
+                      'Website Builder'
+                    ].map((feat, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#e2e8f0' }}>
+                        <Check size={14} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Usage Included:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[
+                      `${(billingSettings?.scaleChats ?? 25000).toLocaleString()} AI Conversations`,
+                      `${billingSettings?.scaleVoice ?? 2000} Voice Minutes`
+                    ].map((feat, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#e2e8f0' }}>
+                        <Check size={14} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
+
+                <button 
+                  onClick={() => { setAuthMode('signup'); setCurrentStep(1); }} 
+                  className="btn" 
+                  style={{ width: '100%', marginTop: '30px', padding: '10px 0', background: '#f59e0b', color: 'black', fontWeight: 'bold', border: 'none' }}
+                >
+                  Deploy Scale Node
+                </button>
+              </div>
+
+              {/* Enterprise Plan Card */}
+              <div className="col-span-4 glass-panel hover-glow" style={{ padding: '32px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '520px', borderTop: '4px solid #ef4444' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#ef4444', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>ENTERPRISE</span>
+                <h4 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', margin: '0 0 6px 0' }}>
+                  {billingSettings?.currency || '₹'}{(billingSettings?.enterprisePrice ?? 19999).toLocaleString()}+
+                  <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 'normal' }}> / month</span>
+                </h4>
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '24px', lineHeight: '1.4' }}>
+                  Custom integrations, dedicated servers, and custom voice telephony lines.
+                </p>
+
+                <div style={{ flexGrow: 1 }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Includes:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                    {[
+                      'Unlimited AI Employees',
+                      'White Label',
+                      'Dedicated Infrastructure',
+                      'Custom Integrations',
+                      'SLA Support'
+                    ].map((feat, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#e2e8f0' }}>
+                        <Check size={14} style={{ color: '#ef4444', flexShrink: 0 }} />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>Usage Included:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {[
+                      'Fair Use Limit',
+                      'Custom Telephony Line routing'
+                    ].map((feat, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#ef4444', flexShrink: 0 }} />
+                    ))}
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => { setAuthMode('signup'); setCurrentStep(1); }} 
+                  className="btn" 
+                  style={{ width: '100%', marginTop: '30px', padding: '10px 0', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontWeight: 'bold' }}
+                >
+                  Contact Operations
+                </button>
               </div>
             </div>
-          </div>
-        </section>
 
+            {/* Unlimited features footer callout */}
+            <div className="glass-panel" style={{ padding: '24px', textAlign: 'center', borderColor: 'rgba(16,185,129,0.15)', background: 'rgba(16,185,129,0.01)' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <CheckCircle2 size={18} style={{ color: '#10b981' }} />
+                <h5 style={{ fontSize: '1rem', fontWeight: '800', color: '#cbd5e1', margin: 0 }}>Uncapped Core Infrastructure</h5>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: '#94a3b8', maxWidth: '640px', margin: '0 auto', lineHeight: '1.5' }}>
+                Unlike other platforms, we never cap your growth. CRM Contacts, Deals Pipelines, Subtasks, Notes, Vector Knowledge Scrapers, and Workspace Teams are completely unlimited on every single tier.
+              </p>
+            </div>
+          </section>
+        )}
 
+        {activeLandingSection === 'about' && (
+          <section style={{ padding: '20px 0 100px 0', maxWidth: '800px', margin: '0 auto' }} className="animate-fade-in">
+            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+              <h3 style={{ fontSize: '2.2rem', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif' }}>
+                Self-Hosted Enterprise Autopilot
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '1.05rem', marginTop: '8px' }}>
+                AiraOS runs 100% locally on your dedicated VPS cluster. No external SaaS requirements.
+              </p>
+            </div>
 
-        {/* Accordion FAQ Section */}
-        <section style={{ padding: '60px 0 100px 0', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif' }}>
-              Frequently Asked Questions
-            </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginTop: '6px' }}>
-              Get answers about platform security, integrations, VPS hosting, and setup parameters.
-            </p>
-          </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', fontSize: '0.92rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+              <p>
+                Modern enterprises struggle with SaaS licensing leakages. As you add more AI receptionists, voice routes, and document vectors, traditional cloud companies stack up per-seat fees that make automation unprofitable.
+              </p>
+              
+              <div className="glass-panel" style={{ padding: '24px', borderLeft: '4px solid #6366f1' }}>
+                <h4 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'white', marginBottom: '10px' }}>Our Mission: Native Compute Ownership</h4>
+                <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
+                  AiraOS breaks this cycle. Built as a fully integrated client console, it deploys directly onto a single VPS (like DigitalOcean, Hetzner, or AWS Ubuntu instance). The LLM engines, SIP trunks, CRM database tables, and calendar schedules coordinate in-memory or through local Docker microservices.
+                </p>
+              </div>
 
-          <div style={{ maxWidth: '780px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {faqs.map((faq, i) => {
-              const isOpen = openFaqIdx === i;
-              return (
-                <div 
-                  key={i} 
-                  className="glass-card" 
-                  style={{ 
-                    padding: '16px 20px', 
-                    cursor: 'pointer',
-                    borderColor: isOpen ? 'var(--primary-color)' : 'rgba(255,255,255,0.03)'
-                  }}
-                  onClick={() => toggleFaq(i)}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: '700', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                      <HelpCircle size={16} style={{ color: 'var(--primary-color)', flexShrink: 0 }} /> {faq.q}
-                    </h4>
-                    {isOpen ? <ChevronDown size={16} style={{ transform: 'rotate(180deg)' }} /> : <ChevronDown size={16} />}
-                  </div>
-                  
-                  {isOpen && (
-                    <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '12px', lineHeight: '1.5', paddingLeft: '24px', borderLeft: '1px solid var(--border-glass)' }}>
-                      {faq.a}
-                    </p>
-                  )}
+              <p>
+                By linking your own Twilio, PhonePe, OpenAI, or BYO SIP credentials, you run a production-ready CRM and AI dialing system at raw server cost. Your sensitive enterprise knowledge, vector logs, and customer chat histories remain completely private within your personal server sandbox.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {activeLandingSection === 'contact' && (
+          <section style={{ padding: '20px 0 100px 0', maxWidth: '640px', margin: '0 auto' }} className="animate-fade-in">
+            <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+              <h3 style={{ fontSize: '2.2rem', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif' }}>
+                Get In Touch with Us
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.98rem', marginTop: '8px' }}>
+                Submit an inquiry. It will save directly into our local workspace CRM pipeline.
+              </p>
+            </div>
+
+            {contactSuccess ? (
+              <div className="glass-panel" style={{ padding: '32px', textAlign: 'center', borderColor: 'var(--success-color)' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+                  <Check size={24} />
                 </div>
-              );
-            })}
-          </div>
-        </section>
+                <h4 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white', marginBottom: '10px' }}>Message Submitted Successfully!</h4>
+                <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: '1.5', marginBottom: '20px' }}>
+                  Your details have been written directly to our local CRM database (tenant `t-1` Smile Dentals). You can sign in as `admin@airaos.com` or `dental@airaos.com` to inspect the pipeline deal.
+                </p>
+                <button 
+                  onClick={() => setContactSuccess(false)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.8rem', padding: '8px 18px' }}
+                >
+                  Send another inquiry
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="glass-panel" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {contactError && (
+                  <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#fca5a5', fontSize: '0.8rem' }}>
+                    {contactError}
+                  </div>
+                )}
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.78rem' }}>Full Name *</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="form-input" 
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="John Doe"
+                    style={{ background: '#0a0d16', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }}
+                  />
+                </div>
+
+                <div className="grid-cols-12" style={{ gap: '12px' }}>
+                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.78rem' }}>Email Address *</label>
+                    <input 
+                      type="email" 
+                      required
+                      className="form-input" 
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      placeholder="john@example.com"
+                      style={{ background: '#0a0d16', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }}
+                    />
+                  </div>
+                  <div className="col-span-6 form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.78rem' }}>Phone Number</label>
+                    <input 
+                      type="tel" 
+                      className="form-input" 
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="+91 90000 12345"
+                      style={{ background: '#0a0d16', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.78rem' }}>Company / Clinic Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={contactCompany}
+                    onChange={(e) => setContactCompany(e.target.value)}
+                    placeholder="Smile Dental Clinic"
+                    style={{ background: '#0a0d16', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }}
+                  />
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontSize: '0.78rem' }}>Inquiry Details / Message *</label>
+                  <textarea 
+                    required
+                    rows={4}
+                    className="form-input" 
+                    value={contactNotes}
+                    onChange={(e) => setContactNotes(e.target.value)}
+                    placeholder="We want to automate outbound bookings..."
+                    style={{ background: '#0a0d16', border: '1px solid rgba(255,255,255,0.08)', color: 'white', fontFamily: 'Inter, sans-serif', padding: '10px' }}
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={contactSubmitting}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '12px 0', fontSize: '0.9rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <Send size={16} /> {contactSubmitting ? 'Submitting...' : 'Send Message'}
+                </button>
+              </form>
+            )}
+          </section>
+        )}
 
       </div>
 
