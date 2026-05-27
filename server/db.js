@@ -47,7 +47,6 @@ function createTenant(id, name, plan = 'Growth', primaryColor = '#0ea5e9', logo 
     primaryColor,
     secondaryColor: '#0f172a',
     settings: {
-      n8nUrl: '',
       timezone: 'Asia/Calcutta'
     },
     emailTemplates: {
@@ -137,7 +136,6 @@ export function ensureSaasSchema(data) {
   } else {
     db.tenants = db.tenants.map((tenant) => {
       const settings = {
-        n8nUrl: tenant.settings?.n8nUrl || '',
         timezone: tenant.settings?.timezone || 'Asia/Calcutta',
         ...(tenant.settings || {})
       };

@@ -121,20 +121,7 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({
     }
   }, [selectedNodeId, selectedWfId]);
 
-  // Fetch custom Workflow Automator URL from localStorage integrations settings
-  const [n8nUrl, setN8nUrl] = useState<string>('');
 
-  useEffect(() => {
-    const stored = localStorage.getItem('coolify_integrations');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed.n8nUrl) {
-          setN8nUrl(parsed.n8nUrl);
-        }
-      } catch (e) {}
-    }
-  }, []);
 
   // Save Node configurations changes to global workflows array
   const handleSaveNodeConfig = () => {
@@ -396,34 +383,13 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({
             {/* Canvas Header */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-glass)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>Interactive Flow Runner: {selectedWf.name}</h4>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>Native Visual Workflow Designer: {selectedWf.name}</h4>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  Click nodes to edit parameters. Simulator requires workflow to be Active.
+                  Natively design, simulate, and deploy trigger-action automations. Click nodes below to edit parameters.
                 </span>
               </div>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {n8nUrl && (
-                  <a
-                    href={n8nUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-secondary"
-                    style={{ 
-                      fontSize: '0.75rem', 
-                      padding: '6px 12px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '4px',
-                      textDecoration: 'none',
-                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                      borderColor: 'var(--danger-color)',
-                      color: 'var(--danger-color)'
-                    }}
-                  >
-                    <GitBranch size={14} /> Open Visual Designer
-                  </a>
-                )}
                 <button 
                   onClick={() => setShowAddNodeForm(!showAddNodeForm)}
                   className="btn btn-secondary"

@@ -1573,33 +1573,7 @@
         // Animate the sound wave bars using real mic frequency data
         animateRealMicWaves();
         
-        // 3. Fetch integrations to check for real WebRTC server
-        let integrationsConfig = {};
-        try {
-          const intRes = await fetch('/api/integrations');
-          if (intRes.ok) {
-            integrationsConfig = await intRes.json();
-          }
-        } catch(e){}
-        
-        const dograhUrl = integrationsConfig.dograhUrl || '';
-        const dograhApiKey = integrationsConfig.dograhApiKey || '';
-        
-        if (dograhUrl) {
-          // Attempt Live WebRTC connection
-          statusEl.innerHTML = '<span class="status-dot" style="background:#f59e0b;"></span> Negotiating WebRTC PeerConnection...';
-          const pc = await connectLiveWebRTC(dograhUrl, dograhApiKey);
-          if (pc) {
-            webrtcPeerConnection = pc;
-            statusEl.innerHTML = '<span class="status-dot" style="background:#10b981;"></span> WebRTC Connected (Live)';
-            document.getElementById('voice-sound-wave').style.display = 'flex';
-            callTranscript.push('System: Secure WebRTC link negotiated successfully with Voxfra/Dograh Voice Gateway.');
-            renderVoiceTranscript();
-            return;
-          }
-        }
-        
-        // 4. WebRTC unavailable or failed -> Fallback to client-side STT + Backend LLM + Client-side TTS
+        // 3. Fallback to client-side STT + Backend LLM + Client-side TTS (Speech Attendant Active)
         statusEl.innerHTML = '<span class="status-dot" style="background:#10b981;"></span> Connected (Speech Attendant Active)';
         document.getElementById('voice-sound-wave').style.display = 'flex';
         document.getElementById('voice-triggers').style.display = 'block';
@@ -1624,45 +1598,6 @@
         callTranscript.push('System Error: Microphone access is required. Please check browser permissions.');
         renderVoiceTranscript();
       }
-    }
-
-    // WebRTC connection negotiator
-    async function connectLiveWebRTC(dograhUrl, dograhApiKey) {
-      try {
-        const pc = new RTCPeerConnection({
-          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-        });
-        
-        microphoneStream.getTracks().forEach(track => pc.addTrack(track, microphoneStream));
-        
-        pc.ontrack = (event) => {
-          const remoteAudio = document.createElement('audio');
-          remoteAudio.srcObject = event.streams[0];
-          remoteAudio.autoplay = true;
-          document.body.appendChild(remoteAudio);
-        };
-        
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        
-        const sdpResponse = await fetch(`${dograhUrl}/api/webrtc/connect`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${dograhApiKey}`
-          },
-          body: JSON.stringify({ sdp: pc.localDescription.sdp, tenantId, agentId: activeAgent?.id })
-        });
-        
-        if (sdpResponse.ok) {
-          const answer = await sdpResponse.json();
-          await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer.sdp }));
-          return pc;
-        }
-      } catch (err) {
-        console.warn("WebRTC handshake failed, rolling back to local web speech API flow:", err);
-      }
-      return null;
     }
 
     // Setup speech recognition (STT)

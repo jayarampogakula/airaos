@@ -27,13 +27,9 @@ interface SuperAdminViewProps {
 export interface IntegrationSettings {
   difyUrl: string;
   difyApiKey: string;
-  n8nUrl: string;
-  n8nApiKey: string;
   calUrl: string;
   twentyUrl: string;
   twentyApiKey: string;
-  dograhUrl: string;
-  dograhApiKey: string;
   twilioAccountSid: string;
   twilioAuthToken: string;
   twilioPhoneNumber: string;
@@ -155,13 +151,9 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
         return {
           difyUrl: parsed.difyUrl || 'https://dify.my-agency.com',
           difyApiKey: parsed.difyApiKey || '',
-          n8nUrl: parsed.n8nUrl || 'https://n8n.my-agency.com',
-          n8nApiKey: parsed.n8nApiKey || '',
           calUrl: parsed.calUrl || 'https://cal.my-agency.com/agency/30min',
           twentyUrl: parsed.twentyUrl || 'https://twenty.my-agency.com',
           twentyApiKey: parsed.twentyApiKey || '',
-          dograhUrl: parsed.dograhUrl || 'http://localhost:3010',
-          dograhApiKey: parsed.dograhApiKey || '',
           twilioAccountSid: parsed.twilioAccountSid || '',
           twilioAuthToken: parsed.twilioAuthToken || '',
           twilioPhoneNumber: parsed.twilioPhoneNumber || '',
@@ -183,13 +175,9 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     return {
       difyUrl: 'https://dify.my-agency.com',
       difyApiKey: '',
-      n8nUrl: 'https://n8n.my-agency.com',
-      n8nApiKey: '',
       calUrl: 'https://cal.my-agency.com/agency/30min',
       twentyUrl: 'https://twenty.my-agency.com',
       twentyApiKey: '',
-      dograhUrl: 'http://localhost:3010',
-      dograhApiKey: '',
       twilioAccountSid: '',
       twilioAuthToken: '',
       twilioPhoneNumber: '',
@@ -790,14 +778,14 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <span style={{ fontSize: '1.2rem' }}>🎙️</span>
                     <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Voice AI Server Gateway</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Voice AI Gateway (Native)</div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                        {integrations.dograhUrl ? `Live connection on ${integrations.dograhUrl}` : 'Running mock voice synthesis gateway'}
+                        Direct WebRTC Telephony • Built-in browser attendant
                       </div>
                     </div>
                   </div>
-                  <span className={`badge ${integrations.dograhUrl ? 'badge-success' : 'badge-warning'}`}>
-                    {integrations.dograhUrl ? 'Online' : 'Simulation'}
+                  <span className="badge badge-success">
+                    Online
                   </span>
                 </div>
 
@@ -805,14 +793,14 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <span style={{ fontSize: '1.2rem' }}>⚙️</span>
                     <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Workflow Automation Engine</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Workflow Automation (Local)</div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                        {integrations.n8nUrl ? `Visual designer linked on ${integrations.n8nUrl}` : 'Running simulated workflow automation'}
+                        Native Visual Workflow Engine • Running
                       </div>
                     </div>
                   </div>
-                  <span className={`badge ${integrations.n8nUrl ? 'badge-success' : 'badge-warning'}`}>
-                    {integrations.n8nUrl ? 'Online' : 'Simulation'}
+                  <span className="badge badge-success">
+                    Active
                   </span>
                 </div>
               </div>
@@ -1026,59 +1014,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
 
 
-            {/* Workflow Automation Mapping */}
-            <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>⚙️</span> Workflow Automation
-              </h4>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.7rem' }}>Workflow Webhook base URL</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={integrations.n8nUrl} 
-                  onChange={(e) => setIntegrations({ ...integrations, n8nUrl: e.target.value })} 
-                  placeholder="https://workflows.yourdomain.com"
-                />
-              </div>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.7rem' }}>Engine API Key</label>
-                <input 
-                  type="password" 
-                  className="form-input" 
-                  value={integrations.n8nApiKey} 
-                  onChange={(e) => setIntegrations({ ...integrations, n8nApiKey: e.target.value })} 
-                  placeholder="api_key_xxxxxxxxxxxxxxxx"
-                />
-              </div>
-            </div>
 
-            {/* SIP Gateway Mapping */}
-            <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🎙️</span> Voice AI Gateway (SIP)
-              </h4>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.7rem' }}>Voice Server URL</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={integrations.dograhUrl} 
-                  onChange={(e) => setIntegrations({ ...integrations, dograhUrl: e.target.value })} 
-                  placeholder="http://localhost:3010"
-                />
-              </div>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.7rem' }}>Voice API / JWT Key</label>
-                <input 
-                  type="password" 
-                  className="form-input" 
-                  value={integrations.dograhApiKey} 
-                  onChange={(e) => setIntegrations({ ...integrations, dograhApiKey: e.target.value })} 
-                  placeholder="auth_xxxxxxxx"
-                />
-              </div>
-            </div>
 
             {/* Twilio Carrier Integration */}
             <div className="col-span-6 glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>

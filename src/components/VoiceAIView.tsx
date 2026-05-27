@@ -211,17 +211,7 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
     } catch (e) {}
   };
 
-  // Dograh configuration state for display
-  const [dograhUrl, setDograhUrl] = useState<string | null>(() => {
-    try {
-      const stored = localStorage.getItem('coolify_integrations');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return parsed.dograhUrl || null;
-      }
-    } catch (e) {}
-    return null;
-  });
+
 
 
   // Outbound Campaigns Tasks List
@@ -622,17 +612,10 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
           </div>
           
           {/* Connection Indicators */}
-          {dograhUrl ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--success-color)', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', color: '#6ee7b7' }}>
-              <span className="node-running" style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)' }} />
-              <span>Voice AI Live ({activeInboundNumber})</span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', color: '#f59e0b' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }} />
-              <span>Simulated Gateways ({activeInboundNumber})</span>
-            </div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--success-color)', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', color: '#6ee7b7' }}>
+            <span className="node-running" style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)' }} />
+            <span>Voice AI Gateway (Active) • {activeInboundNumber}</span>
+          </div>
         </div>
       </div>
 

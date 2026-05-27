@@ -27,7 +27,6 @@ export interface UnifiedIntegrationConfig {
   byoPhoneNumber: string;
   phonepeMerchantId: string;
   phonepeSaltKey: string;
-  n8nUrl: string;
   geminiApiKey: string;
   deepseekApiKey: string;
   activeModelProvider: 'openai' | 'gemini' | 'deepseek';
@@ -50,7 +49,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
     byoPhoneNumber: '',
     phonepeMerchantId: '',
     phonepeSaltKey: '',
-    n8nUrl: 'https://flow.cleveradai.in',
     geminiApiKey: '',
     deepseekApiKey: '',
     activeModelProvider: 'openai'
@@ -116,7 +114,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
               byoPhoneNumber: data.byoPhoneNumber || data.byoPhoneNum || '',
               phonepeMerchantId: data.phonepeMerchantId || '',
               phonepeSaltKey: data.phonepeSaltKey || '',
-              n8nUrl: data.n8nUrl || 'https://flow.cleveradai.in',
               geminiApiKey: data.geminiApiKey || '',
               deepseekApiKey: data.deepseekApiKey || '',
               activeModelProvider: data.activeModelProvider || 'openai'
@@ -158,7 +155,6 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
             byoPhoneNumber: parsed.byoPhoneNumber || parsed.byoPhoneNum || '',
             phonepeMerchantId: parsed.phonepeMerchantId || '',
             phonepeSaltKey: parsed.phonepeSaltKey || '',
-            n8nUrl: parsed.n8nUrl || 'https://flow.cleveradai.in',
             geminiApiKey: parsed.geminiApiKey || '',
             deepseekApiKey: parsed.deepseekApiKey || '',
             activeModelProvider: parsed.activeModelProvider || 'openai'
@@ -218,8 +214,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
       byoPhoneNumber: config.byoPhoneNumber,
       byoPhoneNum: config.byoPhoneNumber,
       phonepeMerchantId: config.phonepeMerchantId,
-      phonepeSaltKey: config.phonepeSaltKey,
-      n8nUrl: config.n8nUrl
+      phonepeSaltKey: config.phonepeSaltKey
     };
 
     const storageKey = currentRole === 'tenant' ? `tenant_integrations_${tenant.id}` : 'coolify_integrations';
@@ -836,30 +831,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                 </div>
               </div>
 
-              {/* Section 3: n8n Workflow Automation Engine */}
-              <div style={{ border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255,255,255,0.01)' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', color: '#ff6c37' }}>
-                  ⚡ n8n Workflow Automation Engine
-                </span>
-                
-                <div className="grid-cols-12" style={{ gap: '14px' }}>
-                  <div className="col-span-12 form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.7rem' }}>n8n Workflow Engine URL</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="https://flow.my-domain.com"
-                      value={config.n8nUrl}
-                      onChange={(e) => setConfig({ ...config, n8nUrl: e.target.value })}
-                      disabled={currentRole === 'tenant'}
-                      style={currentRole === 'tenant' ? { backgroundColor: 'rgba(255,255,255,0.02)', color: 'var(--text-secondary)', cursor: 'not-allowed' } : undefined}
-                    />
-                    {currentRole === 'tenant' && (
-                      <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Preconfigured by SaaS Administrator</span>
-                    )}
-                  </div>
-                </div>
-              </div>
+
 
               {currentRole === 'tenant' && (
                 <div className="grid-cols-12" style={{ gap: '12px' }}>
