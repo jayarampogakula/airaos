@@ -14,6 +14,7 @@ export const TenantSettingsView: React.FC<TenantSettingsViewProps> = ({
   const [name, setName] = useState(tenant.name);
   const [timezone, setTimezone] = useState(tenant.settings?.timezone || 'Asia/Calcutta');
   const [defaultLeadValue, setDefaultLeadValue] = useState(tenant.settings?.defaultLeadValue || 450);
+  const [domain, setDomain] = useState(tenant.domain || '');
   const [welcomeTemplate, setWelcomeTemplate] = useState(tenant.emailTemplates?.welcome || '');
   const [escalationTemplate, setEscalationTemplate] = useState(tenant.emailTemplates?.escalation || '');
   const [saved, setSaved] = useState(false);
@@ -22,6 +23,7 @@ export const TenantSettingsView: React.FC<TenantSettingsViewProps> = ({
     e.preventDefault();
     onUpdateSettings({
       name,
+      domain,
       settings: {
         ...(tenant.settings || {}),
         timezone,
@@ -89,6 +91,19 @@ export const TenantSettingsView: React.FC<TenantSettingsViewProps> = ({
                 />
                 <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
                   Auto-allocated revenue value assigned to new CRM opportunities.
+                </span>
+              </div>
+              <div className="col-span-6 form-group">
+                <label className="form-label">Website Domain / URL</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={domain} 
+                  onChange={(e) => setDomain(e.target.value)} 
+                  placeholder="e.g. smile-dentals.cleveradai.in"
+                />
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                  Your website domain. Displayed on the dashboard overview page.
                 </span>
               </div>
             </div>

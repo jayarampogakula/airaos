@@ -96,6 +96,7 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
   // Saved calls history
   const [savedCalls, setSavedCalls] = useState<SavedCall[]>([]);
   const [selectedCallForModal, setSelectedCallForModal] = useState<SavedCall | null>(null);
+  const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
 
   // Load Config on Mount & Tenant Switch
   useEffect(() => {
@@ -573,8 +574,8 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
   };
 
 
-  const activeInboundNumber = inboundRouting === 'twilio' ? (twilioNum || '+1 (555) 732-1922') : (byoPhoneNum || '+1 (555) 304-4500');
-  const activeOutboundNumber = outboundRouting === 'twilio' ? (twilioNum || '+1 (555) 732-1922') : (byoPhoneNum || '+1 (555) 304-4500');
+  const activeInboundNumber = inboundRouting === 'twilio' ? (twilioNum || '') : (byoPhoneNum || '');
+  const activeOutboundNumber = outboundRouting === 'twilio' ? (twilioNum || '') : (byoPhoneNum || '');
 
   return (
     <div className="animate-fade-in" style={{ height: '100%', overflowY: 'auto', paddingBottom: '40px' }}>
@@ -627,10 +628,17 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
           </div>
           
           {/* Connection Indicators */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--success-color)', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', color: '#6ee7b7' }}>
-            <span className="node-running" style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)' }} />
-            <span>Voice AI Gateway (Active) • {activeInboundNumber}</span>
-          </div>
+          {activeInboundNumber ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--success-color)', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', color: '#6ee7b7' }}>
+              <span className="node-running" style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)' }} />
+              <span>Voice AI Gateway (Active) • {activeInboundNumber}</span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', color: '#fca5a5' }}>
+              <span className="node-stopped" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
+              <span>Voice AI Gateway (Inactive) • Unconfigured</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -652,20 +660,6 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
                     <option key={a.id} value={a.id}>{a.name} ({a.department} Voice AI)</option>
                   ))}
                 </select>
-              </div>
-
-              {/* Company Voice Knowledge Loaded Card */}
-              <div style={{ width: '100%', border: '1px solid var(--border-glass)', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.01)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                  <Shield size={14} style={{ color: 'var(--accent-color)' }} />
-                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>Company Voice Knowledge loaded:</span>
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div>🏢 <strong>Name:</strong> {companyName || tenantName}</div>
-                  <div>🔧 <strong>Services:</strong> {companyServices ? `${companyServices.substring(0, 75)}...` : 'None'}</div>
-                  <div>💰 <strong>Pricing:</strong> {companyPricing ? `${companyPricing.substring(0, 75)}...` : 'None'}</div>
-                  <div>⏰ <strong>Hours:</strong> {companyHours ? `${companyHours.substring(0, 75)}...` : 'None'}</div>
-                </div>
               </div>
 
               {/* Virtual Screen showing incoming/active calls */}
@@ -862,33 +856,61 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {savedCalls.map((call) => (
-                      <tr key={call.id}>
-                        <td>{call.timestamp}</td>
-                        <td>
-                          <span className={`badge ${call.direction === 'inbound' ? 'badge-primary' : 'badge-secondary'}`} style={{ display: 'inline-block', padding: '2px 6px', fontSize: '0.65rem' }}>
-                            {call.direction === 'inbound' ? '📥 Inbound' : '📤 Outbound'}
-                          </span>
-                        </td>
-                        <td style={{ fontWeight: 'bold' }}>{call.contactName}</td>
-                        <td>{call.phone}</td>
-                        <td>{call.goal}</td>
-                        <td>
-                          {call.status === 'completed' && <span className="badge badge-success">Completed</span>}
-                          {call.status === 'pending_callback' && <span className="badge badge-warning">Rescheduled</span>}
-                          {call.status === 'failed' && <span className="badge badge-danger">Not Interested</span>}
-                        </td>
-                        <td>
-                          <button 
-                            onClick={() => setSelectedCallForModal(call)} 
-                            className="btn btn-secondary" 
-                            style={{ padding: '4px 8px', fontSize: '0.7rem' }}
-                          >
-                            🔎 View Transcript
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {savedCalls.map((call) => {
+                      const isExpanded = expandedCallId === call.id;
+                      return (
+                        <React.Fragment key={call.id}>
+                          <tr>
+                            <td>{call.timestamp}</td>
+                            <td>
+                              <span className={`badge ${call.direction === 'inbound' ? 'badge-primary' : 'badge-secondary'}`} style={{ display: 'inline-block', padding: '2px 6px', fontSize: '0.65rem' }}>
+                                {call.direction === 'inbound' ? '📥 Inbound' : '📤 Outbound'}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: 'bold' }}>{call.contactName}</td>
+                            <td>{call.phone}</td>
+                            <td>{call.goal}</td>
+                            <td>
+                              {call.status === 'completed' && <span className="badge badge-success">Completed</span>}
+                              {call.status === 'pending_callback' && <span className="badge badge-warning">Rescheduled</span>}
+                              {call.status === 'failed' && <span className="badge badge-danger">Not Interested</span>}
+                            </td>
+                            <td>
+                              <button 
+                                onClick={() => setExpandedCallId(isExpanded ? null : call.id)} 
+                                className="btn btn-secondary" 
+                                style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+                              >
+                                {isExpanded ? 'Collapse' : '🔎 View Transcript'}
+                              </button>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={7} style={{ background: 'rgba(0,0,0,0.2)', padding: '16px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', padding: '12px', border: '1px solid var(--border-glass)', borderRadius: '6px', background: 'rgba(99,102,241,0.02)' }}>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary-color)', borderBottom: '1px solid var(--border-glass)', paddingBottom: '4px', marginBottom: '4px' }}>
+                                    Call Transcript: {call.contactName} ({call.phone})
+                                  </div>
+                                  {call.transcript && call.transcript.length > 0 ? (
+                                    call.transcript.map((log, idx) => (
+                                      <div key={idx} style={{ fontSize: '0.75rem', display: 'flex', gap: '6px', margin: '2px 0' }}>
+                                        <strong style={{ color: log.sender === 'agent' ? 'var(--primary-color)' : 'var(--accent-color)' }}>
+                                          {log.sender === 'agent' ? 'AI Attendant:' : 'Customer:'}
+                                        </strong>
+                                        <span style={{ color: 'var(--text-primary)' }}>{log.text}</span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>No speech transcript recorded.</span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1167,22 +1189,6 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
             <h3 style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', margin: 0 }}>
               <PhoneCall size={18} /> Phone Routing & Credentials
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-                Connect your communication gateways to allow the digital employee to answer inbound calls and execute outbound campaign dials.
-              </p>
-              <a 
-                href="#voice-doc-guide" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  const el = document.getElementById('voice-doc-guide');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }} 
-                style={{ fontSize: '0.72rem', color: 'var(--primary-color)', textDecoration: 'underline', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-              >
-                📘 Voice AI Setup & Gateway Documentation Guide
-              </a>
-            </div>
 
             <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.15)', borderRadius: '8px', fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
               💡 <strong>Centralized vault:</strong> Phone carrier settings, Twilio credentials, BYO Carrier SIP credentials, payment keys (PhonePe), and AI engine keys can be managed centrally in the <strong>Integrations</strong> tab under Administration.
@@ -1413,161 +1419,10 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
             </div>
           </div>
           
-          {/* Voice AI Setup & Gateway Documentation Guide */}
-          <div id="voice-doc-guide" className="col-span-12 glass-panel" style={{ marginTop: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(11, 15, 29, 0.4)', border: '1px solid var(--border-glass)' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', margin: 0 }}>
-              📘 Voice AI & SIP Gateway Setup Guide
-            </h3>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--accent-color)', margin: 0 }}>1. How Inbound & Outbound Calling Works</h4>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-                  <strong>Inbound Calls:</strong> Customers call your active Twilio or BYO SIP phone number. AiraOS automatically routes the call to the selected AI agent, who answers FAQs, collects lead information, and updates your scheduler in real-time.
-                </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-                  <strong>Outbound Campaigns:</strong> When you start dialer queues, AiraOS connects calls using your associated voice gateway, follows call scripts, handles rescheduled callbacks, and logs updates directly in the CRM.
-                </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-                  <strong>Will calls go to/from my own number?</strong> Yes! If you configure a <strong>Custom BYO SIP trunk</strong> or <strong>Twilio Elastic SIP trunk</strong> with your existing number, calls will dial from and be received on that number. If you use standard Twilio, it dials from your Twilio-purchased number.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--accent-color)', margin: 0 }}>2. Custom BYO SIP Server Integration</h4>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-                  Bring Your Own (BYO) carrier allows routing VoIP calls through your existing corporate PBX (such as FreePBX, Asterisk, 3CX, Cisco CallManager) or SIP providers (Telnyx, Bandwidth, Flowroute, Twilio SIP Elastic Trunking).
-                </p>
-                <div style={{ padding: '10px', background: 'rgba(0, 0, 0, 0.2)', borderRadius: '6px', border: '1px solid var(--border-glass)', fontSize: '0.7rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div>🔑 <strong>SIP Server / Gateway:</strong> Your provider gateway host address (e.g. <code>sip.telnyx.com</code>).</div>
-                  <div>👤 <strong>SIP Username / Password:</strong> The extension auth username and credentials.</div>
-                  <div>📞 <strong>Custom Number:</strong> The DID phone number registered with the SIP trunk.</div>
-                </div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-                  <strong>Where to get:</strong> Contact your company VoIP network administrator, or retrieve credentials from your VoIP/SIP carrier accounts.
-                </p>
-              </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--accent-color)', margin: 0 }}>3. Simulated Gateways vs Live Nodes</h4>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-                  <strong>Simulated Gateways (Sandbox):</strong> Runs locally to let you interactively test AI receptionist scripts, speech triggers, tool logic, and mock database updates without linking credentials or consuming call minutes.
-                </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-                  <strong>Live Gateway Node:</strong> Integrates with physical VoIP phone systems when connected with a valid Twilio SID or BYO SIP credentials and registered under integrations.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--accent-color)', margin: 0 }}>🔗 Internal Shortcuts & Support</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
-                  <button 
-                    type="button"
-                    onClick={() => onSwitchTab?.('integrations')} 
-                    className="btn btn-secondary" 
-                    style={{ padding: '6px 12px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    ⚙️ Central Integrations Vault
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => onSwitchTab?.('employees')} 
-                    className="btn btn-secondary" 
-                    style={{ padding: '6px 12px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    🤖 Manage AI Receptionist Personas
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => onSwitchTab?.('scheduler')} 
-                    className="btn btn-secondary" 
-                    style={{ padding: '6px 12px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    📅 View Calendar Bookings
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* Popup Transcript Modal */}
-      {selectedCallForModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999
-        }}>
-          <div className="glass-panel" style={{
-            width: '500px',
-            maxHeight: '80vh',
-            padding: '24px',
-            background: '#0d111c',
-            border: '1px solid var(--border-glass)',
-            borderRadius: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px', marginBottom: '16px' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 'bold' }}>
-                  Call Transcript: {selectedCallForModal.contactName}
-                </h3>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  {selectedCallForModal.direction === 'inbound' ? '📥 Inbound Call' : '📤 Outbound Campaign'} • {selectedCallForModal.phone}
-                </span>
-              </div>
-              <button 
-                onClick={() => setSelectedCallForModal(null)} 
-                className="btn btn-danger" 
-                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-              >
-                ✕ Close
-              </button>
-            </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px', marginBottom: '16px' }}>
-              {selectedCallForModal.transcript.map((log, idx) => (
-                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  {log.actionPerformed && (
-                    <div style={{ display: 'flex', gap: '6px', padding: '6px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '4px', fontSize: '0.7rem', color: '#6ee7b7', fontFamily: 'monospace' }}>
-                      <span>{log.actionPerformed}</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: log.sender === 'user' ? 'flex-end' : 'flex-start' }}>
-                    <div style={{
-                      maxWidth: '85%',
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      fontSize: '0.8rem',
-                      background: log.sender === 'user' ? 'var(--primary-color)' : 'rgba(255,255,255,0.03)',
-                      color: 'white',
-                      border: log.sender === 'user' ? 'none' : '1px solid var(--border-glass)'
-                    }}>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                        {log.sender === 'user' ? 'Customer' : 'Digital Employee'}
-                      </div>
-                      {log.text}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -26,6 +26,7 @@ interface DashboardViewProps {
     websitesLimit: number;
     websitesUsed: number;
   };
+  conversations: any[];
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -35,7 +36,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   deals,
   chatsUsed,
   platformSupportBot,
-  usageLimits
+  usageLimits,
+  conversations
 }) => {
   const pipelineValue = deals.reduce((acc, d) => acc + d.value, 0);
   const activeAppsCount = appointments.filter(a => a.status === 'scheduled').length;
@@ -49,6 +51,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
 
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+
   const getBaseDomain = () => {
     const host = window.location.host;
     const hostname = window.location.hostname;
@@ -57,6 +62,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       return host.replace(/^(app|dashboard|www|admin)\./i, '');
     }
     return cleaned;
+  };
+
+  const getDisplayDomain = () => {
+    const localDomainType = localStorage.getItem(`tenant_domain_type_${tenant.id}`);
+    const localCustomDomain = localStorage.getItem(`tenant_custom_domain_${tenant.id}`);
+    
+    if (localDomainType === 'custom' && localCustomDomain) {
+      return localCustomDomain;
+    }
+    
+    if (tenant.domain && !tenant.domain.endsWith('airaos.com')) {
+      return tenant.domain;
+    }
+    
+    if (tenant.websiteConfig?.isWebsiteGenerated) {
+      return tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`);
+    }
+    
+    return '';
   };
 
   // Initialize welcome message when bot configuration is loaded
@@ -128,11 +152,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const [weekOffset, setWeekOffset] = useState(0);
 
-  const getWeekRangeString = (offset: number) => {
-    const current = new Date();
-    const day = current.getDay();
-    const diff = current.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(current.setDate(diff + offset * 7));
+  const getMondayOfOffset = (year: number, month: number, offset: number) => {
+    const baseDate = new Date(year, month, 1);
+    const day = baseDate.getDay();
+    const diff = baseDate.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(year, month, diff);
+    monday.setDate(monday.getDate() + offset * 7);
+    return monday;
+  };
+
+  const getWeekRangeString = (year: number, month: number, offset: number) => {
+    const monday = getMondayOfOffset(year, month, offset);
     const sunday = new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000);
 
     const mondayMonth = monday.toLocaleDateString(undefined, { month: 'short' });
@@ -149,36 +179,52 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return `${mondayMonth} ${mondayYear} - ${sundayMonth} ${sundayYear} (${monday.getDate()} - ${sunday.getDate()})`;
   };
 
-  const getDayDate = (offset: number, dayIndex: number) => {
-    const current = new Date();
-    const day = current.getDay();
-    const diff = current.getDate() - day + (day === 0 ? -6 : 1);
-    const date = new Date(current.setDate(diff + offset * 7 + dayIndex));
-    return date.getDate();
+  const getDayDate = (year: number, month: number, offset: number, dayIndex: number) => {
+    const monday = getMondayOfOffset(year, month, offset);
+    const date = new Date(monday.getTime());
+    date.setDate(monday.getDate() + dayIndex);
+    return date;
   };
 
-  const getTrafficDataForOffset = (offset: number) => {
-    const seed = Math.abs(offset) % 5;
-    const baseChats = [42, 58, 74, 62, 89, 35, 20];
-    const baseCalls = [12, 18, 24, 15, 30, 8, 5];
-    const factor = [1.0, 1.2, 0.8, 1.1, 0.95][seed];
-    const shift = [-5, 8, -12, 4, -2][seed];
+  const getRealTrafficDataForOffset = (year: number, month: number, offset: number) => {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
+    
     return days.map((day, idx) => {
-      const chats = Math.max(5, Math.round(baseChats[idx] * factor + shift));
-      const calls = Math.max(2, Math.round(baseCalls[idx] * factor + (shift / 2)));
+      const dayDate = getDayDate(year, month, offset, idx);
+      const startOfDay = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0);
+      const endOfDay = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 23, 59, 59);
+      
+      let chatCount = 0;
+      let voiceCount = 0;
+      
+      (conversations || []).forEach(conv => {
+        const hasActivityOnDay = conv.messages?.some((msg: any) => {
+          if (!msg.timestamp) return false;
+          const msgDate = new Date(msg.timestamp);
+          return msgDate >= startOfDay && msgDate <= endOfDay;
+        });
+        
+        if (hasActivityOnDay) {
+          if (conv.channel === 'voice') {
+            voiceCount++;
+          } else {
+            chatCount++;
+          }
+        }
+      });
+      
       return {
         day,
-        date: getDayDate(offset, idx),
-        chats,
-        calls
+        date: dayDate.getDate(),
+        chats: chatCount,
+        calls: voiceCount
       };
     });
   };
 
-  const trafficData = getTrafficDataForOffset(weekOffset);
-  const maxTraffic = 120; // scale factor
+  const trafficData = getRealTrafficDataForOffset(selectedYear, selectedMonth, weekOffset);
+  const maxChatsOrCalls = Math.max(...trafficData.map(t => Math.max(t.chats, t.calls)), 5);
+  const maxTraffic = Math.ceil(maxChatsOrCalls / 5) * 5;
 
   return (
     <div className="animate-fade-in">
@@ -188,9 +234,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <p className="view-subtitle">Dashboard control console & live execution metrics.</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Domain: <a href={`https://${tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', textDecoration: 'none' }}>{tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)} <ExternalLink size={10} style={{ display: 'inline' }} /></a>
-          </span>
+          {getDisplayDomain() ? (
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Domain: <a href={`https://${getDisplayDomain()}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', textDecoration: 'none' }}>{getDisplayDomain()} <ExternalLink size={10} style={{ display: 'inline' }} /></a>
+            </span>
+          ) : (
+            <span style={{ fontSize: '0.75rem', color: 'var(--warning-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              Domain: Not Configured
+            </span>
+          )}
           <button className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <RefreshCw size={12} /> Sync Data
           </button>
@@ -261,6 +313,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div>
               <h4 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>Weekly Traffic Distribution</h4>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                <select 
+                  value={selectedMonth} 
+                  onChange={(e) => {
+                    setSelectedMonth(Number(e.target.value));
+                    setWeekOffset(0);
+                  }}
+                  style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)', padding: '2px 6px', fontSize: '0.7rem', outline: 'none', cursor: 'pointer' }}
+                >
+                  {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, idx) => (
+                    <option key={idx} value={idx} style={{ background: '#090d16', color: 'white' }}>{m}</option>
+                  ))}
+                </select>
+
+                <select 
+                  value={selectedYear} 
+                  onChange={(e) => {
+                    setSelectedYear(Number(e.target.value));
+                    setWeekOffset(0);
+                  }}
+                  style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)', padding: '2px 6px', fontSize: '0.7rem', outline: 'none', cursor: 'pointer' }}
+                >
+                  {[2025, 2026, 2027].map(y => (
+                    <option key={y} value={y} style={{ background: '#090d16', color: 'white' }}>{y}</option>
+                  ))}
+                </select>
+
                 <button 
                   onClick={() => setWeekOffset(prev => prev - 1)}
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', padding: '2px 8px', fontSize: '0.7rem' }}
@@ -268,7 +346,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   &larr; Prev
                 </button>
                 <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                  {getWeekRangeString(weekOffset)}
+                  {getWeekRangeString(selectedYear, selectedMonth, weekOffset)}
                 </span>
                 <button 
                   onClick={() => setWeekOffset(prev => prev + 1)}

@@ -1103,6 +1103,7 @@ function App() {
                   chatsUsed={getUsageLimits().conversationsUsed}
                   platformSupportBot={platformSupportBot}
                   usageLimits={getUsageLimits()}
+                  conversations={getFilteredConversations()}
                 />
               )}
               {activeTab === 'brain' && (

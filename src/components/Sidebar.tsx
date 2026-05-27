@@ -29,8 +29,13 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-// @ts-ignore
-const appVersionString = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'v0.4.0';
+import versionData from '../version.json';
+
+const commitCount = versionData?.commitCount || 42;
+const major = Math.floor(commitCount / 100);
+const minor = Math.floor((commitCount % 100) / 10);
+const patch = commitCount % 10;
+const appVersionString = `v${major}.${minor}.${patch}`;
 
 export const Sidebar: React.FC<SidebarProps> = ({
   user,

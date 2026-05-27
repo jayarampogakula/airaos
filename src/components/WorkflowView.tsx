@@ -104,7 +104,21 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({
   useEffect(() => {
     if (selectedNode) {
       setNodeConfig({
-        connectorType: selectedNode.config?.connectorType || (selectedNode.label.toLowerCase().includes('whatsapp') ? 'whatsapp' : selectedNode.label.toLowerCase().includes('email') ? 'email' : selectedNode.label.toLowerCase().includes('slack') ? 'slack' : selectedNode.label.toLowerCase().includes('webhook') ? 'webhook' : selectedNode.label.toLowerCase().includes('sms') ? 'sms' : 'whatsapp'),
+        connectorType: selectedNode.config?.connectorType || (
+          (selectedNode.label.toLowerCase().includes('crm') || selectedNode.label.toLowerCase().includes('contact') || selectedNode.label.toLowerCase().includes('deal') || selectedNode.component.toLowerCase().includes('crm'))
+            ? 'crm'
+            : selectedNode.label.toLowerCase().includes('whatsapp')
+              ? 'whatsapp'
+              : selectedNode.label.toLowerCase().includes('email')
+                ? 'email'
+                : selectedNode.label.toLowerCase().includes('slack')
+                  ? 'slack'
+                  : selectedNode.label.toLowerCase().includes('webhook')
+                    ? 'webhook'
+                    : selectedNode.label.toLowerCase().includes('sms')
+                      ? 'sms'
+                      : 'whatsapp'
+        ),
         whatsappNumber: selectedNode.config?.whatsappNumber || '',
         whatsappTemplate: selectedNode.config?.whatsappTemplate || 'welcome_lead',
         emailRecipient: selectedNode.config?.emailRecipient || '',
@@ -654,21 +668,16 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({
                     </div>
                     
                     <div className="grid-cols-12" style={{ gap: '8px' }}>
-                      <div className="col-span-12 form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.65rem', marginBottom: '2px' }}>Connector Protocol</label>
-                        <select 
-                          className="form-input" 
-                          style={{ padding: '4px 8px', fontSize: '0.7rem' }}
-                          value={nodeConfig.connectorType}
-                          onChange={(e) => setNodeConfig({ ...nodeConfig, connectorType: e.target.value })}
-                        >
-                          <option value="whatsapp">WhatsApp Integration</option>
-                          <option value="email">Email SMTP Connector</option>
-                          <option value="sms">SMS Text Alert</option>
-                          <option value="slack">Slack Notification</option>
-                          <option value="webhook">Webhook HTTP API</option>
-                          <option value="crm">Twenty CRM Integrator</option>
-                        </select>
+                      <div className="col-span-12" style={{ margin: 0, paddingBottom: '6px', borderBottom: '1px solid var(--border-glass)', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>INTEGRATION PROTOCOL:</span>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: 'var(--primary-color)', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {nodeConfig.connectorType === 'crm' && 'Twenty CRM Integrator'}
+                          {nodeConfig.connectorType === 'whatsapp' && 'WhatsApp Service'}
+                          {nodeConfig.connectorType === 'email' && 'Email SMTP Connector'}
+                          {nodeConfig.connectorType === 'sms' && 'SMS Gateway'}
+                          {nodeConfig.connectorType === 'slack' && 'Slack Notification'}
+                          {nodeConfig.connectorType === 'webhook' && 'Webhook HTTP API'}
+                        </div>
                       </div>
 
                       {nodeConfig.connectorType === 'crm' && (
