@@ -13,6 +13,7 @@ export const TenantSettingsView: React.FC<TenantSettingsViewProps> = ({
 }) => {
   const [name, setName] = useState(tenant.name);
   const [timezone, setTimezone] = useState(tenant.settings?.timezone || 'Asia/Calcutta');
+  const [defaultLeadValue, setDefaultLeadValue] = useState(tenant.settings?.defaultLeadValue || 450);
   const [welcomeTemplate, setWelcomeTemplate] = useState(tenant.emailTemplates?.welcome || '');
   const [escalationTemplate, setEscalationTemplate] = useState(tenant.emailTemplates?.escalation || '');
   const [saved, setSaved] = useState(false);
@@ -23,7 +24,8 @@ export const TenantSettingsView: React.FC<TenantSettingsViewProps> = ({
       name,
       settings: {
         ...(tenant.settings || {}),
-        timezone
+        timezone,
+        defaultLeadValue: Number(defaultLeadValue)
       },
       emailTemplates: {
         ...(tenant.emailTemplates || {}),
@@ -72,6 +74,22 @@ export const TenantSettingsView: React.FC<TenantSettingsViewProps> = ({
                   disabled 
                   style={{ background: 'rgba(255,255,255,0.01)', color: 'var(--text-muted)' }}
                 />
+              </div>
+            </div>
+            <div className="grid-cols-12" style={{ gap: '16px', marginTop: '16px' }}>
+              <div className="col-span-6 form-group">
+                <label className="form-label">Default Lead Revenue Value ($)</label>
+                <input 
+                  type="number" 
+                  className="form-input" 
+                  value={defaultLeadValue} 
+                  onChange={(e) => setDefaultLeadValue(Number(e.target.value))} 
+                  required
+                  min="0"
+                />
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                  Auto-allocated revenue value assigned to new CRM opportunities.
+                </span>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, DollarSign, Calendar, ChevronRight, UserPlus, 
   Search, KanbanSquare, Table, Trash2, ArrowRight, 
@@ -14,6 +14,7 @@ interface CRMPipelineViewProps {
   onAddContactNote?: (contactId: string, note: string) => void;
   agents: Agent[];
   tenantId: string;
+  onUpdateContact?: (updated: Contact) => void;
 }
 
 interface DropoffAnalysisReport {
@@ -36,10 +37,49 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
   onAddContact,
   onAddContactNote,
   agents,
-  tenantId
+  tenantId,
+  onUpdateContact
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'deals' | 'contacts' | 'dropoff'>('deals');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editCompany, setEditCompany] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editProject, setEditProject] = useState('');
+  const [editAgentId, setEditAgentId] = useState('');
+
+  const handleStartEdit = (c: Contact) => {
+    setEditName(c.name || '');
+    setEditEmail(c.email || '');
+    setEditPhone(c.phone || '');
+    setEditCompany(c.company || '');
+    setEditCity(c.city || '');
+    setEditProject(c.project || '');
+    setEditAgentId(c.assignedAgentId || '');
+    setIsEditing(true);
+  };
+
+  const handleSaveContactEdit = (contactId: string) => {
+    if (onUpdateContact) {
+      const contact = contacts.find(c => c.id === contactId);
+      if (contact) {
+        onUpdateContact({
+          ...contact,
+          name: editName,
+          email: editEmail,
+          phone: editPhone,
+          company: editCompany,
+          city: editCity,
+          project: editProject,
+          assignedAgentId: editAgentId
+        });
+      }
+    }
+    setIsEditing(false);
+  };
   
   // CRM Filters state
   const [filterDate, setFilterDate] = useState('');
@@ -49,6 +89,10 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
 
   // Selected contact for detail drawer
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsEditing(false);
+  }, [selectedContactId]);
 
   // AI Campaign states
   const [campaignObjective, setCampaignObjective] = useState('');
@@ -908,36 +952,79 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
             </div>
 
             {/* Profile Info */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Email:</span>
-                <span style={{ color: 'white', fontWeight: '500' }}>{contact.email}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Phone:</span>
-                <span style={{ color: 'white', fontWeight: '500' }}>{contact.phone}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Company:</span>
-                <span style={{ color: 'white', fontWeight: '500' }}>{contact.company}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>City:</span>
-                <span style={{ color: 'white', fontWeight: '500' }}>{contact.city || 'Not Specified'}</span>
-              </div>
-              {tenantId === 't-2' && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Real Estate Project:</span>
-                  <span style={{ color: 'var(--primary-color)', fontWeight: 'bold' }}>{contact.project || 'Not Specified'}</span>
+            {isEditing ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem', overflowY: 'auto', maxHeight: '320px', paddingRight: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Name:</label>
+                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editName} onChange={(e) => setEditName(e.target.value)} />
                 </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Assigned Employee:</span>
-                <span style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>
-                  {agentObj ? `${agentObj.name} (${agentObj.department})` : 'Unassigned'}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Email:</label>
+                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Phone:</label>
+                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Company:</label>
+                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editCompany} onChange={(e) => setEditCompany(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>City:</label>
+                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editCity} onChange={(e) => setEditCity(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Project:</label>
+                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editProject} onChange={(e) => setEditProject(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Assigned Employee:</label>
+                  <select className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editAgentId} onChange={(e) => setEditAgentId(e.target.value)}>
+                    <option value="">Unassigned</option>
+                    {agents.map(a => <option key={a.id} value={a.id}>{a.name} ({a.department})</option>)}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem', flex: 1 }} onClick={() => handleSaveContactEdit(contact.id)}>Save</button>
+                  <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.75rem', flex: 1 }} onClick={() => setIsEditing(false)}>Cancel</button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Email:</span>
+                  <span style={{ color: 'white', fontWeight: '500' }}>{contact.email}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Phone:</span>
+                  <span style={{ color: 'white', fontWeight: '500' }}>{contact.phone}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Company:</span>
+                  <span style={{ color: 'white', fontWeight: '500' }}>{contact.company}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>City:</span>
+                  <span style={{ color: 'white', fontWeight: '500' }}>{contact.city || 'Not Specified'}</span>
+                </div>
+                {tenantId === 't-2' && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Real Estate Project:</span>
+                    <span style={{ color: 'var(--primary-color)', fontWeight: 'bold' }}>{contact.project || 'Not Specified'}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Assigned Employee:</span>
+                  <span style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>
+                    {agentObj ? `${agentObj.name} (${agentObj.department})` : 'Unassigned'}
+                  </span>
+                </div>
+                <button className="btn btn-secondary" style={{ marginTop: '8px', padding: '6px', fontSize: '0.75rem' }} onClick={() => handleStartEdit(contact)}>
+                  ✏️ Edit Profile Info
+                </button>
+              </div>
+            )}
 
             {/* Tags */}
             <div>

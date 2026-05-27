@@ -137,7 +137,7 @@ export interface Conversation {
   contact?: Partial<Contact>;
 }
 
-export type ManagedChannelType = 'website' | 'whatsapp' | 'gmail' | 'outlook' | 'smtp' | 'telegram' | 'instagram' | 'facebook';
+export type ManagedChannelType = 'website' | 'whatsapp' | 'gmail' | 'outlook' | 'smtp' | 'telegram' | 'instagram' | 'facebook' | 'sms';
 
 export interface ChannelConfig {
   id: string;

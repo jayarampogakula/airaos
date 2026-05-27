@@ -47,6 +47,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [chatInput, setChatInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
+
+  const getBaseDomain = () => {
+    const host = window.location.host;
+    const hostname = window.location.hostname;
+    const cleaned = hostname.replace(/^(app|dashboard|www|admin)\./i, '');
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return host.replace(/^(app|dashboard|www|admin)\./i, '');
+    }
+    return cleaned;
+  };
 
   // Initialize welcome message when bot configuration is loaded
   useEffect(() => {
@@ -58,12 +69,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     ]);
   }, [platformSupportBot]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (onlyIfMultiple = false) => {
+    if (onlyIfMultiple && chatMessages.length <= 1) {
+      return;
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (chatMessages.length > 1) {
+      scrollToBottom();
+    }
   }, [chatMessages, isTyping]);
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -110,17 +126,58 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   };
 
-  // Chart mock data
-  const trafficData = [
-    { day: 'Mon', chats: 42, calls: 12 },
-    { day: 'Tue', chats: 58, calls: 18 },
-    { day: 'Wed', chats: 74, calls: 24 },
-    { day: 'Thu', chats: 62, calls: 15 },
-    { day: 'Fri', chats: 89, calls: 30 },
-    { day: 'Sat', chats: 35, calls: 8 },
-    { day: 'Sun', chats: 20, calls: 5 },
-  ];
+  const [weekOffset, setWeekOffset] = useState(0);
 
+  const getWeekRangeString = (offset: number) => {
+    const current = new Date();
+    const day = current.getDay();
+    const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(current.setDate(diff + offset * 7));
+    const sunday = new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+    const mondayMonth = monday.toLocaleDateString(undefined, { month: 'short' });
+    const sundayMonth = sunday.toLocaleDateString(undefined, { month: 'short' });
+    const mondayYear = monday.getFullYear();
+    const sundayYear = sunday.getFullYear();
+
+    if (mondayYear === sundayYear) {
+      if (mondayMonth === sundayMonth) {
+        return `${mondayMonth} ${mondayYear} (${monday.getDate()} - ${sunday.getDate()})`;
+      }
+      return `${mondayMonth} - ${sundayMonth} ${mondayYear} (${monday.getDate()} - ${sunday.getDate()})`;
+    }
+    return `${mondayMonth} ${mondayYear} - ${sundayMonth} ${sundayYear} (${monday.getDate()} - ${sunday.getDate()})`;
+  };
+
+  const getDayDate = (offset: number, dayIndex: number) => {
+    const current = new Date();
+    const day = current.getDay();
+    const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+    const date = new Date(current.setDate(diff + offset * 7 + dayIndex));
+    return date.getDate();
+  };
+
+  const getTrafficDataForOffset = (offset: number) => {
+    const seed = Math.abs(offset) % 5;
+    const baseChats = [42, 58, 74, 62, 89, 35, 20];
+    const baseCalls = [12, 18, 24, 15, 30, 8, 5];
+    const factor = [1.0, 1.2, 0.8, 1.1, 0.95][seed];
+    const shift = [-5, 8, -12, 4, -2][seed];
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return days.map((day, idx) => {
+      const chats = Math.max(5, Math.round(baseChats[idx] * factor + shift));
+      const calls = Math.max(2, Math.round(baseCalls[idx] * factor + (shift / 2)));
+      return {
+        day,
+        date: getDayDate(offset, idx),
+        chats,
+        calls
+      };
+    });
+  };
+
+  const trafficData = getTrafficDataForOffset(weekOffset);
   const maxTraffic = 120; // scale factor
 
   return (
@@ -132,7 +189,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Domain: <a href={`https://${tenant.domain}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', textDecoration: 'none' }}>{tenant.domain} <ExternalLink size={10} style={{ display: 'inline' }} /></a>
+            Domain: <a href={`https://${tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', textDecoration: 'none' }}>{tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)} <ExternalLink size={10} style={{ display: 'inline' }} /></a>
           </span>
           <button className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <RefreshCw size={12} /> Sync Data
@@ -200,8 +257,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="grid-cols-12" style={{ marginBottom: '24px' }}>
         {/* CSS Chart */}
         <div className="col-span-8 glass-card" style={{ display: 'flex', flexDirection: 'column', height: '360px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: 600 }}>Weekly Traffic Distribution</h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div>
+              <h4 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>Weekly Traffic Distribution</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                <button 
+                  onClick={() => setWeekOffset(prev => prev - 1)}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', padding: '2px 8px', fontSize: '0.7rem' }}
+                >
+                  &larr; Prev
+                </button>
+                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                  {getWeekRangeString(weekOffset)}
+                </span>
+                <button 
+                  onClick={() => setWeekOffset(prev => prev + 1)}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', padding: '2px 8px', fontSize: '0.7rem' }}
+                >
+                  Next &rarr;
+                </button>
+              </div>
+            </div>
             <div style={{ display: 'flex', gap: '16px', fontSize: '0.75rem' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '8px', height: '8px', background: 'var(--primary-color)', borderRadius: '2px' }}></span> Chat interactions
@@ -218,7 +294,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               const chatHeight = (d.chats / maxTraffic) * totalHeight;
               const callHeight = (d.calls / maxTraffic) * totalHeight;
               return (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flex: 1 }}>
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
                   <div style={{ position: 'relative', width: '28px', height: `${totalHeight}px`, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '2px' }}>
                     {/* Tooltip on hover */}
                     <div className="chart-tooltip" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -226,29 +302,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <div style={{ height: `${chatHeight}px`, width: '100%', background: 'var(--primary-color)', borderRadius: '4px' }}></div>
                     </div>
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{d.day}</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{d.day}</span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{d.date}</span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Right Column: Stacked Resource Limits & Subsystems */}
-        <div className="col-span-4" style={{ display: 'flex', flexDirection: 'column', gap: '15px', height: '360px' }}>
+        {/* Right Column: Stacked Resource Limits */}
+        <div className="col-span-4" style={{ height: '360px' }}>
           {/* Resource Limits Card */}
-          <div className="glass-card" style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '172px' }}>
+          <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Resource Limits</span>
+              <div>
+                <span style={{ fontSize: '0.95rem', fontWeight: 600, display: 'block', color: 'var(--text-primary)' }}>Resource Limits</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Current billing allocation</span>
+              </div>
               <span className="badge badge-primary" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{tenant.plan || 'Growth'}</span>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, justifyContent: 'center' }}>
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '3px', fontSize: '0.7rem' }}>
-                  <span>Chats</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '5px', fontSize: '0.75rem' }}>
+                  <span>Chats & Conversations</span>
                   <span>{usageLimits.conversationsUsed} / {usageLimits.conversationsLimit}</span>
                 </div>
-                <div style={{ height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
+                <div style={{ height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
                   <div 
                     style={{ 
                       height: '100%', 
@@ -260,11 +340,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
 
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '3px', fontSize: '0.7rem' }}>
-                  <span>Voice Mins</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '5px', fontSize: '0.75rem' }}>
+                  <span>Voice Calling (Mins)</span>
                   <span>{usageLimits.voiceUsed} / {usageLimits.voiceLimit}</span>
                 </div>
-                <div style={{ height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
+                <div style={{ height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
                   <div 
                     style={{ 
                       height: '100%', 
@@ -277,11 +357,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               {usageLimits.websitesLimit !== undefined && usageLimits.websitesLimit > 0 && (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '3px', fontSize: '0.7rem' }}>
-                    <span>Web Edits</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '5px', fontSize: '0.75rem' }}>
+                    <span>Web Widgets Active</span>
                     <span>{usageLimits.websitesUsed ?? 0} / {usageLimits.websitesLimit}</span>
                   </div>
-                  <div style={{ height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
                     <div 
                       style={{ 
                         height: '100%', 
@@ -293,45 +373,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Connected Subsystems Card */}
-          <div className="glass-card" style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', height: '172px' }}>
-            <h4 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '10px' }}>Connected Subsystems</h4>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '1rem' }}>🧠</span>
-                  <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>AI Reasoning</div>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>4 models active</div>
-                  </div>
-                </div>
-                <span className="badge badge-success" style={{ fontSize: '0.6rem', padding: '1px 4px' }}>Online</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '1rem' }}>💬</span>
-                  <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Unified Inbox</div>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>3 channels active</div>
-                  </div>
-                </div>
-                <span className="badge badge-success" style={{ fontSize: '0.6rem', padding: '1px 4px' }}>Online</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '1rem' }}>📅</span>
-                  <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Scheduler</div>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Calendar Sync Active</div>
-                  </div>
-                </div>
-                <span className="badge badge-success" style={{ fontSize: '0.6rem', padding: '1px 4px' }}>Synced</span>
-              </div>
+            <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '12px', marginTop: '12px', fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Renews dynamically monthly</span>
+              <span style={{ color: 'var(--primary-color)', fontWeight: 500 }}>System Active</span>
             </div>
           </div>
         </div>
@@ -487,7 +532,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success-color)' }}></div>
               <div style={{ flex: 1 }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>Workflow Run Succeeded: Lead Capture & CRM Sync</span>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Trigger: Chat Lead Capture • Created deal worth $450 in CRM</div>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Trigger: Chat Lead Capture • Created deal worth ${tenant.settings?.defaultLeadValue !== undefined ? tenant.settings.defaultLeadValue : 450} in CRM</div>
               </div>
               <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>3m ago</span>
             </div>

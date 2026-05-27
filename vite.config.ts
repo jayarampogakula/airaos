@@ -1,13 +1,35 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
 
 // Calculate version based on git commit count
-let commitCount = 40; // Default fallback
+let commitCount = 42; // Default fallback
+const versionFilePath = path.resolve(__dirname, 'src/version.json');
+
 try {
-  commitCount = parseInt(execSync('git rev-list --count HEAD').toString().trim(), 10) || 40;
+  const countStr = execSync('git rev-list --count HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  const parsed = parseInt(countStr, 10);
+  if (!isNaN(parsed) && parsed > 0) {
+    commitCount = parsed;
+    try {
+      fs.writeFileSync(versionFilePath, JSON.stringify({ commitCount }, null, 2));
+    } catch (writeErr) {
+      // Ignore write errors
+    }
+  }
 } catch (e) {
-  // Graceful fallback
+  try {
+    if (fs.existsSync(versionFilePath)) {
+      const data = JSON.parse(fs.readFileSync(versionFilePath, 'utf-8'));
+      if (data && typeof data.commitCount === 'number') {
+        commitCount = data.commitCount;
+      }
+    }
+  } catch (readErr) {
+    // Ignore read errors
+  }
 }
 
 const major = Math.floor(commitCount / 100);

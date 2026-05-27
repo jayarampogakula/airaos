@@ -288,19 +288,17 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
   const handleConnectChannel = async (type: ManagedChannelType) => {
     setChannelSaving(type);
     const draft = channelDrafts[type] || {};
+    const existingChannel = channels.find(c => c.type === type);
+    const mergedConfig = {
+      ...(existingChannel?.config || {}),
+      ...draft
+    };
     try {
       const res = await apiFetch(`/api/current-tenant/channels/${type}/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          config: {
-            websiteUrl: draft.websiteUrl || tenant.domain,
-            email: draft.email,
-            phoneNumber: draft.phoneNumber,
-            botToken: draft.botToken,
-            pageId: draft.pageId,
-            instagramAccountId: draft.instagramAccountId
-          }
+          config: mergedConfig
         })
       });
       if (res.ok) {
@@ -875,40 +873,214 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                           </span>
                         </div>
                         {channel.type === 'website' && (
-                          <input
-                            className="form-input"
-                            placeholder="Website URL"
-                            value={draft.websiteUrl || channel.config.websiteUrl || tenant.domain}
-                            onChange={(event) => handleChannelDraftChange(channel.type, 'websiteUrl', event.target.value)}
-                            style={{ fontSize: '0.7rem', padding: '7px 9px' }}
-                          />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <input
+                              className="form-input"
+                              placeholder="Website URL"
+                              value={draft.websiteUrl !== undefined ? draft.websiteUrl : (channel.config.websiteUrl || tenant.domain)}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'websiteUrl', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Widget Title (e.g. AI Assistant)"
+                              value={draft.widgetTitle !== undefined ? draft.widgetTitle : (channel.config.widgetTitle || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'widgetTitle', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Accent Color Hex (e.g. #0ea5e9)"
+                              value={draft.widgetColor !== undefined ? draft.widgetColor : (channel.config.widgetColor || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'widgetColor', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                          </div>
                         )}
-                        {['gmail', 'outlook', 'smtp'].includes(channel.type) && (
-                          <input
-                            className="form-input"
-                            placeholder="Support email address"
-                            value={draft.email || channel.config.email || ''}
-                            onChange={(event) => handleChannelDraftChange(channel.type, 'email', event.target.value)}
-                            style={{ fontSize: '0.7rem', padding: '7px 9px' }}
-                          />
+                        {channel.type === 'whatsapp' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <input
+                              type="password"
+                              className="form-input"
+                              placeholder="WhatsApp Access Token (EAAG...)"
+                              value={draft.whatsappToken !== undefined ? draft.whatsappToken : (channel.config.whatsappToken || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'whatsappToken', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Phone Number ID (e.g. 1029384756)"
+                              value={draft.phoneId !== undefined ? draft.phoneId : (channel.config.phoneId || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'phoneId', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="WhatsApp Business Account ID"
+                              value={draft.accountId !== undefined ? draft.accountId : (channel.config.accountId || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'accountId', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                          </div>
                         )}
                         {channel.type === 'telegram' && (
-                          <input
-                            className="form-input"
-                            placeholder="Telegram bot token"
-                            value={draft.botToken || channel.config.botToken || ''}
-                            onChange={(event) => handleChannelDraftChange(channel.type, 'botToken', event.target.value)}
-                            style={{ fontSize: '0.7rem', padding: '7px 9px' }}
-                          />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <input
+                              className="form-input"
+                              placeholder="Telegram Bot Token"
+                              value={draft.botToken !== undefined ? draft.botToken : (channel.config.botToken || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'botToken', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Bot Username (e.g. smile_dentals_bot)"
+                              value={draft.botUsername !== undefined ? draft.botUsername : (channel.config.botUsername || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'botUsername', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                          </div>
                         )}
-                        {['facebook', 'instagram'].includes(channel.type) && (
-                          <input
-                            className="form-input"
-                            placeholder={channel.type === 'facebook' ? 'Facebook page ID' : 'Instagram business account ID'}
-                            value={draft.pageId || draft.instagramAccountId || channel.config.pageId || channel.config.instagramAccountId || ''}
-                            onChange={(event) => handleChannelDraftChange(channel.type, channel.type === 'facebook' ? 'pageId' : 'instagramAccountId', event.target.value)}
-                            style={{ fontSize: '0.7rem', padding: '7px 9px' }}
-                          />
+                        {['gmail', 'outlook', 'smtp'].includes(channel.type) && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <input
+                              className="form-input"
+                              placeholder="Support Email Address"
+                              value={draft.email !== undefined ? draft.email : (channel.config.email || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'email', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <input
+                                className="form-input"
+                                placeholder="SMTP Host (smtp.gmail.com)"
+                                value={draft.smtpHost !== undefined ? draft.smtpHost : (channel.config.smtpHost || '')}
+                                onChange={(event) => handleChannelDraftChange(channel.type, 'smtpHost', event.target.value)}
+                                style={{ fontSize: '0.7rem', padding: '7px 9px', flex: 2 }}
+                              />
+                              <input
+                                className="form-input"
+                                placeholder="Port"
+                                value={draft.smtpPort !== undefined ? draft.smtpPort : (channel.config.smtpPort || '')}
+                                onChange={(event) => handleChannelDraftChange(channel.type, 'smtpPort', event.target.value)}
+                                style={{ fontSize: '0.7rem', padding: '7px 9px', flex: 1 }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <input
+                                className="form-input"
+                                placeholder="SMTP Username"
+                                value={draft.smtpUser !== undefined ? draft.smtpUser : (channel.config.smtpUser || '')}
+                                onChange={(event) => handleChannelDraftChange(channel.type, 'smtpUser', event.target.value)}
+                                style={{ fontSize: '0.7rem', padding: '7px 9px', flex: 1 }}
+                              />
+                              <input
+                                type="password"
+                                className="form-input"
+                                placeholder="SMTP App Password"
+                                value={draft.smtpPass !== undefined ? draft.smtpPass : (channel.config.smtpPass || '')}
+                                onChange={(event) => handleChannelDraftChange(channel.type, 'smtpPass', event.target.value)}
+                                style={{ fontSize: '0.7rem', padding: '7px 9px', flex: 1 }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <input
+                                className="form-input"
+                                placeholder="IMAP Host (imap.gmail.com)"
+                                value={draft.imapHost !== undefined ? draft.imapHost : (channel.config.imapHost || '')}
+                                onChange={(event) => handleChannelDraftChange(channel.type, 'imapHost', event.target.value)}
+                                style={{ fontSize: '0.7rem', padding: '7px 9px', flex: 2 }}
+                              />
+                              <input
+                                className="form-input"
+                                placeholder="Port"
+                                value={draft.imapPort !== undefined ? draft.imapPort : (channel.config.imapPort || '')}
+                                onChange={(event) => handleChannelDraftChange(channel.type, 'imapPort', event.target.value)}
+                                style={{ fontSize: '0.7rem', padding: '7px 9px', flex: 1 }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <input
+                                className="form-input"
+                                placeholder="IMAP Username"
+                                value={draft.imapUser !== undefined ? draft.imapUser : (channel.config.imapUser || '')}
+                                onChange={(event) => handleChannelDraftChange(channel.type, 'imapUser', event.target.value)}
+                                style={{ fontSize: '0.7rem', padding: '7px 9px', flex: 1 }}
+                              />
+                              <input
+                                type="password"
+                                className="form-input"
+                                placeholder="IMAP App Password"
+                                value={draft.imapPass !== undefined ? draft.imapPass : (channel.config.imapPass || '')}
+                                onChange={(event) => handleChannelDraftChange(channel.type, 'imapPass', event.target.value)}
+                                style={{ fontSize: '0.7rem', padding: '7px 9px', flex: 1 }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {channel.type === 'facebook' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <input
+                              className="form-input"
+                              placeholder="Facebook Page ID"
+                              value={draft.pageId !== undefined ? draft.pageId : (channel.config.pageId || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'pageId', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <input
+                              type="password"
+                              className="form-input"
+                              placeholder="Page Access Token (EAAC...)"
+                              value={draft.pageAccessToken !== undefined ? draft.pageAccessToken : (channel.config.pageAccessToken || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'pageAccessToken', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                          </div>
+                        )}
+                        {channel.type === 'instagram' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <input
+                              className="form-input"
+                              placeholder="Instagram Business Account ID"
+                              value={draft.instagramAccountId !== undefined ? draft.instagramAccountId : (channel.config.instagramAccountId || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'instagramAccountId', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <input
+                              type="password"
+                              className="form-input"
+                              placeholder="Instagram Page Access Token"
+                              value={draft.pageAccessToken !== undefined ? draft.pageAccessToken : (channel.config.pageAccessToken || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'pageAccessToken', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                          </div>
+                        )}
+                        {channel.type === 'sms' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <input
+                              className="form-input"
+                              placeholder="Twilio Account SID"
+                              value={draft.twilioAccountSid !== undefined ? draft.twilioAccountSid : (channel.config.twilioAccountSid || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'twilioAccountSid', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <input
+                              type="password"
+                              className="form-input"
+                              placeholder="Twilio Auth Token"
+                              value={draft.twilioAuthToken !== undefined ? draft.twilioAuthToken : (channel.config.twilioAuthToken || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'twilioAuthToken', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                            <input
+                              className="form-input"
+                              placeholder="Twilio Phone Number"
+                              value={draft.twilioPhoneNumber !== undefined ? draft.twilioPhoneNumber : (channel.config.twilioPhoneNumber || '')}
+                              onChange={(event) => handleChannelDraftChange(channel.type, 'twilioPhoneNumber', event.target.value)}
+                              style={{ fontSize: '0.7rem', padding: '7px 9px' }}
+                            />
+                          </div>
                         )}
                         {!!channel.config.lastError && (
                           <span style={{ fontSize: '0.65rem', color: 'var(--danger-color)' }}>{channel.config.lastError}</span>

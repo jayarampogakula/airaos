@@ -7,7 +7,7 @@ import { DB_FILE, readDb, writeDb } from './db.js';
 import { runCrew } from './crewEngine.js';
 import { initTelephonyService } from './telephonyService.js';
 import { encryptCredentials, decryptCredentials } from './vault.js';
-export const CHANNEL_TYPES = ['website', 'whatsapp', 'gmail', 'outlook', 'smtp', 'telegram', 'instagram', 'facebook'];
+export const CHANNEL_TYPES = ['website', 'whatsapp', 'gmail', 'outlook', 'smtp', 'telegram', 'instagram', 'facebook', 'sms'];
 
 export function displayChannelName(type) {
   const labels = {
@@ -18,7 +18,8 @@ export function displayChannelName(type) {
     smtp: 'SMTP Email',
     telegram: 'Telegram',
     instagram: 'Instagram DM',
-    facebook: 'Facebook Messenger'
+    facebook: 'Facebook Messenger',
+    sms: 'Texts / SMS'
   };
   return labels[type] || type;
 }
@@ -1121,7 +1122,10 @@ app.post('/api/contacts', async (req, res) => {
     const dealExists = db.deals && db.deals.some(d => d.contactId === existingContact.id && d.tenantId === tenantId);
     if (!dealExists) {
       const dealName = tenantId === 't-1' ? 'Dental Consultation' : tenantId === 't-2' ? 'KP Heights Site Visit' : tenantId === 't-3' ? 'Coaching Enrollment' : 'General Inquiry';
-      const dealValue = tenantId === 't-1' ? 450 : tenantId === 't-2' ? 120000 : tenantId === 't-3' ? 1200 : 150;
+      const tenantObj = db.tenants && db.tenants.find(t => t.id === tenantId);
+      const dealValue = (tenantObj && tenantObj.settings && typeof tenantObj.settings.defaultLeadValue === 'number')
+        ? tenantObj.settings.defaultLeadValue
+        : (tenantId === 't-1' ? 450 : tenantId === 't-2' ? 120000 : tenantId === 't-3' ? 1200 : 150);
       const newDeal = {
         id: `d-${Date.now()}`,
         tenantId,
@@ -1186,7 +1190,10 @@ app.post('/api/contacts', async (req, res) => {
 
   // Automatically create a deal in the 'lead' stage for this new contact
   const dealName = tenantId === 't-1' ? 'Dental Consultation' : tenantId === 't-2' ? 'KP Heights Site Visit' : tenantId === 't-3' ? 'Coaching Enrollment' : 'General Inquiry';
-  const dealValue = tenantId === 't-1' ? 450 : tenantId === 't-2' ? 120000 : tenantId === 't-3' ? 1200 : 150;
+  const tenantObj = db.tenants && db.tenants.find(t => t.id === tenantId);
+  const dealValue = (tenantObj && tenantObj.settings && typeof tenantObj.settings.defaultLeadValue === 'number')
+    ? tenantObj.settings.defaultLeadValue
+    : (tenantId === 't-1' ? 450 : tenantId === 't-2' ? 120000 : tenantId === 't-3' ? 1200 : 150);
   const newDeal = {
     id: `d-${Date.now()}`,
     tenantId,

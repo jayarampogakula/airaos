@@ -513,6 +513,15 @@ function App() {
     }));
   };
 
+  const handleUpdateContact = (updatedContact: Contact) => {
+    setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+    apiFetch(`/api/contacts/${updatedContact.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedContact)
+    }).catch(err => console.warn('Could not sync updated contact to backend:', err));
+  };
+
   const handleUpdateDealStage = (dealId: string, stage: Deal['stage']) => {
     setDeals(prev => prev.map(d => {
       if (d.id === dealId) {
@@ -1117,6 +1126,7 @@ function App() {
                   onAddContactNote={handleAddContactNote}
                   onAddContactTag={handleAddContactTag}
                   tenantId={selectedTenantId}
+                  onUpdateContact={handleUpdateContact}
                 />
               )}
               {activeTab === 'crm' && (
@@ -1128,6 +1138,7 @@ function App() {
                   onAddContactNote={handleAddContactNote}
                   agents={getFilteredAgents()}
                   tenantId={selectedTenantId}
+                  onUpdateContact={handleUpdateContact}
                 />
               )}
               {activeTab === 'scheduler' && (
