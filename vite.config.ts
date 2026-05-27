@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react'
 import { execSync } from 'child_process'
 
 // Calculate version based on git commit count
-let commitCount = 38; // Default fallback
+let commitCount = 40; // Default fallback
 try {
-  commitCount = parseInt(execSync('git rev-list --count HEAD').toString().trim(), 10) || 38;
+  commitCount = parseInt(execSync('git rev-list --count HEAD').toString().trim(), 10) || 40;
 } catch (e) {
   // Graceful fallback
 }

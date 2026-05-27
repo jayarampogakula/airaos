@@ -330,6 +330,26 @@
       outline: none;
     }
 
+    .mic-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      outline: none;
+      margin-right: 2px;
+      transition: all 0.2s ease;
+    }
+    .mic-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+    }
+
     /* Booking Panel */
     .booking-container {
       display: flex;
@@ -707,6 +727,14 @@
   <!-- Chat Footer -->
   <div id="footer-chat" class="chat-footer">
     <input type="text" id="chat-input" class="chat-input" placeholder="Type your query..." onkeypress="handleKeyPress(event)">
+    <button id="mic-agent-btn" class="mic-btn" onclick="startVoiceCall()" title="Voice Call" style="display: none;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>
+    </button>
     <button class="send-btn" onclick="sendChatMessage()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -1030,12 +1058,14 @@
       // Show voice button if hybrid or voice mode is enabled
       const callBtn = document.getElementById('call-agent-btn');
       if (callBtn) {
+        callBtn.style.display = 'none';
+      }
+      const micBtn = document.getElementById('mic-agent-btn');
+      if (micBtn) {
         if (mode === 'hybrid' || mode === 'voice') {
-          callBtn.style.display = 'inline-flex';
-          const agentName = activeAgent ? activeAgent.name : 'Agent';
-          callBtn.innerText = `📞 Call ${agentName}`;
+          micBtn.style.display = 'inline-flex';
         } else {
-          callBtn.style.display = 'none';
+          micBtn.style.display = 'none';
         }
       }
     }

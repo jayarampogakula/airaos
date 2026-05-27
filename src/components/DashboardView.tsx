@@ -18,6 +18,14 @@ interface DashboardViewProps {
     welcomeMessage: string;
     prompt: string;
   };
+  usageLimits: {
+    conversationsLimit: number;
+    conversationsUsed: number;
+    voiceLimit: number;
+    voiceUsed: number;
+    websitesLimit: number;
+    websitesUsed: number;
+  };
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -26,7 +34,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   appointments,
   deals,
   chatsUsed,
-  platformSupportBot
+  platformSupportBot,
+  usageLimits
 }) => {
   const pipelineValue = deals.reduce((acc, d) => acc + d.value, 0);
   const activeAppsCount = appointments.filter(a => a.status === 'scheduled').length;
@@ -224,64 +233,105 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Infrastructure Status */}
-        <div className="col-span-4 glass-card" style={{ display: 'flex', flexDirection: 'column', height: '360px' }}>
-          <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>Connected Subsystems</h4>
-          
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.25rem' }}>🧠</span>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: '500' }}>AI Reasoning Engine</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>4 active models configured</div>
-                </div>
-              </div>
-              <span className="badge badge-success">Online</span>
+        {/* Right Column: Stacked Resource Limits & Subsystems */}
+        <div className="col-span-4" style={{ display: 'flex', flexDirection: 'column', gap: '15px', height: '360px' }}>
+          {/* Resource Limits Card */}
+          <div className="glass-card" style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '172px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Resource Limits</span>
+              <span className="badge badge-primary" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>{tenant.plan || 'Growth'}</span>
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.25rem' }}>💬</span>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: '500' }}>Unified Inbox Manager</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>3 communication channels active</div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '3px', fontSize: '0.7rem' }}>
+                  <span>Chats</span>
+                  <span>{usageLimits.conversationsUsed} / {usageLimits.conversationsLimit}</span>
+                </div>
+                <div style={{ height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div 
+                    style={{ 
+                      height: '100%', 
+                      width: `${Math.min(100, (usageLimits.conversationsUsed / usageLimits.conversationsLimit) * 100)}%`,
+                      background: 'var(--primary-color)' 
+                    }} 
+                  />
                 </div>
               </div>
-              <span className="badge badge-success">Online</span>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '3px', fontSize: '0.7rem' }}>
+                  <span>Voice Mins</span>
+                  <span>{usageLimits.voiceUsed} / {usageLimits.voiceLimit}</span>
+                </div>
+                <div style={{ height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div 
+                    style={{ 
+                      height: '100%', 
+                      width: `${Math.min(100, (usageLimits.voiceUsed / usageLimits.voiceLimit) * 100)}%`,
+                      background: 'var(--accent-color)' 
+                    }} 
+                  />
+                </div>
+              </div>
+
+              {usageLimits.websitesLimit !== undefined && usageLimits.websitesLimit > 0 && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '3px', fontSize: '0.7rem' }}>
+                    <span>Web Edits</span>
+                    <span>{usageLimits.websitesUsed ?? 0} / {usageLimits.websitesLimit}</span>
+                  </div>
+                  <div style={{ height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div 
+                      style={{ 
+                        height: '100%', 
+                        width: `${Math.min(100, ((usageLimits.websitesUsed ?? 0) / usageLimits.websitesLimit) * 100)}%`,
+                        background: 'linear-gradient(90deg, var(--primary-color) 0%, var(--accent-color) 100%)' 
+                      }} 
+                    />
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.25rem' }}>🔄</span>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: '500' }}>Process Workflows</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>3 active automation runbooks</div>
+          {/* Connected Subsystems Card */}
+          <div className="glass-card" style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', height: '172px' }}>
+            <h4 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '10px' }}>Connected Subsystems</h4>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '1rem' }}>🧠</span>
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>AI Reasoning</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>4 models active</div>
+                  </div>
                 </div>
+                <span className="badge badge-success" style={{ fontSize: '0.6rem', padding: '1px 4px' }}>Online</span>
               </div>
-              <span className="badge badge-success">Online</span>
-            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.25rem' }}>📅</span>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: '500' }}>Calendar Scheduler</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Google & Outlook Sync Active</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '1rem' }}>💬</span>
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Unified Inbox</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>3 channels active</div>
+                  </div>
                 </div>
+                <span className="badge badge-success" style={{ fontSize: '0.6rem', padding: '1px 4px' }}>Online</span>
               </div>
-              <span className="badge badge-success">Synced</span>
-            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.25rem' }}>🗄️</span>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: '500' }}>CRM Database</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Relational Contacts Ledger</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '1rem' }}>📅</span>
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>Scheduler</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>Calendar Sync Active</div>
+                  </div>
                 </div>
+                <span className="badge badge-success" style={{ fontSize: '0.6rem', padding: '1px 4px' }}>Synced</span>
               </div>
-              <span className="badge badge-success">Connected</span>
             </div>
           </div>
         </div>

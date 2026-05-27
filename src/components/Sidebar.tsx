@@ -30,7 +30,7 @@ interface SidebarProps {
 }
 
 // @ts-ignore
-const appVersionString = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'v0.3.8';
+const appVersionString = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'v0.4.0';
 
 export const Sidebar: React.FC<SidebarProps> = ({
   user,
@@ -361,83 +361,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })
         )}
       </div>
-
-      {/* Tenant Limits Card */}
-      {currentRole === 'tenant' && (
-        <div style={{ padding: '16px', borderTop: '1px solid var(--border-glass)' }}>
-          <div 
-            className="glass-card" 
-            style={{ 
-              padding: '12px', 
-              borderRadius: 'var(--radius-md)', 
-              backgroundColor: 'rgba(255,255,255,0.01)',
-              fontSize: '0.75rem'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Resource Limits</span>
-              <span className="badge badge-primary">{selectedTenant.plan}</span>
-            </div>
-            
-            <div style={{ marginBottom: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '4px', fontSize: '0.7rem' }}>
-                <span>Chats</span>
-                <span>{usageLimits.conversationsUsed} / {usageLimits.conversationsLimit}</span>
-              </div>
-              <div style={{ height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
-                <div 
-                  style={{ 
-                    height: '100%', 
-                    width: `${Math.min(100, (usageLimits.conversationsUsed / usageLimits.conversationsLimit) * 100)}%`,
-                    background: 'var(--primary-color)' 
-                  }} 
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '4px', fontSize: '0.7rem' }}>
-                <span>Voice Mins</span>
-                <span>{usageLimits.voiceUsed} / {usageLimits.voiceLimit}</span>
-              </div>
-              <div style={{ height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
-                <div 
-                  style={{ 
-                    height: '100%', 
-                    width: `${Math.min(100, (usageLimits.voiceUsed / usageLimits.voiceLimit) * 100)}%`,
-                    background: 'var(--accent-color)' 
-                  }} 
-                />
-              </div>
-            </div>
-
-            {usageLimits.websitesLimit !== undefined && usageLimits.websitesLimit > 0 && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '4px', fontSize: '0.7rem' }}>
-                  <span>Web Edits</span>
-                  <span>{usageLimits.websitesUsed ?? 0} / {usageLimits.websitesLimit}</span>
-                </div>
-                <div style={{ height: '4px', background: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div 
-                    style={{ 
-                      height: '100%', 
-                      width: `${Math.min(100, ((usageLimits.websitesUsed ?? 0) / usageLimits.websitesLimit) * 100)}%`,
-                      background: 'linear-gradient(90deg, var(--primary-color) 0%, var(--accent-color) 100%)' 
-                    }} 
-                  />
-                </div>
-              </div>
-            )}
-            
-            {usageLimits.conversationsUsed >= usageLimits.conversationsLimit * 0.8 && (
-              <div style={{ display: 'flex', gap: '6px', marginTop: '10px', color: 'var(--warning-color)', fontSize: '0.65rem', alignItems: 'center' }}>
-                <AlertCircle size={10} />
-                <span>Plan is reaching limits.</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Log Out Button */}
       <div style={{ padding: '16px', borderTop: '1px solid var(--border-glass)' }}>
