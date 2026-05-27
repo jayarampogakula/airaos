@@ -1551,9 +1551,9 @@
       const statusEl = document.getElementById('voice-call-status');
       statusEl.innerHTML = '<span class="status-dot" style="background:#f59e0b;"></span> Initializing production voice stream...';
       
-      // Initialize transcript
-      callTranscript = ['System: Requesting microphone permission and WebRTC handshake...'];
-      renderVoiceTranscript();
+       // Initialize transcript
+       callTranscript = ['System: Requesting microphone permission...'];
+       renderVoiceTranscript();
       
       document.getElementById('voice-sound-wave').style.display = 'none';
       document.getElementById('voice-triggers').style.display = 'none';
@@ -1578,7 +1578,7 @@
         document.getElementById('voice-sound-wave').style.display = 'flex';
         document.getElementById('voice-triggers').style.display = 'block';
         
-        callTranscript.push('System: Microphones online. Local speech-to-text (STT) and voice synthesis (TTS) engines engaged.');
+        callTranscript.push('System: Voice connection active. Speak clearly into your microphone.');
         
         const agentName = activeAgent ? activeAgent.name : 'Sarah';
         const businessNameClean = tenantId === 't-1' ? 'Smile Dentals' : tenantId === 't-2' ? 'KP Real Estates' : tenantId === 't-3' ? 'ABC Coaching' : 'AiraOS';
@@ -1745,9 +1745,66 @@
       const utterance = new SpeechSynthesisUtterance(cleanText);
       
       const voices = window.speechSynthesis.getVoices();
-      const engVoice = voices.find(v => v.lang.startsWith('en-US')) || voices.find(v => v.lang.startsWith('en'));
-      if (engVoice) {
-        utterance.voice = engVoice;
+      
+      // Determine gender requested
+      let voiceGender = 'female'; // Default to female
+      if (activeAgent) {
+        const vLower = (activeAgent.voice || '').toLowerCase();
+        const nLower = (activeAgent.name || '').toLowerCase();
+        if ((vLower.includes('male') && !vLower.includes('female')) || nLower.includes('marcus') || nLower.includes('alex')) {
+          voiceGender = 'male';
+        }
+      }
+      
+      // Search for a matching voice
+      let selectedVoice = null;
+      
+      if (voiceGender === 'female') {
+        // Look for common browser female voice names
+        selectedVoice = voices.find(v => {
+          const name = v.name.toLowerCase();
+          return v.lang.startsWith('en') && (
+            name.includes('zira') || 
+            name.includes('hazel') || 
+            name.includes('female') || 
+            name.includes('samantha') || 
+            name.includes('google us english') ||
+            name.includes('susan') || 
+            name.includes('haruka') ||
+            name.includes('karen') ||
+            name.includes('moira') ||
+            name.includes('tessa')
+          );
+        });
+      } else {
+        // Look for common browser male voice names
+        selectedVoice = voices.find(v => {
+          const name = v.name.toLowerCase();
+          return v.lang.startsWith('en') && (
+            name.includes('david') || 
+            name.includes('male') || 
+            name.includes('george') || 
+            name.includes('mark') || 
+            name.includes('ravi')
+          );
+        });
+      }
+      
+      // Fallback 1: Any english voice matching gender if possible
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => {
+          const name = v.name.toLowerCase();
+          return v.lang.startsWith('en') && (voiceGender === 'female' ? !name.includes('david') && !name.includes('george') && !name.includes('mark') : name.includes('david') || name.includes('george') || name.includes('mark'));
+        });
+      }
+      
+      // Fallback 2: Any English voice
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => v.lang.startsWith('en-US')) || voices.find(v => v.lang.startsWith('en'));
+      }
+      
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
       }
       
       utterance.onend = () => {
@@ -1812,18 +1869,66 @@
     function renderVoiceTranscript() {
       const container = document.getElementById('voice-transcript');
       container.innerHTML = '';
+      
+      // Speak instruction card at the top of the transcript box
+      const instructionDiv = document.createElement('div');
+      instructionDiv.style.background = 'rgba(16, 185, 129, 0.08)';
+      instructionDiv.style.border = '1px solid rgba(16, 185, 129, 0.2)';
+      instructionDiv.style.borderRadius = '6px';
+      instructionDiv.style.padding = '10px';
+      instructionDiv.style.textAlign = 'center';
+      instructionDiv.style.color = '#34d399';
+      instructionDiv.style.fontWeight = '600';
+      instructionDiv.style.fontSize = '0.78rem';
+      instructionDiv.style.marginBottom = '12px';
+      instructionDiv.style.display = 'flex';
+      instructionDiv.style.alignItems = 'center';
+      instructionDiv.style.justifyContent = 'center';
+      instructionDiv.style.gap = '8px';
+      
+      const agentName = activeAgent ? activeAgent.name : 'Sarah';
+      instructionDiv.innerHTML = `<span>🎙️</span> Voice active. Speak clearly into your microphone to talk to ${agentName}.`;
+      container.appendChild(instructionDiv);
+
       callTranscript.forEach(log => {
+        // Hide internal system log clutters from customer transcript
+        if (log.startsWith('System:')) {
+          return;
+        }
+        
         const div = document.createElement('div');
-        div.style.lineHeight = '1.3';
+        div.style.lineHeight = '1.4';
         div.style.textAlign = 'left';
+        div.style.padding = '6px 8px';
+        div.style.borderRadius = '4px';
+        div.style.fontSize = '0.75rem';
+        div.style.marginBottom = '6px';
+        
         if (log.startsWith('Customer:')) {
           div.style.color = 'var(--text-primary)';
-        } else if (log.startsWith('System:')) {
+          div.style.background = 'rgba(255, 255, 255, 0.03)';
+          div.style.borderLeft = '3px solid var(--primary-color)';
+          div.innerHTML = `<strong>You:</strong> ${log.replace('Customer:', '').trim()}`;
+        } else if (log.startsWith('System Error:')) {
           div.style.color = '#ef4444';
+          div.style.background = 'rgba(239, 68, 68, 0.05)';
+          div.style.borderLeft = '3px solid #ef4444';
+          div.innerHTML = `<strong>Error:</strong> ${log.replace('System Error:', '').trim()}`;
         } else {
+          // AI voice agent line
           div.style.color = '#67e8f9';
+          div.style.background = 'rgba(103, 232, 249, 0.03)';
+          div.style.borderLeft = '3px solid #67e8f9';
+          
+          const prefix = `AI (${agentName}):`;
+          let cleanContent = log;
+          if (log.startsWith(prefix)) {
+            cleanContent = log.substring(prefix.length).trim();
+          } else if (log.startsWith('AI:')) {
+            cleanContent = log.replace('AI:', '').trim();
+          }
+          div.innerHTML = `<strong>${agentName}:</strong> ${cleanContent}`;
         }
-        div.innerText = log;
         container.appendChild(div);
       });
       container.scrollTop = container.scrollHeight;

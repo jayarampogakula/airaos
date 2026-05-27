@@ -35,7 +35,147 @@ function slugify(value) {
     .substring(0, 48) || `tenant-${Date.now()}`;
 }
 
+function compileDefaultWebsiteHTML(tenantId, name, primaryColor, config) {
+  const themeBg = config.theme === 'sleek-clinic' ? '#0b1329' : config.theme === 'luxury-estate' ? '#0c0a09' : config.theme === 'tech-minimalist' ? '#050505' : '#0a0f1d';
+  const themeAccent = primaryColor || '#0ea5e9';
+  const servicesList = (config.services || '').split(',').map(s => s.trim()).filter(Boolean);
+  const serviceCards = servicesList.map(s => `
+    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; text-align: center;">
+      <h3 style="color: ${themeAccent}; font-size: 1.1rem; margin-bottom: 8px; font-family: inherit;">${s}</h3>
+      <p style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; margin: 0;">Professional delivery of ${s.toLowerCase()} tailored to meet your requirements.</p>
+    </div>
+  `).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${config.businessName} - Live Site</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: ${themeBg};
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      box-sizing: border-box;
+    }
+    .container {
+      max-width: 800px;
+      text-align: center;
+    }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.5rem;
+      margin: 0 0 10px 0;
+      background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .slogan {
+      color: ${themeAccent};
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 20px 0;
+    }
+    .desc {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin: 0 0 40px 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      width: 100%;
+      margin-bottom: 40px;
+    }
+    .footer {
+      color: #64748b;
+      font-size: 0.8rem;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>${config.businessName}</h1>
+    <p class="slogan">${config.slogan}</p>
+    <p class="desc">${config.description}</p>
+    
+    <div class="grid">
+      ${serviceCards}
+    </div>
+    
+    <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px; font-size: 0.85rem; color: #94a3b8;">
+      📞 ${config.phone} &nbsp;&bull;&nbsp; ✉️ ${config.email}
+    </div>
+    
+    <div class="footer">
+      Powered by AiraOS AI Website Publisher
+    </div>
+  </div>
+  <script src="/widget.js" data-tenant-id="${tenantId}" data-color="${themeAccent}" data-title="${config.businessName} AI Assistant"></script>
+</body>
+</html>`;
+}
+
 function createTenant(id, name, plan = 'Growth', primaryColor = '#0ea5e9', logo = 'A') {
+  let slogan = "";
+  let description = "";
+  let services = "";
+  let phone = "";
+  let email = "";
+  let theme = "sleek-clinic";
+  
+  if (id === 't-1') {
+    slogan = "Gentle Care, Beautiful Smiles";
+    description = "At Smile Dental Clinic, we provide state-of-the-art dental care for patients of all ages. From general checkups to cosmetic teeth whitening and cleanings, our professional team is dedicated to your oral health.";
+    services = "Teeth Whitening, Dental Cleanings, Teeth Aligners, Cosmetic Dentistry, Emergency Oral Care";
+    phone = "+1 (555) 019-2834";
+    email = "hello@smiledentalclinic.com";
+    theme = "sleek-clinic";
+  } else if (id === 't-2') {
+    slogan = "Elevated Living - Premium Luxury Estates";
+    description = "Apex Heights connects you with the finest luxury properties in the metropolitan area. Specializing in high-end penthouse units, model suite viewings, and personalized real estate consultations.";
+    services = "Private Penthouse Tours, Real Estate Consultations, Portfolio Management, Luxury Market Evaluation";
+    phone = "+1 (555) 489-1122";
+    email = "listings@apexheights.co";
+    theme = "luxury-estate";
+  } else {
+    slogan = "Scalable Infrastructure - Enterprise Dev Support";
+    description = "ByteTech Software Solutions builds secure, Docker-containerized cloud microservices. Our vector databases and technical API nodes process millions of sync transactions daily.";
+    services = "API Integration Sync, Developer Support Consult, System Architecture Audit, Cloud Node Maintenance";
+    phone = "+1 (555) 762-9900";
+    email = "dev-support@bytetech.io";
+    theme = "tech-minimalist";
+  }
+
+  const config = {
+    businessName: name,
+    slogan,
+    description,
+    services,
+    phone,
+    email,
+    theme,
+    isWebsiteGenerated: true
+  };
+  
+  const compiledHtml = compileDefaultWebsiteHTML(id, name, primaryColor, config);
+  const websiteConfig = {
+    ...config,
+    html: compiledHtml
+  };
+
   return {
     id,
     name,
@@ -54,7 +194,8 @@ function createTenant(id, name, plan = 'Growth', primaryColor = '#0ea5e9', logo 
       escalation: `Alert: Conversation with {contact_name} has been escalated.`
     },
     credits: 0,
-    billingHistory: []
+    billingHistory: [],
+    websiteConfig
   };
 }
 
@@ -139,10 +280,58 @@ export function ensureSaasSchema(data) {
         timezone: tenant.settings?.timezone || 'Asia/Calcutta',
         ...(tenant.settings || {})
       };
+      
+      let websiteConfig = tenant.websiteConfig;
+      if (!websiteConfig || !websiteConfig.html) {
+        let slogan = "";
+        let description = "";
+        let services = "";
+        let phone = "";
+        let email = "";
+        let theme = "sleek-clinic";
+        
+        if (tenant.id === 't-1') {
+          slogan = "Gentle Care, Beautiful Smiles";
+          description = "At Smile Dental Clinic, we provide state-of-the-art dental care for patients of all ages. From general checkups to cosmetic teeth whitening and cleanings, our professional team is dedicated to your oral health.";
+          services = "Teeth Whitening, Dental Cleanings, Teeth Aligners, Cosmetic Dentistry, Emergency Oral Care";
+          phone = "+1 (555) 019-2834";
+          email = "hello@smiledentalclinic.com";
+          theme = "sleek-clinic";
+        } else if (tenant.id === 't-2') {
+          slogan = "Elevated Living - Premium Luxury Estates";
+          description = "Apex Heights connects you with the finest luxury properties in the metropolitan area. Specializing in high-end penthouse units, model suite viewings, and personalized real estate consultations.";
+          services = "Private Penthouse Tours, Real Estate Consultations, Portfolio Management, Luxury Market Evaluation";
+          phone = "+1 (555) 489-1122";
+          email = "listings@apexheights.co";
+          theme = "luxury-estate";
+        } else {
+          slogan = "Scalable Infrastructure - Enterprise Dev Support";
+          description = "ByteTech Software Solutions builds secure, Docker-containerized cloud microservices. Our vector databases and technical API nodes process millions of sync transactions daily.";
+          services = "API Integration Sync, Developer Support Consult, System Architecture Audit, Cloud Node Maintenance";
+          phone = "+1 (555) 762-9900";
+          email = "dev-support@bytetech.io";
+          theme = "tech-minimalist";
+        }
+
+        const config = {
+          businessName: tenant.name,
+          slogan,
+          description,
+          services,
+          phone,
+          email,
+          theme,
+          isWebsiteGenerated: true
+        };
+        const html = compileDefaultWebsiteHTML(tenant.id, tenant.name, tenant.primaryColor, config);
+        websiteConfig = { ...config, html };
+      }
+
       return {
         ...tenant,
         slug: tenant.slug || slugify(tenant.name),
-        settings
+        settings,
+        websiteConfig
       };
     });
   }

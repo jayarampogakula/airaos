@@ -1,9 +1,9 @@
 import React from 'react';
 import { 
-  LayoutDashboard, Brain, UserCheck, MessageSquare, Users, Calendar, 
-  GitBranch, PhoneCall, Database, Settings, Code, ShieldAlert,
-  ChevronDown, ChevronRight, AlertCircle, ShoppingBag, Globe, Link, CreditCard,
-  Key
+  LayoutDashboard, Inbox, Phone, Workflow, Users, Calendar, 
+  Bot, Database, Network, MessageSquareCode, Globe, BrainCircuit,
+  PlugZap, Shield, Palette, CreditCard, Settings, LifeBuoy,
+  ChevronDown, ChevronRight, AlertCircle, ShieldAlert, Key, ShoppingBag, MessageSquare
 } from 'lucide-react';
 import { Tenant, User } from '../types';
 
@@ -47,44 +47,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const groups = [
     {
-      title: "Workspace Overview",
+      title: "🏠 Dashboard",
       tabs: [
-        { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-        { id: 'inbox', label: 'Unified Inbox', icon: MessageSquare },
+        { id: 'dashboard', label: 'Overview', icon: LayoutDashboard }
+      ]
+    },
+    {
+      title: "💬 Communications",
+      tabs: [
+        { id: 'inbox', label: 'Omnichannel Inbox', icon: Inbox },
+        { id: 'voice', label: 'Voice Calls', icon: Phone },
+        { id: 'workflow', label: 'Workflow Automation', icon: Workflow }
+      ]
+    },
+    {
+      title: "👥 CRM & Sales",
+      tabs: [
         { id: 'crm', label: 'CRM Pipeline', icon: Users },
         { id: 'scheduler', label: 'Calendar Scheduler', icon: Calendar }
       ]
     },
     {
-      title: "Chatbot Agent Suite",
+      title: "🤖 AI Agents",
       tabs: [
-        { id: 'employees', label: 'AI Employees', icon: UserCheck },
+        { id: 'employees', label: 'AI Agents', icon: Bot },
         { id: 'knowledge', label: 'Knowledge Base', icon: Database },
-        { id: 'widget', label: 'Chatbot Widget Builder', icon: Code },
-        { id: 'crew', label: 'CrewAI Orchestrator', icon: Brain }
+        { id: 'crew', label: 'Agent Orchestrator', icon: Network }
       ]
     },
     {
-      title: "AI Web Publisher",
+      title: "🌐 Channels & Widgets",
       tabs: [
-        { id: 'website', label: 'AI Website Builder', icon: Globe }
+        { id: 'widget', label: 'Chatbot Widget Builder', icon: MessageSquareCode },
+        { id: 'website', label: 'Website Builder', icon: Globe }
       ]
     },
     {
-      title: "Voice Call Center",
+      title: "🧠 AI Models",
       tabs: [
-        { id: 'voice', label: 'Inbound/Outbound Calls', icon: PhoneCall },
-        { id: 'workflow', label: 'Automation Workflows', icon: GitBranch }
+        { id: 'brain', label: 'AI Brain', icon: BrainCircuit }
       ]
     },
     {
-      title: "Administration",
+      title: "🔌 Integrations",
       tabs: [
-        { id: 'brain', label: 'AI Brain', icon: Brain },
-        { id: 'billing', label: 'Billing & Credits', icon: CreditCard },
-        { id: 'whitelabel', label: 'White Label', icon: Settings },
-        { id: 'team', label: 'Team Access', icon: Users },
-        { id: 'integrations', label: 'Integrations', icon: Link }
+        { id: 'integrations', label: 'Integrations', icon: PlugZap }
+      ]
+    },
+    {
+      title: "👨‍💼 Administration",
+      tabs: [
+        { id: 'team', label: 'Team Access', icon: Shield },
+        { id: 'whitelabel', label: 'White Label', icon: Palette },
+        { id: 'billing', label: 'Billing & Credits', icon: CreditCard }
+      ]
+    },
+    {
+      title: "⚙️ System",
+      tabs: [
+        { id: 'tenant_settings', label: 'Settings', icon: Settings },
+        { id: 'tenant_support', label: 'Help & Support', icon: LifeBuoy }
       ]
     }
   ];

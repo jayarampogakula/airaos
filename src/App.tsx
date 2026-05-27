@@ -18,6 +18,8 @@ import { IntegrationsView } from './components/IntegrationsView';
 import { CrewAIView } from './components/CrewAIView';
 import { BillingUpgradeView } from './components/BillingUpgradeView';
 import { PhonePeSimulator } from './components/PhonePeSimulator';
+import { TenantSettingsView } from './components/TenantSettingsView';
+import { TenantSupportView } from './components/TenantSupportView';
 import { useAuth } from './auth/AuthProvider';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 
@@ -349,7 +351,8 @@ function App() {
     const superadminTabs = ['tenants', 'plans', 'infrastructure', 'settings', 'marketplace', 'support_bot'];
     const tenantTabs = [
       'dashboard', 'brain', 'employees', 'inbox', 'crm', 
-      'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations', 'crew', 'billing'
+      'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations', 'crew', 'billing',
+      'tenant_settings', 'tenant_support'
     ];
 
     if (currentRole === 'superadmin') {
@@ -1230,6 +1233,17 @@ function App() {
                   tenant={selectedTenant}
                   usageLimits={getUsageLimits()}
                   platformBillingSettings={platformBillingSettings}
+                />
+              )}
+              {activeTab === 'tenant_settings' && (
+                <TenantSettingsView
+                  tenant={selectedTenant}
+                  onUpdateSettings={(updates) => handleUpdateBranding(selectedTenantId, updates)}
+                />
+              )}
+              {activeTab === 'tenant_support' && (
+                <TenantSupportView
+                  tenant={selectedTenant}
                 />
               )}
             </>
