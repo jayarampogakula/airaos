@@ -122,8 +122,8 @@ function App() {
     enabled: true,
     name: 'Platform Guide',
     avatar: '🤖',
-    welcomeMessage: 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?',
-    prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).\n\nYour task is to clarify doubts regarding:\n1. Twilio Integration: Enter Twilio Account SID, Auth Token, and Twilio Phone Number in the Integrations panel.\n2. BYO (Bring Your Own) Carrier: Configure BYO SIP Server host, username, password, and the custom phone number.\n3. SIP Integration: Use the BYO SIP Server credentials to route inbound and outbound calls through custom PBX/carriers.\n4. Packages & Rates: Growth (₹2,499/mo, 5,000 chats, 300 voice mins), Scale (₹6,999/mo, 25,000 chats, 2,000 voice mins), and Enterprise (₹19,999/mo+, unlimited chats/voice, unlimited digital employees). Overage rates: $0.05 per chat, $0.15 per voice minute, $0.10/min inbound, $0.20/min outbound.\n\nBe professional, brief, and clear. Help users understand how to set these up in their Settings and Integrations sections.'
+    welcomeMessage: 'Hi! I am the GatiDesk Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?',
+    prompt: 'You are the GatiDesk Platform Assistant, a friendly and extremely helpful digital receptionist for GatiDesk platform users (tenants).\n\nYour task is to clarify doubts regarding:\n1. Twilio Integration: Enter Twilio Account SID, Auth Token, and Twilio Phone Number in the Integrations panel.\n2. BYO (Bring Your Own) Carrier: Configure BYO SIP Server host, username, password, and the custom phone number.\n3. SIP Integration: Use the BYO SIP Server credentials to route inbound and outbound calls through custom PBX/carriers.\n4. Packages & Rates: Growth (₹2,499/mo, 5,000 chats, 300 voice mins), Scale (₹6,999/mo, 25,000 chats, 2,000 voice mins), and Enterprise (₹19,999/mo+, unlimited chats/voice, unlimited digital employees). Overage rates: $0.05 per chat, $0.15 per voice minute, $0.10/min inbound, $0.20/min outbound.\n\nBe professional, brief, and clear. Help users understand how to set these up in their Settings and Integrations sections.'
   });
 
   const [platformBillingSettings, setPlatformBillingSettings] = useState(() => {
@@ -173,7 +173,7 @@ function App() {
 
   // Force superadmin role for admin user
   useEffect(() => {
-    if (user?.email === 'admin@airaos.com' && currentRole !== 'superadmin' && !isImpersonating) {
+    if (user?.email === 'admin@gatidesk.com' && currentRole !== 'superadmin' && !isImpersonating) {
       setCurrentRole('superadmin');
       setActiveTab('tenants');
     }
@@ -223,7 +223,7 @@ function App() {
   useEffect(() => {
     if (platformSupportBot?.enabled) {
       // Prevent duplicate scripts or widgets
-      const existingScript = document.getElementById('airaos-platform-bot-script');
+      const existingScript = document.getElementById('gatidesk-platform-bot-script');
       if (existingScript) return;
 
       const getAppBasePath = () => {
@@ -235,7 +235,7 @@ function App() {
       };
 
       const script = document.createElement('script');
-      script.id = 'airaos-platform-bot-script';
+      script.id = 'gatidesk-platform-bot-script';
       script.src = getAppBasePath() + 'widget.js';
       script.setAttribute('data-tenant-id', selectedTenantId || 't-1');
       script.setAttribute('data-title', platformSupportBot.name || 'Platform Guide');
@@ -248,44 +248,44 @@ function App() {
 
       return () => {
         // Cleanup if disabled or component updates
-        const scriptEl = document.getElementById('airaos-platform-bot-script');
+        const scriptEl = document.getElementById('gatidesk-platform-bot-script');
         if (scriptEl) scriptEl.remove();
         
         // Remove launcher and container elements created by widget.js
-        const launcher = document.querySelector('.airaos-widget-launcher');
-        const container = document.querySelector('.airaos-widget-container');
+        const launcher = document.querySelector('.gatidesk-widget-launcher');
+        const container = document.querySelector('.gatidesk-widget-container');
         if (launcher) launcher.remove();
         if (container) container.remove();
         
         // Remove stylesheet injected by widget.js
         const styles = document.getElementsByTagName('style');
         for (let i = 0; i < styles.length; i++) {
-          if (styles[i].innerHTML.includes('airaos-widget-launcher')) {
+          if (styles[i].innerHTML.includes('gatidesk-widget-launcher')) {
             styles[i].remove();
             break;
           }
         }
 
-        delete (window as any).AiraOSWidgetLoaded;
+        delete (window as any).GatiDeskWidgetLoaded;
       };
     } else {
       // If disabled, make sure it is cleaned up
-      const scriptEl = document.getElementById('airaos-platform-bot-script');
+      const scriptEl = document.getElementById('gatidesk-platform-bot-script');
       if (scriptEl) scriptEl.remove();
-      const launcher = document.querySelector('.airaos-widget-launcher');
-      const container = document.querySelector('.airaos-widget-container');
+      const launcher = document.querySelector('.gatidesk-widget-launcher');
+      const container = document.querySelector('.gatidesk-widget-container');
       if (launcher) launcher.remove();
       if (container) container.remove();
       
       const styles = document.getElementsByTagName('style');
       for (let i = 0; i < styles.length; i++) {
-        if (styles[i].innerHTML.includes('airaos-widget-launcher')) {
+        if (styles[i].innerHTML.includes('gatidesk-widget-launcher')) {
           styles[i].remove();
           break;
         }
       }
 
-      delete (window as any).AiraOSWidgetLoaded;
+      delete (window as any).GatiDeskWidgetLoaded;
     }
   }, [platformSupportBot?.enabled, platformSupportBot?.name, selectedTenantId]);
 
@@ -914,7 +914,7 @@ function App() {
   };
 
   const handleLoginSuccess = (_role: 'tenant' | 'superadmin', tenantId?: string, email?: string) => {
-    const isAdmin = email === 'admin@airaos.com' || user?.email === 'admin@airaos.com';
+    const isAdmin = email === 'admin@gatidesk.com' || user?.email === 'admin@gatidesk.com';
     if (isAdmin) {
       setCurrentRole('superadmin');
       setActiveTab('tenants');
@@ -1170,6 +1170,7 @@ function App() {
                   tenantId={selectedTenantId}
                   tenantName={selectedTenant.name}
                   onSwitchTab={setActiveTab}
+                  knowledgeSources={getFilteredSources()}
                 />
               )}
               {activeTab === 'knowledge' && (

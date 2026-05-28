@@ -135,7 +135,7 @@ export function createTenantRecord({ companyName }) {
     id,
     name: companyName,
     slug,
-    domain: `${slug}.airaos.com`,
+    domain: `${slug}.gatidesk.com`,
     plan: 'Growth',
     status: 'active',
     logo: companyName.charAt(0).toUpperCase(),

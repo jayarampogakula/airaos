@@ -35,7 +35,7 @@ export const WhiteLabelView: React.FC<WhiteLabelViewProps> = ({
         <div className="view-header">
           <div>
             <h2 className="view-title">White Label Branding</h2>
-            <p className="view-subtitle">Rebrand AiraOS console domain, layout styles, and customer touchpoints with your own agency identity.</p>
+            <p className="view-subtitle">Rebrand GatiDesk console domain, layout styles, and customer touchpoints with your own agency identity.</p>
           </div>
         </div>
 
@@ -102,7 +102,7 @@ export const WhiteLabelView: React.FC<WhiteLabelViewProps> = ({
       <div className="view-header">
         <div>
           <h2 className="view-title">White Label Branding</h2>
-          <p className="view-subtitle">Rebrand AiraOS console domain, layout styles, and customer touchpoints with your own agency identity.</p>
+          <p className="view-subtitle">Rebrand GatiDesk console domain, layout styles, and customer touchpoints with your own agency identity.</p>
         </div>
       </div>
 
@@ -129,7 +129,7 @@ export const WhiteLabelView: React.FC<WhiteLabelViewProps> = ({
                 />
               </div>
               <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                Map a CNAME record in your DNS settings pointing your domain to AiraOS routers.
+                Map a CNAME record in your DNS settings pointing your domain to GatiDesk routers.
               </span>
             </div>
           </div>

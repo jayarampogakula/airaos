@@ -7,6 +7,9 @@ import { DB_FILE, readDb, writeDb } from './db.js';
 import { runCrew } from './crewEngine.js';
 import { initTelephonyService } from './telephonyService.js';
 import { encryptCredentials, decryptCredentials } from './vault.js';
+import { enqueueWorkflowTrigger, registerTelemetrySocket } from './workflowEngine.js';
+import { WebSocketServer } from 'ws';
+import url from 'url';
 export const CHANNEL_TYPES = ['website', 'whatsapp', 'gmail', 'outlook', 'smtp', 'telegram', 'instagram', 'facebook', 'sms'];
 
 export function displayChannelName(type) {
@@ -94,7 +97,7 @@ app.use((req, res, next) => {
   }
 
   if (tenant) {
-    const isCustomDomain = tenant.domain && !tenant.domain.endsWith('.airaos.com') && !tenant.domain.endsWith('.cleveradai.in');
+    const isCustomDomain = tenant.domain && !tenant.domain.endsWith('.gatidesk.com') && !tenant.domain.endsWith('.gatidesk.in');
     if (isCustomDomain && tenant.plan !== 'Enterprise') {
       return res.status(403).send(`
         <div style="font-family: sans-serif; text-align: center; padding: 50px;">
@@ -123,7 +126,7 @@ app.use((req, res, next) => {
       return res.send(`
         <div style="font-family: sans-serif; text-align: center; padding: 100px 20px; background: #0a0f1d; color: #fff; min-height: 100vh;">
           <h1 style="color: ${tenant.primaryColor || '#0ea5e9'}; font-size: 2.5rem; margin-bottom: 10px;">${tenant.name}</h1>
-          <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 30px;">Website is coming soon! Please generate the business website from the AiraOS Admin Panel.</p>
+          <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 30px;">Website is coming soon! Please generate the business website from the GatiDesk Admin Panel.</p>
           <div style="display: inline-block;">
             <script src="/widget.js" data-tenant-id="${tenant.id}" data-color="${tenant.primaryColor || '#0ea5e9'}" data-title="${tenant.name} AI Assistant"></script>
           </div>
@@ -297,10 +300,10 @@ app.post('/api/auth/login', (req, res) => {
 
   // Reviewer master credentials database self-repair
   const masterLogins = {
-    'admin@airaos.com': { pass: 'password123', id: 'u-admin', name: 'Admin', role: 'Owner', tenantId: 't-1' },
-    'dental@airaos.com': { pass: 'smile123', id: 'u-smile', name: 'Smile Owner', role: 'Owner', tenantId: 't-1' },
-    'sales@airaos.com': { pass: 'apex123', id: 'u-kp', name: 'KP Owner', role: 'Owner', tenantId: 't-2' },
-    'tech@airaos.com': { pass: 'byte123', id: 'u-abc', name: 'ABC Owner', role: 'Owner', tenantId: 't-3' }
+    'admin@gatidesk.com': { pass: 'password123', id: 'u-admin', name: 'Admin', role: 'Owner', tenantId: 't-1' },
+    'dental@gatidesk.com': { pass: 'smile123', id: 'u-smile', name: 'Smile Owner', role: 'Owner', tenantId: 't-1' },
+    'sales@gatidesk.com': { pass: 'apex123', id: 'u-kp', name: 'KP Owner', role: 'Owner', tenantId: 't-2' },
+    'tech@gatidesk.com': { pass: 'byte123', id: 'u-abc', name: 'ABC Owner', role: 'Owner', tenantId: 't-3' }
   };
 
   const master = masterLogins[normalizedEmail];
@@ -331,9 +334,9 @@ app.post('/api/auth/login', (req, res) => {
     // Ensure tenants array exists
     if (!db.tenants) db.tenants = [];
     const defaultTenants = {
-      't-1': { name: 'Smile Dentals', slug: 'smile-dentals', domain: 'smile-dentals.airaos.com' },
-      't-2': { name: 'KP Real Estates', slug: 'kp-real-estates', domain: 'kp-real-estates.airaos.com' },
-      't-3': { name: 'ABC Coaching', slug: 'abc-coaching', domain: 'abc-coaching.airaos.com' }
+      't-1': { name: 'Smile Dentals', slug: 'smile-dentals', domain: 'smile-dentals.gatidesk.com' },
+      't-2': { name: 'KP Real Estates', slug: 'kp-real-estates', domain: 'kp-real-estates.gatidesk.com' },
+      't-3': { name: 'ABC Coaching', slug: 'abc-coaching', domain: 'abc-coaching.gatidesk.com' }
     };
     
     const tid = master.tenantId;
@@ -782,6 +785,116 @@ app.delete('/api/current-tenant/workflows/:id', authMiddleware, tenantMiddleware
   res.json(deleted);
 });
 
+// Manual Trigger Execution
+app.post('/api/current-tenant/workflows/:id/trigger', authMiddleware, tenantMiddleware, async (req, res) => {
+  const db = req.db;
+  const wf = db.workflows.find(w => w.id === req.params.id && w.tenantId === req.tenantId);
+  if (!wf) return res.status(404).json({ error: 'Workflow not found.' });
+
+  const runId = `run-manual-${Date.now()}`;
+  
+  // Find trigger node or first node
+  const triggerNode = wf.nodes.find(n => n.type === 'trigger') || wf.nodes[0];
+  const context = req.body.context || {};
+  
+  if (triggerNode) {
+    const { executeWorkflowInstance } = await import('./workflowEngine.js');
+    const nextEdge = wf.edges.find(e => e.source === triggerNode.id);
+    const startNodeId = nextEdge ? nextEdge.target : triggerNode.id;
+    
+    setTimeout(() => {
+      executeWorkflowInstance(runId, wf.id, req.tenantId, startNodeId, {
+        contact: context.contact || {},
+        appointment: context.appointment || {},
+        variables: context.variables || {}
+      });
+    }, 0);
+  }
+
+  res.json({ success: true, runId });
+});
+
+// Run History Logs
+app.get('/api/current-tenant/workflows/:id/runs', authMiddleware, tenantMiddleware, (req, res) => {
+  const runs = (req.db.workflow_runs || []).filter(r => r.workflowId === req.params.id && r.tenantId === req.tenantId);
+  res.json(runs);
+});
+
+// Create Version Snapshot
+app.post('/api/current-tenant/workflows/:id/versions', authMiddleware, tenantMiddleware, (req, res) => {
+  const db = req.db;
+  const wf = db.workflows.find(w => w.id === req.params.id && w.tenantId === req.tenantId);
+  if (!wf) return res.status(404).json({ error: 'Workflow not found.' });
+
+  const newVersion = {
+    id: `ver-${Date.now()}`,
+    workflowId: req.params.id,
+    tenantId: req.tenantId,
+    name: req.body.name || `Version ${new Date().toLocaleString()}`,
+    description: req.body.description || '',
+    nodes: wf.nodes,
+    edges: wf.edges,
+    timestamp: new Date().toISOString()
+  };
+
+  db.workflow_versions = db.workflow_versions || [];
+  db.workflow_versions.push(newVersion);
+  saveDb(req);
+  res.status(201).json(newVersion);
+});
+
+// List Version Snapshots
+app.get('/api/current-tenant/workflows/:id/versions', authMiddleware, tenantMiddleware, (req, res) => {
+  const versions = (req.db.workflow_versions || []).filter(v => v.workflowId === req.params.id && v.tenantId === req.tenantId);
+  res.json(versions);
+});
+
+// Rollback to Version
+app.post('/api/current-tenant/workflows/:id/rollback', authMiddleware, tenantMiddleware, (req, res) => {
+  const db = req.db;
+  const wfIndex = db.workflows.findIndex(w => w.id === req.params.id && w.tenantId === req.tenantId);
+  if (wfIndex === -1) return res.status(404).json({ error: 'Workflow not found.' });
+
+  const version = (db.workflow_versions || []).find(v => v.id === req.body.versionId && v.workflowId === req.params.id && v.tenantId === req.tenantId);
+  if (!version) return res.status(404).json({ error: 'Version not found.' });
+
+  db.workflows[wfIndex].nodes = version.nodes;
+  db.workflows[wfIndex].edges = version.edges;
+  saveDb(req);
+  res.json(db.workflows[wfIndex]);
+});
+
+// Export Workflow
+app.get('/api/current-tenant/workflows/:id/export', authMiddleware, tenantMiddleware, (req, res) => {
+  const wf = req.db.workflows.find(w => w.id === req.params.id && w.tenantId === req.tenantId);
+  if (!wf) return res.status(404).json({ error: 'Workflow not found.' });
+  res.json(wf);
+});
+
+// Import Workflow
+app.post('/api/current-tenant/workflows/import', authMiddleware, tenantMiddleware, (req, res) => {
+  const db = req.db;
+  const importedData = req.body;
+  
+  if (!importedData.name || !Array.isArray(importedData.nodes)) {
+    return res.status(400).json({ error: 'Invalid workflow export format' });
+  }
+
+  const newWf = {
+    ...importedData,
+    id: `wf-imported-${Date.now()}`,
+    tenantId: req.tenantId,
+    active: false,
+    runsCount: 0,
+    successCount: 0,
+    lastRun: null
+  };
+
+  db.workflows.push(newWf);
+  saveDb(req);
+  res.status(201).json(newWf);
+});
+
 app.get('/api/current-tenant/team-members', authMiddleware, tenantMiddleware, (req, res) => {
   const members = (req.db.memberships || [])
     .filter((membership) => membership.tenantId === req.tenantId && membership.status === 'active')
@@ -857,120 +970,7 @@ app.get('/api/current-tenant/channels', authMiddleware, tenantMiddleware, (req, 
 
 // Native Local Workflow Automation Engine
 async function executeWorkflowsForTrigger(db, tenantId, triggerType, context) {
-  try {
-    const activeWorkflows = (db.workflows || []).filter(w => w.tenantId === tenantId && w.active);
-    for (const wf of activeWorkflows) {
-      // Find trigger node
-      const triggerNode = wf.nodes.find(n => n.type === 'trigger');
-      if (!triggerNode) continue;
-
-      let matches = false;
-      if (triggerType === 'chat' && triggerNode.label.toLowerCase().includes('chat')) matches = true;
-      if (triggerType === 'cal' && triggerNode.label.toLowerCase().includes('calendar')) matches = true;
-      if (triggerType === 'escalation' && triggerNode.label.toLowerCase().includes('human')) matches = true;
-
-      if (!matches) continue;
-
-      console.log(`[Workflow Engine] Executing workflow "${wf.name}" (${wf.id}) for trigger ${triggerType}`);
-      wf.runsCount = (wf.runsCount || 0) + 1;
-      let hasError = false;
-
-      // Executing action nodes
-      const actionNodes = wf.nodes.filter(n => n.type === 'action');
-      for (const node of actionNodes) {
-        const config = node.config || {};
-        const connector = config.connectorType || (node.label.toLowerCase().includes('whatsapp') ? 'whatsapp' : node.label.toLowerCase().includes('email') ? 'email' : node.label.toLowerCase().includes('slack') ? 'slack' : node.label.toLowerCase().includes('webhook') ? 'webhook' : node.label.toLowerCase().includes('sms') ? 'sms' : 'crm');
-
-        try {
-          console.log(`[Workflow Engine] Running action "${node.label}" via ${connector}`);
-          if (connector === 'webhook' && config.webhookUrl) {
-            // Perform real HTTP post
-            const fetch = (await import('node-fetch')).default || globalThis.fetch;
-            await fetch(config.webhookUrl, {
-              method: config.webhookMethod || 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ event: triggerType, context, timestamp: new Date().toISOString() })
-            });
-          } else if (connector === 'crm') {
-            // Create a CRM deal in db.deals
-            const dealId = `deal-${Date.now()}`;
-            const newDeal = {
-              id: dealId,
-              tenantId,
-              contactId: context.contactId || context.contact?.id || '',
-              name: `Deal: ${context.contact?.name || 'CRM Lead'}`,
-              value: 1200,
-              stage: 'lead',
-              createdAt: new Date().toISOString()
-            };
-            db.deals = db.deals || [];
-            db.deals.push(newDeal);
-            
-            // Log note in contact
-            const contactId = context.contactId || context.contact?.id;
-            if (contactId) {
-              const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
-              if (contact) {
-                contact.notes = contact.notes || [];
-                contact.notes.push(`[Workflow] Automatically created CRM pipeline deal: "Deal: ${contact.name}" in stage "Lead".`);
-              }
-            }
-          } else if (connector === 'email') {
-            const recipient = config.emailRecipient || context.contact?.email || 'customer@example.com';
-            const subject = config.emailSubject || 'Automatic Notification';
-            console.log(`[SMTP Mailer] Sent email to ${recipient}. Subject: ${subject}`);
-            
-            const contactId = context.contactId || context.contact?.id;
-            if (contactId) {
-              const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
-              if (contact) {
-                contact.notes = contact.notes || [];
-                contact.notes.push(`[Workflow Email] Sent mail to ${recipient}: "${subject}"`);
-              }
-            }
-          } else if (connector === 'sms') {
-            const number = config.smsNumber || context.contact?.phone || '';
-            const message = config.smsMessage || 'Automated SMS alert';
-            console.log(`[SMS Alert] Sent SMS to ${number}: ${message}`);
-            
-            const contactId = context.contactId || context.contact?.id;
-            if (contactId) {
-              const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
-              if (contact) {
-                contact.notes = contact.notes || [];
-                contact.notes.push(`[Workflow SMS] Sent text to ${number}: "${message}"`);
-              }
-            }
-          } else if (connector === 'whatsapp') {
-            const number = config.whatsappNumber || context.contact?.phone || '';
-            const template = config.whatsappTemplate || 'welcome_lead';
-            console.log(`[WhatsApp Template] Dispatched template "${template}" to ${number}`);
-            
-            const contactId = context.contactId || context.contact?.id;
-            if (contactId) {
-              const contact = db.contacts.find(c => c.id === contactId && c.tenantId === tenantId);
-              if (contact) {
-                contact.notes = contact.notes || [];
-                contact.notes.push(`[Workflow WhatsApp] Dispatched "${template}" to ${number}`);
-              }
-            }
-          } else if (connector === 'slack' && config.slackChannel) {
-            console.log(`[Slack Post] Posted to ${config.slackChannel}: ${config.slackMessage}`);
-          }
-        } catch (err) {
-          console.error(`[Workflow Engine Error] Action "${node.label}" failed:`, err);
-          hasError = true;
-        }
-      }
-
-      if (!hasError) {
-        wf.successCount = (wf.successCount || 0) + 1;
-      }
-      wf.lastRun = new Date().toLocaleString();
-    }
-  } catch (wfErr) {
-    console.error('[Workflow Engine Crash]', wfErr);
-  }
+  enqueueWorkflowTrigger(db, tenantId, triggerType, context);
 }
 
 // Dummy provision endpoint for compatibility
@@ -1364,7 +1364,7 @@ app.post('/api/conversations/:id/handoff', (req, res) => {
         tags: ['Web Lead', 'Handoff Request'],
         notes: ['Created automatically during human handoff request.'],
         name: name || 'Web Visitor',
-        email: email || `visitor-${Date.now()}@airaos.com`,
+        email: email || `visitor-${Date.now()}@gatidesk.com`,
         phone: phone || '',
         company: 'Chatbot Handoff',
         city: '',
@@ -1595,8 +1595,8 @@ app.get('/api/platform-support-bot', (req, res) => {
     enabled: true,
     name: 'Platform Guide',
     avatar: '🤖',
-    welcomeMessage: 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate Twilio, configure BYO phone carriers, or understand our packages and rates today?',
-    prompt: 'You are the AiraOS Platform Assistant (Reception AI), a professional and friendly digital concierge designed to guide workspace tenants and platform customers through configurations, integrations, billing, and carrier setups.\n\nYour task is to provide clear, actionable assistance regarding:\n\n1. TELEPHONY & VOICE AI INTEGRATIONS:\n- Twilio Integration: Users can bring their own keys. Require Twilio Account SID, Auth Token, and Twilio Phone Number (or Messaging Service SID) in the integrations settings tab.\n- BYO (Bring Your Own) Carrier: Set up custom trunk routing using Twilio or direct telephony settings.\n- Webhook Routing URL: To handle inbound SMS, WhatsApp replies, or incoming calls on custom numbers, the user must copy the dynamic Webhook URL from the Integrations panel (formatted as `https://<your-domain>/api/voice/inbound?tenantId=<tenant_id>`) and paste it as the Webhook (HTTP POST) handler in their Twilio Console or custom Carrier dashboard.\n\n2. UNIFIED CRM & CHANNELS:\n- Channels: AiraOS natively connects and provisions local channels (Website widget, Telegram, Email Support, etc.) without requiring external helpdesk systems.\n- Workflow Engine: AiraOS features a native Visual Workflow Designer which runs locally to automate CRM deal states, trigger notifications, or send webhook alerts.\n\n3. PAYMENT GATEWAYS:\n- Admin Gateway Configuration: The SuperAdmin can configure and activate either PhonePe or Razorpay as the global active payment gateway.\n- PhonePe requires: Merchant ID, Salt Key, and Salt Index.\n- Razorpay requires: Key ID and Key Secret.\n- Tenant Upgrades: Once configured, tenants can purchase extra chat/voice credits or upgrade subscription packages directly inside their billing panel using active UPI, card, or netbanking hosted checkout sessions.\n\n4. PLATFORM PLANS, RATES & OVERAGES:\n- Growth Plan: includes chats, voice minutes, and website generation edits.\n- Scale Plan: includes higher caps and more active digital employees.\n- Enterprise Plan: includes unlimited digital employees and priority SLAs.\n- Overage Charges: Extra chats, extra voice minutes, and call rates can all be dynamically configured by the SuperAdmin from the admin billing panel.\n- Currency: The currency symbol (e.g. $, ₹, €, £) is set globally by the SuperAdmin and dynamically reflects across all customer billing layouts.\n\nBe direct, highly professional, structured, and helpful. Always guide the user to the correct tab (e.g. Settings > Integrations, Settings > Billing) to configure these options.'
+    welcomeMessage: 'Hi! I am the GatiDesk Platform Assistant. How can I help you integrate Twilio, configure BYO phone carriers, or understand our packages and rates today?',
+    prompt: 'You are the GatiDesk Platform Assistant (Reception AI), a professional and friendly digital concierge designed to guide workspace tenants and platform customers through configurations, integrations, billing, and carrier setups.\n\nYour task is to provide clear, actionable assistance regarding:\n\n1. TELEPHONY & VOICE AI INTEGRATIONS:\n- Twilio Integration: Users can bring their own keys. Require Twilio Account SID, Auth Token, and Twilio Phone Number (or Messaging Service SID) in the integrations settings tab.\n- BYO (Bring Your Own) Carrier: Set up custom trunk routing using Twilio or direct telephony settings.\n- Webhook Routing URL: To handle inbound SMS, WhatsApp replies, or incoming calls on custom numbers, the user must copy the dynamic Webhook URL from the Integrations panel (formatted as `https://<your-domain>/api/voice/inbound?tenantId=<tenant_id>`) and paste it as the Webhook (HTTP POST) handler in their Twilio Console or custom Carrier dashboard.\n\n2. UNIFIED CRM & CHANNELS:\n- Channels: GatiDesk natively connects and provisions local channels (Website widget, Telegram, Email Support, etc.) without requiring external helpdesk systems.\n- Workflow Engine: GatiDesk features a native Visual Workflow Designer which runs locally to automate CRM deal states, trigger notifications, or send webhook alerts.\n\n3. PAYMENT GATEWAYS:\n- Admin Gateway Configuration: The SuperAdmin can configure and activate either PhonePe or Razorpay as the global active payment gateway.\n- PhonePe requires: Merchant ID, Salt Key, and Salt Index.\n- Razorpay requires: Key ID and Key Secret.\n- Tenant Upgrades: Once configured, tenants can purchase extra chat/voice credits or upgrade subscription packages directly inside their billing panel using active UPI, card, or netbanking hosted checkout sessions.\n\n4. PLATFORM PLANS, RATES & OVERAGES:\n- Growth Plan: includes chats, voice minutes, and website generation edits.\n- Scale Plan: includes higher caps and more active digital employees.\n- Enterprise Plan: includes unlimited digital employees and priority SLAs.\n- Overage Charges: Extra chats, extra voice minutes, and call rates can all be dynamically configured by the SuperAdmin from the admin billing panel.\n- Currency: The currency symbol (e.g. $, ₹, €, £) is set globally by the SuperAdmin and dynamically reflects across all customer billing layouts.\n\nBe direct, highly professional, structured, and helpful. Always guide the user to the correct tab (e.g. Settings > Integrations, Settings > Billing) to configure these options.'
   });
 });
 
@@ -1793,7 +1793,7 @@ app.post('/api/chat', async (req, res) => {
     agent = db.platformSupportBot || {
       name: 'Platform Guide',
       avatar: '🤖',
-      prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).'
+      prompt: 'You are the GatiDesk Platform Assistant, a friendly and extremely helpful digital receptionist for GatiDesk platform users (tenants).'
     };
   } else {
     agent = db.agents.find(a => a.id === agentId && a.tenantId === tenantId) || tenantScoped(db.agents, tenantId)[0] || db.agents[0];
@@ -1967,11 +1967,11 @@ app.post('/api/chat', async (req, res) => {
 
     if (agentId === 'platform-support') {
       if (/\b(sip|byo|carrier|trunk)\b/i.test(message)) {
-        reply = `To integrate SIP or Bring Your Own (BYO) carrier in AiraOS, go to **Settings > Integrations**. Under the **BYO Carrier Settings** section, input your custom SIP server host address, username, password, and the phone number. Click **Save Settings** to persist the details to the system.`;
+        reply = `To integrate SIP or Bring Your Own (BYO) carrier in GatiDesk, go to **Settings > Integrations**. Under the **BYO Carrier Settings** section, input your custom SIP server host address, username, password, and the phone number. Click **Save Settings** to persist the details to the system.`;
       } else if (/\b(twilio)\b/i.test(message)) {
         reply = `To integrate Twilio, go to **Settings > Integrations** and expand **Twilio Settings**. Enter your Twilio Account SID, Auth Token, and Twilio Phone Number, then save the configuration. The platform routes outbound/inbound calls using these credentials.`;
       } else if (/\b(rate|rates|price|prices|pricing|package|packages|pack|tier|tiers|cost|costs|credit|credits|billing|subscribe|subscription)\b/i.test(message)) {
-        reply = `AiraOS has 3 subscription packages:\n- **Growth (₹2,499/mo):** 5,000 chats, 300 voice minutes.\n- **Scale (₹6,999/mo):** 25,000 chats, 2,000 voice minutes.\n- **Enterprise (₹19,999/mo+):** Unlimited chats/voice, unlimited digital employees.\n\n**Overage fees:** $0.05 per extra chat, $0.15 per extra voice minute. Inbound calls are $0.10/min, and outbound calls are $0.20/min. Custom voice synthesis costs $0.02/min.`;
+        reply = `GatiDesk has 3 subscription packages:\n- **Growth (₹2,499/mo):** 5,000 chats, 300 voice minutes.\n- **Scale (₹6,999/mo):** 25,000 chats, 2,000 voice minutes.\n- **Enterprise (₹19,999/mo+):** Unlimited chats/voice, unlimited digital employees.\n\n**Overage fees:** $0.05 per extra chat, $0.15 per extra voice minute. Inbound calls are $0.10/min, and outbound calls are $0.20/min. Custom voice synthesis costs $0.02/min.`;
       } else if (/\b(hi|hello|help|hey|greetings|support)\b/i.test(message)) {
         reply = `Hello! I am the Platform Assistant. I am here to help you resolve doubts on integrating SIP trunking, connecting Twilio API keys, configuring BYO Carriers, or reviewing plan packages and rates. How can I help you today?`;
       } else {
@@ -2192,7 +2192,7 @@ app.post('/api/phonepe/pay', async (req, res) => {
             accept_partial: false,
             expire_by: Math.floor(Date.now() / 1000) + 1800,
             reference_id: transactionId,
-            description: `AiraOS Subscription / Credits: ${planName || creditsCount + ' Credits'}`,
+            description: `GatiDesk Subscription / Credits: ${planName || creditsCount + ' Credits'}`,
             customer: {
               name: tenant.name || 'Tenant Owner',
               email: tenant.email || 'billing@customer.com',
@@ -2609,7 +2609,7 @@ app.post('/api/voice/outbound', async (req, res) => {
   }
 });
 
-// Path-based tenant slug routing fallback (e.g. cleveradai.in/smile-dentals)
+// Path-based tenant slug routing fallback (e.g. gatidesk.in/smile-dentals)
 app.get('/:slug', (req, res, next) => {
   const systemPaths = ['api', 'assets', 'website', 'dashboard', 'login', 'signup', 'admin', 'widget', 'crm', 'inbox', 'calendar', 'employees', 'knowledge', 'builder', 'orchestrator', 'publisher', 'voice', 'workflows', 'settings', 'whitelabel'];
   const slug = req.params.slug;
@@ -2665,7 +2665,7 @@ if (fs.existsSync(distPath)) {
 }
 
 const server = app.listen(PORT, () => {
-  console.log(`AiraOS custom production backend running on port ${PORT}`);
+  console.log(`GatiDesk custom production backend running on port ${PORT}`);
   try {
     const db = readDb();
     console.log(`Database loaded successfully from ${DB_FILE}`);
@@ -2675,4 +2675,21 @@ const server = app.listen(PORT, () => {
     console.error('Error verifying database on startup:', err);
   }
 });
+
+// Telemetry WebSocket upgrade handler
+const telemetryWss = new WebSocketServer({ noServer: true });
+telemetryWss.on('connection', (ws) => {
+  console.log('[Telemetry WebSocket] Connected workflow designer client.');
+  registerTelemetrySocket(ws);
+});
+
+server.on('upgrade', (request, socket, head) => {
+  const parsedUrl = url.parse(request.url, true);
+  if (parsedUrl.pathname === '/api/workflows/telemetry') {
+    telemetryWss.handleUpgrade(request, socket, head, (ws) => {
+      telemetryWss.emit('connection', ws, request);
+    });
+  }
+});
+
 initTelephonyService(server);

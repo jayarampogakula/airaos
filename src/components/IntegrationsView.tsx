@@ -666,7 +666,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                 <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ShieldCheck size={18} style={{ color: 'var(--success-color)' }} />
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Active standard outbound routing route is: <strong>{getManagedNumber()}</strong> (Simulated AiraOS Trunk).
+                    Active standard outbound routing route is: <strong>{getManagedNumber()}</strong> (Simulated GatiDesk Trunk).
                   </span>
                 </div>
               ) : (

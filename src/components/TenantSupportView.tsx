@@ -18,7 +18,7 @@ export const TenantSupportView: React.FC<TenantSupportViewProps> = ({ tenant }) 
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'ai',
-      text: 'Hello! I am the AiraOS Platform Assistant. How can I help you integrate Twilio, configure BYO carrier, or understand our packages and rates today?',
+      text: 'Hello! I am the GatiDesk Platform Assistant. How can I help you integrate Twilio, configure BYO carrier, or understand our packages and rates today?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -113,7 +113,7 @@ export const TenantSupportView: React.FC<TenantSupportViewProps> = ({ tenant }) 
               🤖
             </div>
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>AiraOS Assistant</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>GatiDesk Assistant</div>
               <div style={{ fontSize: '0.7rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span> Live Support Online
               </div>
@@ -270,12 +270,12 @@ export const TenantSupportView: React.FC<TenantSupportViewProps> = ({ tenant }) 
           <div className="glass-panel" style={{ padding: '20px' }}>
             <h3 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '10px', color: 'var(--text-primary)' }}>Developer Docs</h3>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: '0 0 12px 0' }}>
-              AiraOS integrates voice agents using client-side Speech-to-Text (STT) and text-to-speech (TTS) interfaces, alongside a Visual Workflow automation pipeline.
+              GatiDesk integrates voice agents using client-side Speech-to-Text (STT) and text-to-speech (TTS) interfaces, alongside a Visual Workflow automation pipeline.
             </p>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               Webhook endpoint format:<br/>
               <code style={{ display: 'block', padding: '6px', background: 'rgba(0,0,0,0.3)', borderRadius: '4px', marginTop: '4px', fontSize: '0.7rem', overflowX: 'auto', whiteSpace: 'nowrap' }}>
-                {`https://${tenant.slug}.airaos.com/api/voice/inbound`}
+                {`https://${tenant.slug}.gatidesk.com/api/voice/inbound`}
               </code>
             </div>
           </div>

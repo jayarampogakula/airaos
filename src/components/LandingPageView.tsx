@@ -110,7 +110,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
       role: 'tenant' as const,
       name: 'Admin Multi-Workspace',
       desc: 'Access Smile Dentals, KP Real Estates, and ABC Coaching from one account.',
-      email: 'admin@airaos.com',
+      email: 'admin@gatidesk.com',
       password: 'password123',
       color: '#ef4444',
       badge: 'Owner',
@@ -120,7 +120,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
       role: 'tenant' as const,
       name: 'Smile Dental Clinic',
       desc: 'Manage receptionist AI (Sarah) booking dental checkups, cleaning services, answering FAQs, and syncing calendar slots.',
-      email: 'dental@airaos.com',
+      email: 'dental@gatidesk.com',
       password: 'smile123',
       color: '#6366f1',
       badge: 'Growth Plan',
@@ -130,7 +130,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
       role: 'tenant' as const,
       name: 'Apex Heights Real Estate',
       desc: 'Manage property sales AI (Marcus) qualifying buyer budgets, booking tours, recording CRM leads, and sending pricing sheets.',
-      email: 'sales@airaos.com',
+      email: 'sales@gatidesk.com',
       password: 'apex123',
       color: '#f59e0b',
       badge: 'Scale Plan',
@@ -140,7 +140,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
       role: 'tenant' as const,
       name: 'ByteTech Software Solutions',
       desc: 'Manage technical customer support AI handling developer questions, troubleshooting bugs, and raising escalation alerts.',
-      email: 'tech@airaos.com',
+      email: 'tech@gatidesk.com',
       password: 'byte123',
       color: '#10b981',
       badge: 'Enterprise Plan',
@@ -178,7 +178,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
   const faqs = [
     {
       q: 'Do I need to install dependencies or setup databases?',
-      a: 'AiraOS features a fully preconfigured client dashboard out-of-the-box. When deploying in production, platform operators can link their own self-hosted VPS microservice containers (Dify, Workflow Automator, Calendar Scheduler, Twenty CRM) using the Super Admin Integrations Panel to direct live connections.'
+      a: 'GatiDesk features a fully preconfigured client dashboard out-of-the-box. When deploying in production, platform operators can link their own self-hosted VPS microservice containers (Dify, Workflow Automator, Calendar Scheduler, Twenty CRM) using the Super Admin Integrations Panel to direct live connections.'
     },
     {
       q: 'What is Coolify and how does it manage the infrastructure?',
@@ -190,7 +190,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
     },
     {
       q: 'How do vector databases connect to the client portal?',
-      a: 'AiraOS handles file indexing under the hood. When tenants upload PDF manuals or FAQ spreadsheets in the Knowledge Base center, the text is chunked, converted into vector representations, and query-matched to form contextual responses during customer chats.'
+      a: 'GatiDesk handles file indexing under the hood. When tenants upload PDF manuals or FAQ spreadsheets in the Knowledge Base center, the text is chunked, converted into vector representations, and query-matched to form contextual responses during customer chats.'
     }
   ];
 
@@ -280,20 +280,23 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontWeight: 'bold', color: 'white', fontSize: '1.05rem'
             }}>
-              A
+              G
             </div>
-            <span style={{ fontWeight: 'bold', fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif' }}>AiraOS</span>
+            <span style={{ fontWeight: 'bold', fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif' }}>GatiDesk</span>
           </div>
 
           {/* Core Content */}
           <div style={{ zIndex: 10, margin: '60px 0' }}>
             {authMode === 'login' ? (
               <>
-                <h2 style={{ fontSize: '2.2rem', fontWeight: 800, lineHeight: '1.2', fontFamily: 'Space Grotesk, sans-serif', background: 'linear-gradient(to right, #ffffff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '20px' }}>
-                  Smarter customer relations. Faster than ever.
+                <h2 style={{ fontSize: '2.2rem', fontWeight: 800, lineHeight: '1.2', fontFamily: 'Space Grotesk, sans-serif', background: 'linear-gradient(to right, #ffffff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '10px' }}>
+                  Welcome to GatiDesk
                 </h2>
-                <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '30px' }}>
-                  A unified digital employee platform combining vector databases, CRM pipelines, and voice SIP campaigns.
+                <p style={{ color: '#818cf8', fontSize: '1.1rem', fontWeight: '600', marginBottom: '20px', fontFamily: 'Space Grotesk, sans-serif' }}>
+                  Global Automation & Telephony Intelligence
+                </p>
+                <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '30px' }}>
+                  AI-powered communication, workflow automation, voice agents, CRM orchestration, and omnichannel engagement — unified into one intelligent operating system.
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -317,7 +320,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
                   10 minutes. Hours saved.
                 </h2>
                 <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '30px' }}>
-                  AiraOS builds structured workspace templates for your team. Hire automated experts:
+                  GatiDesk builds structured workspace templates for your team. Hire automated experts:
                 </p>
 
                 {/* Simulated Agents List from screenshot 2 */}
@@ -343,7 +346,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
           </div>
 
           <div style={{ fontSize: '0.75rem', color: '#475569', zIndex: 10 }}>
-            © 2026 AiraOS Inc. Secure Docker/SSL Cloud Console.
+            © 2026 GatiDesk Technologies Secure Docker/SSL Cloud Console.
           </div>
 
           {/* Glow blob */}
@@ -399,8 +402,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
                 </div>
 
                 <div>
-                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, fontFamily: 'Space Grotesk, sans-serif' }}>Welcome back</h3>
-                  <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px', margin: '4px 0 0 0' }}>Sign in to your AiraOS dashboard</p>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, fontFamily: 'Space Grotesk, sans-serif' }}>Welcome to GatiDesk</h3>
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px', margin: '4px 0 0 0' }}>Sign in to access Global Automation & Telephony Intelligence</p>
                 </div>
 
                 {loginError && (
@@ -508,7 +511,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
                 {/* Stepper Header agent tag */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '8px', alignSelf: 'flex-start' }}>
                   <span style={{ fontSize: '1rem' }}>🤖</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#4f46e5' }}>AiraOS Onboarding Agent</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#4f46e5' }}>GatiDesk Onboarding Agent</span>
                 </div>
 
                 {/* Stepper Form steps */}
@@ -851,7 +854,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
               A
             </div>
             <h1 style={{ fontSize: '1.4rem', fontWeight: '800', letterSpacing: '0.05em', fontFamily: 'Space Grotesk, sans-serif' }}>
-              AiraOS
+              GatiDesk
             </h1>
           </div>
 
@@ -1433,7 +1436,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
                 Self-Hosted Enterprise Autopilot
               </h3>
               <p style={{ color: '#94a3b8', fontSize: '1.05rem', marginTop: '8px' }}>
-                AiraOS runs 100% locally on your dedicated VPS cluster. No external SaaS requirements.
+                GatiDesk runs 100% locally on your dedicated VPS cluster. No external SaaS requirements.
               </p>
             </div>
 
@@ -1445,7 +1448,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
               <div className="glass-panel" style={{ padding: '24px', borderLeft: '4px solid #6366f1' }}>
                 <h4 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'white', marginBottom: '10px' }}>Our Mission: Native Compute Ownership</h4>
                 <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
-                  AiraOS breaks this cycle. Built as a fully integrated client console, it deploys directly onto a single VPS (like DigitalOcean, Hetzner, or AWS Ubuntu instance). The LLM engines, SIP trunks, CRM database tables, and calendar schedules coordinate in-memory or through local Docker microservices.
+                  GatiDesk breaks this cycle. Built as a fully integrated client console, it deploys directly onto a single VPS (like DigitalOcean, Hetzner, or AWS Ubuntu instance). The LLM engines, SIP trunks, CRM database tables, and calendar schedules coordinate in-memory or through local Docker microservices.
                 </p>
               </div>
 
@@ -1474,7 +1477,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
                 </div>
                 <h4 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white', marginBottom: '10px' }}>Message Submitted Successfully!</h4>
                 <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: '1.5', marginBottom: '20px' }}>
-                  Your details have been written directly to our local CRM database (tenant `t-1` Smile Dentals). You can sign in as `admin@airaos.com` or `dental@airaos.com` to inspect the pipeline deal.
+                  Your details have been written directly to our local CRM database (tenant `t-1` Smile Dentals). You can sign in as `admin@gatidesk.com` or `dental@gatidesk.com` to inspect the pipeline deal.
                 </p>
                 <button 
                   onClick={() => setContactSuccess(false)}
@@ -1581,7 +1584,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onLoginSuccess
         backgroundColor: '#05070c'
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>© 2026 AiraOS Inc. All rights reserved.</span>
+          <span>© 2026 GatiDesk Technologies All rights reserved.</span>
           <span style={{ display: 'flex', gap: '14px' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Server size={12} /> VPS Docker Deployed</span>
             <span>•</span>

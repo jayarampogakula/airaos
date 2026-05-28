@@ -340,7 +340,7 @@ export const CommunicationHubView: React.FC<CommunicationHubViewProps> = ({
                 <div key={message.id} className={`chat-message-bubble ${message.private ? 'ai' : message.sender}`}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.65rem', opacity: 0.7 }}>
                     <span style={{ fontWeight: 'bold' }}>
-                      {message.sender === 'customer' ? activeContact?.name : message.sender === 'ai' ? `AiraOS (${assignedAgent?.name || 'AI'})` : message.private || message.sender === 'note' ? 'Private Note' : 'Staff Agent'}
+                      {message.sender === 'customer' ? activeContact?.name : message.sender === 'ai' ? `GatiDesk (${assignedAgent?.name || 'AI'})` : message.private || message.sender === 'note' ? 'Private Note' : 'Staff Agent'}
                     </span>
                     <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>

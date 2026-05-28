@@ -261,11 +261,11 @@ const compileWebsiteHTML = (config: any) => {
 
   <div class="about-contact" id="contact">
     <h2>Get in Touch</h2>
-    <p>Contact Email: ${config.email || 'support@airaos.com'} | Phone: ${config.phone || '+1 (555) 000-0000'}</p>
+    <p>Contact Email: ${config.email || 'support@gatidesk.com'} | Phone: ${config.phone || '+1 (555) 000-0000'}</p>
   </div>
 
   <footer>
-    <p>&copy; ${new Date().getFullYear()} ${config.businessName}. Powered by AiraOS AI receptionist.</p>
+    <p>&copy; ${new Date().getFullYear()} ${config.businessName}. Powered by GatiDesk AI receptionist.</p>
   </footer>
   <script>
     // Intercept relative and hash link clicks to prevent iframe navigation in preview
@@ -738,8 +738,8 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
       `[AI AGENT] Creating customized marketing copy and service cards...`,
       `[THEME ENGINE] Compiling CSS stylesheets for selected style: "${theme.toUpperCase()}"...`,
       `[THEME ENGINE] Building responsive section anchors (#home, #services, #about, #contact)...`,
-      `[WIDGET INJECTOR] Embedding dynamic AiraOS live-chat and voice widget...`,
-      `[ROUTER] Mapping Traefik reverse-proxy domain: https://${tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)}...`,
+      `[WIDGET INJECTOR] Embedding dynamic GatiDesk live-chat and voice widget...`,
+      `[ROUTER] Mapping Traefik reverse-proxy domain: https://${tenant.domain.replace(/\.?gatidesk\.com$/, `.${getBaseDomain()}`)}...`,
       `[ROUTER] Registering LetsEncrypt SSL security certification...`,
       `[SUCCESS] AI Web Node deployed successfully! Site is now LIVE and responsive.`
     ];
@@ -1114,7 +1114,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
             </div>
           </div>
           <div style={{ textAlign: 'center', borderTop: `1px solid ${themeCardBorder}`, paddingTop: '10px', fontSize: '0.6rem', color: 'var(--text-muted)' }}>
-            © 2026 {businessName}. Powered by AiraOS Web Engine.
+            © 2026 {businessName}. Powered by GatiDesk Web Engine.
           </div>
         </footer>
       </div>
@@ -1399,7 +1399,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                       checked={domainType === 'subdomain'} 
                       onChange={() => setDomainType('subdomain')} 
                     />
-                    Host on platform subdomain ({tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)})
+                    Host on platform subdomain ({tenant.domain.replace(/\.?gatidesk\.com$/, `.${getBaseDomain()}`)})
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>
                     <input 
@@ -1448,7 +1448,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                         <tr>
                           <td style={{ padding: '4px 6px', fontWeight: 'bold' }}>CNAME</td>
                           <td style={{ padding: '4px 6px' }}>www</td>
-                          <td style={{ padding: '4px 6px', color: 'var(--primary-color)' }}>{tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`)}</td>
+                          <td style={{ padding: '4px 6px', color: 'var(--primary-color)' }}>{tenant.domain.replace(/\.?gatidesk\.com$/, `.${getBaseDomain()}`)}</td>
                         </tr>
                       </tbody>
                     </table>

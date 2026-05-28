@@ -4,7 +4,7 @@ export const mockTenants: Tenant[] = [
   {
     id: 't-1',
     name: 'Smile Dental Clinic',
-    domain: 'smile-dental.airaos.com',
+    domain: 'smile-dental.gatidesk.com',
     plan: 'Growth',
     status: 'active',
     logo: '🦷',
@@ -272,30 +272,20 @@ export const mockAppointments: Appointment[] = [
     location: 'Smile Dental Clinic Suite A',
     type: 'Teeth Whitening',
     status: 'scheduled'
-  },
-  {
-    id: 'app-302',
-    contactId: 'c-102',
-    agentId: 'a-2',
-    dateTime: '2026-05-24T11:00:00',
-    duration: 60,
-    location: 'Apex Heights Tower 2, Penthouse Lobby',
-    type: 'Property Tour',
-    status: 'scheduled'
   }
 ];
 
 export const mockWorkflows: Workflow[] = [
   {
     id: 'wf-1',
-    name: 'Lead Capture & CRM Sync',
-    description: 'Triggered when chat client submits email. Automatically creates a contact and pipeline deal in CRM, and fires welcome email.',
+    name: 'Customer Onboarding Sequence',
+    description: 'Triggered when a new customer is onboarded. Automatically sends a welcome email immediately, followed by a hygiene guide after 3 days and special offers after 7 days.',
     active: true,
     nodes: [
-      { id: 'wn-1', type: 'trigger', label: 'Chat Lead Capture', component: 'Communication Hub', description: 'User submits contact details in chat widget', status: 'active' },
-      { id: 'wn-2', type: 'action', label: 'Create CRM Contact', component: 'CRM (Twenty)', description: 'Saves name, phone, and email in Contacts database', status: 'active' },
-      { id: 'wn-3', type: 'action', label: 'Create Pipeline Deal', component: 'CRM (Twenty)', description: 'Places new deal into "Lead" stage in pipeline', status: 'active' },
-      { id: 'wn-4', type: 'action', label: 'Send Welcome WhatsApp', component: 'Workflow Node', description: 'Dispatches custom welcome WhatsApp templates', status: 'active' }
+      { id: 'wn-1', type: 'trigger', label: 'Onboarding Trigger', component: 'Native CRM', description: 'Fires when a new customer is registered in Native CRM', status: 'active' },
+      { id: 'wn-2', type: 'action', label: 'Send Welcome Email', component: 'Email Connector', description: 'Sends predesigned onboarding welcome template immediately', status: 'active', config: { connectorType: 'email', emailTemplateId: 'welcome_onboarding', timingMode: 'immediate' } },
+      { id: 'wn-3', type: 'action', label: 'Send 3-Day Followup', component: 'Email Connector', description: 'Sends educational oral hygiene guide after 3 days delay', status: 'active', config: { connectorType: 'email', emailTemplateId: 'onboarding_3day_followup', timingMode: 'delay', delayValue: 3, delayUnit: 'days' } },
+      { id: 'wn-4', type: 'action', label: 'Send 7-Day Promo Offer', component: 'Email Connector', description: 'Sends whitening promotional offer after 7 days delay', status: 'active', config: { connectorType: 'email', emailTemplateId: 'onboarding_7day_upsell', timingMode: 'delay', delayValue: 7, delayUnit: 'days' } }
     ],
     edges: [
       { id: 'we-1', source: 'wn-1', target: 'wn-2' },
@@ -308,19 +298,17 @@ export const mockWorkflows: Workflow[] = [
   },
   {
     id: 'wf-2',
-    name: 'Appointment Reminder Loop',
-    description: 'Triggered 24h before Calendar Scheduler appointment. Sends WhatsApp, checks read receipts, sends follow-up SMS if unread.',
+    name: 'Appointment Confirmation & Reminder',
+    description: 'Triggered when a customer books an appointment. Sends confirmation details immediately on WhatsApp, and a final reminder 1 hour before.',
     active: true,
     nodes: [
-      { id: 'wn-5', type: 'trigger', label: 'Calendar Trigger', component: 'Appointment Engine', description: 'Fires 24 hours prior to scheduled appointment', status: 'active' },
-      { id: 'wn-6', type: 'action', label: 'Send WhatsApp Reminder', component: 'Workflow Node', description: 'Sends booking detail details and yes/no confirmation buttons', status: 'active' },
-      { id: 'wn-7', type: 'action', label: 'Wait 3 Hours', component: 'Workflow Core', description: 'Delays workflow to evaluate customer confirmation reply', status: 'active' },
-      { id: 'wn-8', type: 'action', label: 'Verify Confirmation', component: 'CRM (Twenty)', description: 'Checks if client replied or confirmed in CRM', status: 'active' }
+      { id: 'wn-5', type: 'trigger', label: 'Appointment Scheduled', component: 'Calendar Engine', description: 'Fires when slot is booked in Calendar Scheduler', status: 'active' },
+      { id: 'wn-6', type: 'action', label: 'Send Booking WhatsApp', component: 'WhatsApp Node', description: 'Dispatches booking confirmation details immediately', status: 'active', config: { connectorType: 'whatsapp', whatsappTemplateId: 'appointment_confirm', timingMode: 'immediate' } },
+      { id: 'wn-7', type: 'action', label: 'Send 1-Hour Reminder', component: 'WhatsApp Node', description: 'Sends a second alert exactly 1 hour before appointment time', status: 'active', config: { connectorType: 'whatsapp', whatsappTemplateId: 'appointment_remind_1h', timingMode: 'relative', relativeValue: 1, relativeUnit: 'hours', relativeAnchor: 'before' } }
     ],
     edges: [
       { id: 'we-4', source: 'wn-5', target: 'wn-6' },
-      { id: 'we-5', source: 'wn-6', target: 'wn-7' },
-      { id: 'we-6', source: 'wn-7', target: 'wn-8' }
+      { id: 'we-5', source: 'wn-6', target: 'wn-7' }
     ],
     runsCount: 89,
     successCount: 88,
@@ -329,12 +317,12 @@ export const mockWorkflows: Workflow[] = [
   {
     id: 'wf-3',
     name: 'Support Incident Escalation',
-    description: 'Triggered when AI Support Agent transfers chat. Creates Jira ticket, alerts Slack general channel, updates CRM SLA flags.',
+    description: 'Triggered when AI Support Agent transfers chat. Creates ticket in Native CRM, alerts Slack general channel, and pings support queue.',
     active: false,
     nodes: [
-      { id: 'wn-9', type: 'trigger', label: 'Human Escalation Trigger', component: 'AI Brain / Hub', description: 'Conversation status changes to human_escalated', status: 'inactive' },
-      { id: 'wn-10', type: 'action', label: 'Create Support Ticket', component: 'CRM (Twenty)', description: 'Adds ticket entity linked to customer profiles', status: 'inactive' },
-      { id: 'wn-11', type: 'action', label: 'Slack Alert Dev Team', component: 'Workflow Node', description: 'Pings engineering Slack channel with logs links', status: 'inactive' }
+      { id: 'wn-9', type: 'trigger', label: 'Human Handoff Trigger', component: 'AI Brain / Hub', description: 'Conversation status changes to human_escalated', status: 'inactive' },
+      { id: 'wn-10', type: 'action', label: 'Create CRM Ticket', component: 'Native CRM', description: 'Adds ticket entity linked to customer profiles immediately', status: 'inactive', config: { connectorType: 'crm', crmAction: 'create_ticket', timingMode: 'immediate' } },
+      { id: 'wn-11', type: 'action', label: 'Slack Alert Dev Team', component: 'Slack Integration', description: 'Pings engineering Slack channel with logs links', status: 'inactive', config: { connectorType: 'slack', slackChannel: '#general', slackMessage: 'Support Ticket Escalated: {contact_name}', timingMode: 'immediate' } }
     ],
     edges: [
       { id: 'we-7', source: 'wn-9', target: 'wn-10' },

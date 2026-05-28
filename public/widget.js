@@ -1,7 +1,7 @@
 (function() {
   // Prevent double loading
-  if (window.AiraOSWidgetLoaded) return;
-  window.AiraOSWidgetLoaded = true;
+  if (window.GatiDeskWidgetLoaded) return;
+  window.GatiDeskWidgetLoaded = true;
 
   // Find our script script tag
   const scriptTag = document.currentScript || (function() {
@@ -24,7 +24,7 @@
   // Create widget container & launcher styles
   const style = document.createElement('style');
   style.innerHTML = `
-    .airaos-widget-launcher {
+    .gatidesk-widget-launcher {
       position: fixed;
       bottom: 24px;
       ${position}: 24px;
@@ -41,17 +41,17 @@
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       border: 1px solid rgba(255,255,255,0.1);
     }
-    .airaos-widget-launcher:hover {
+    .gatidesk-widget-launcher:hover {
       transform: scale(1.08) translateY(-2px);
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
     }
-    .airaos-widget-launcher:active {
+    .gatidesk-widget-launcher:active {
       transform: scale(0.95);
     }
-    .airaos-widget-launcher.open {
+    .gatidesk-widget-launcher.open {
       display: none !important;
     }
-    .airaos-widget-container {
+    .gatidesk-widget-container {
       position: fixed;
       bottom: 24px;
       ${position}: 24px;
@@ -68,19 +68,19 @@
       border: 1px solid rgba(255,255,255,0.08);
       background: #090f1d;
     }
-    .airaos-widget-container.open {
+    .gatidesk-widget-container.open {
       transform: translateY(0) scale(1);
       opacity: 1;
       pointer-events: auto;
     }
-    .airaos-widget-iframe {
+    .gatidesk-widget-iframe {
       width: 100%;
       height: 100%;
       border: none;
       background: transparent;
     }
     @media (max-width: 480px) {
-      .airaos-widget-container {
+      .gatidesk-widget-container {
         bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
@@ -88,7 +88,7 @@
         height: 100% !important;
         border-radius: 0 !important;
       }
-      .airaos-widget-launcher.open {
+      .gatidesk-widget-launcher.open {
         display: none !important;
       }
     }
@@ -109,7 +109,7 @@
 
     // Create launcher button
     const launcher = document.createElement('div');
-    launcher.className = 'airaos-widget-launcher';
+    launcher.className = 'gatidesk-widget-launcher';
     launcher.innerHTML = `
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s ease;">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -119,11 +119,11 @@
 
     // Create iframe container
     const container = document.createElement('div');
-    container.className = 'airaos-widget-container';
+    container.className = 'gatidesk-widget-container';
     
     const iframeSrc = `${baseDomain}/widget-chat.html?tenantId=${encodeURIComponent(tenantId)}&color=${encodeURIComponent(color)}&title=${encodeURIComponent(title)}&mode=${encodeURIComponent(mode)}&agentId=${encodeURIComponent(agentId)}`;
     container.innerHTML = `
-      <iframe class="airaos-widget-iframe" src="${iframeSrc}" allow="microphone"></iframe>
+      <iframe class="gatidesk-widget-iframe" src="${iframeSrc}" allow="microphone"></iframe>
     `;
     document.body.appendChild(container);
 
@@ -156,7 +156,7 @@
 
     // Listen for close instructions from inside iframe (e.g. mobile closing)
     window.addEventListener('message', function(event) {
-      if (event.data === 'airaos-widget-close') {
+      if (event.data === 'gatidesk-widget-close') {
         if (isOpen) toggleWidget();
       }
     });

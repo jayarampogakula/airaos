@@ -165,24 +165,49 @@ export interface Appointment {
 
 export interface WorkflowNode {
   id: string;
-  type: 'trigger' | 'action';
-  label: string;
-  component: string;
-  description: string;
-  status: 'active' | 'inactive';
+  type: string; // 'trigger' | 'action' | 'ai' | 'condition' | 'loop'
+  position?: { x: number; y: number };
+  data?: any;
+  label?: string;
+  component?: string;
+  description?: string;
+  status?: string;
   config?: {
-    connectorType?: 'whatsapp' | 'email' | 'sms' | 'slack' | 'webhook';
+    connectorType?: string;
+    crmAction?: string;
+    dealName?: string;
+    dealValue?: string;
+    pipelineStage?: string;
     whatsappNumber?: string;
     whatsappTemplate?: string;
+    whatsappTemplateId?: string;
     emailRecipient?: string;
     emailSubject?: string;
     emailBody?: string;
+    emailTemplateId?: string;
     smsNumber?: string;
     smsMessage?: string;
     slackChannel?: string;
     slackMessage?: string;
     webhookUrl?: string;
     webhookMethod?: string;
+    timingMode?: string;
+    delayValue?: number;
+    delayUnit?: string;
+    relativeValue?: number;
+    relativeUnit?: string;
+    relativeAnchor?: string;
+    relativeAnchorEvent?: string;
+    // AI configuration parameters
+    aiNodeType?: string;
+    aiInstructions?: string;
+    aiTargetText?: string;
+    classifierCategories?: string;
+    kbQuery?: string;
+    // Loop node parameters
+    loopType?: string;
+    maxRetries?: string;
+    loopVariable?: string;
   };
 }
 
@@ -190,6 +215,10 @@ export interface WorkflowEdge {
   id: string;
   source: string;
   target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  animated?: boolean;
+  style?: Record<string, any>;
 }
 
 export interface Workflow {
@@ -203,6 +232,39 @@ export interface Workflow {
   runsCount: number;
   successCount: number;
   lastRun?: string;
+  variables?: Record<string, string>;
+}
+
+export interface WorkflowVersion {
+  id: string;
+  workflowId: string;
+  tenantId: string;
+  name: string;
+  description?: string;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+  timestamp: string;
+}
+
+export interface WorkflowRunLog {
+  nodeId: string;
+  label: string;
+  type: string;
+  startTime: string;
+  status: 'running' | 'success' | 'failed';
+  output?: string;
+  error?: string;
+  duration?: number;
+}
+
+export interface WorkflowRun {
+  id: string;
+  workflowId: string;
+  tenantId: string;
+  status: 'running' | 'completed' | 'failed' | 'delayed';
+  timestamp: string;
+  timeline: WorkflowRunLog[];
+  variables: Record<string, any>;
 }
 
 export interface KnowledgeSource {

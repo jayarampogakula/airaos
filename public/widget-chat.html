@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AiraOS Live AI Assistant</title>
+  <title>GatiDesk Live AI Assistant</title>
   <style>
     :root {
       --primary-color: #0ea5e9;
@@ -818,14 +818,14 @@
     // Isolate platform guide storage keys from tenant-specific chatbot keys
     const isPlatformSupport = (agentId === 'platform-support');
     const chatHistoryKey = isPlatformSupport 
-      ? `airaos_chat_history_platform_${tenantId}` 
-      : `airaos_chat_history_${tenantId}`;
+      ? `gatidesk_chat_history_platform_${tenantId}` 
+      : `gatidesk_chat_history_${tenantId}`;
     const sessionTimeKey = isPlatformSupport 
-      ? `airaos_session_time_platform_${tenantId}` 
-      : `airaos_session_time_${tenantId}`;
+      ? `gatidesk_session_time_platform_${tenantId}` 
+      : `gatidesk_session_time_${tenantId}`;
     const identityKey = isPlatformSupport 
-      ? `airaos_identity_platform_${tenantId}` 
-      : `airaos_identity_${tenantId}`;
+      ? `gatidesk_identity_platform_${tenantId}` 
+      : `gatidesk_identity_${tenantId}`;
 
     // Logged-in auto-fill parameters
     const paramName = params.get('userName') || '';
@@ -1076,7 +1076,7 @@
 
     function loadWelcomeGreeting() {
       if (agentId === 'platform-support') {
-        const greeting = activeAgent ? activeAgent.welcomeMessage : 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?';
+        const greeting = activeAgent ? activeAgent.welcomeMessage : 'Hi! I am the GatiDesk Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?';
         addMessage(greeting, 'ai');
         return;
       }
@@ -1090,7 +1090,7 @@
       const welcomeBanner = document.createElement('div');
       welcomeBanner.className = 'welcome-banner';
       
-      const businessNameClean = tenantId === 't-1' ? 'Smile Dentals' : tenantId === 't-2' ? 'KP Real Estates' : tenantId === 't-3' ? 'ABC Coaching' : 'AiraOS';
+      const businessNameClean = tenantId === 't-1' ? 'Smile Dentals' : tenantId === 't-2' ? 'KP Real Estates' : tenantId === 't-3' ? 'ABC Coaching' : 'GatiDesk';
       const welcomeName = activeAgent ? activeAgent.name : 'Sarah';
       
       welcomeBanner.innerHTML = `
@@ -1150,7 +1150,7 @@
     }
 
     function closeWidget() {
-      window.parent.postMessage('airaos-widget-close', '*');
+      window.parent.postMessage('gatidesk-widget-close', '*');
     }
 
     // Message Rendering Node
@@ -1615,7 +1615,7 @@
         callTranscript.push('System: Voice connection active. Speak clearly into your microphone.');
         
         const agentName = activeAgent ? activeAgent.name : 'Sarah';
-        const businessNameClean = tenantId === 't-1' ? 'Smile Dentals' : tenantId === 't-2' ? 'KP Real Estates' : tenantId === 't-3' ? 'ABC Coaching' : 'AiraOS';
+        const businessNameClean = tenantId === 't-1' ? 'Smile Dentals' : tenantId === 't-2' ? 'KP Real Estates' : tenantId === 't-3' ? 'ABC Coaching' : 'GatiDesk';
         const welcomeMsg = `AI (${agentName}): Welcome to ${businessNameClean}. This is your AI digital assistant. How can I help you today?`;
         callTranscript.push(welcomeMsg);
         renderVoiceTranscript();

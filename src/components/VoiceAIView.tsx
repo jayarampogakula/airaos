@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   PhoneCall, PhoneOff, Mic, Send, RefreshCw, Volume2, Shield, 
   Settings, Play, Phone, Calendar, Plus, Trash2, CheckCircle2, 
-  AlertTriangle, Layers, Info, Check, MessageSquare 
+  AlertTriangle, Layers, Info, Check, MessageSquare, BookOpen
 } from 'lucide-react';
 import { Agent, Contact, Appointment, ChatMessage } from '../types';
 import { useAuth } from '../auth/AuthProvider';
+import { mockKbChunks } from '../mockData';
 
 interface VoiceAIViewProps {
   agents: Agent[];
@@ -15,6 +16,7 @@ interface VoiceAIViewProps {
   tenantId: string;
   tenantName: string;
   onSwitchTab?: (tab: string) => void;
+  knowledgeSources?: any[];
 }
 
 interface OutboundTask {
@@ -35,11 +37,52 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
   onAddVoiceConversation,
   tenantId,
   tenantName,
-  onSwitchTab
+  onSwitchTab,
+  knowledgeSources
 }) => {
   const { apiFetch } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'inbound' | 'outbound' | 'settings'>('inbound');
   const [selectedAgentId, setSelectedAgentId] = useState(agents[0]?.id || '');
+
+  const [linkedKbIds, setLinkedKbIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem(`voice_linked_kb_${tenantId}_${selectedAgentId}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [outboundLinkedKbIds, setOutboundLinkedKbIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem(`voice_outbound_linked_kb_${tenantId}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Reset/sync state when tenant or agent changes
+  useEffect(() => {
+    const saved = localStorage.getItem(`voice_linked_kb_${tenantId}_${selectedAgentId}`);
+    setLinkedKbIds(saved ? JSON.parse(saved) : []);
+    const obSaved = localStorage.getItem(`voice_outbound_linked_kb_${tenantId}`);
+    setOutboundLinkedKbIds(obSaved ? JSON.parse(obSaved) : []);
+  }, [tenantId, selectedAgentId]);
+
+  const handleToggleLinkKb = (sourceId: string) => {
+    let next;
+    if (linkedKbIds.includes(sourceId)) {
+      next = linkedKbIds.filter(id => id !== sourceId);
+    } else {
+      next = [...linkedKbIds, sourceId];
+    }
+    setLinkedKbIds(next);
+    localStorage.setItem(`voice_linked_kb_${tenantId}_${selectedAgentId}`, JSON.stringify(next));
+  };
+
+  const handleToggleOutboundLinkKb = (sourceId: string) => {
+    let next;
+    if (outboundLinkedKbIds.includes(sourceId)) {
+      next = outboundLinkedKbIds.filter(id => id !== sourceId);
+    } else {
+      next = [...outboundLinkedKbIds, sourceId];
+    }
+    setOutboundLinkedKbIds(next);
+    localStorage.setItem(`voice_outbound_linked_kb_${tenantId}`, JSON.stringify(next));
+  };
 
   // Conversational Lead capture state
   const [voiceRequireLeadCapture, setVoiceRequireLeadCapture] = useState(() => {
@@ -338,8 +381,31 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
       } else {
         const textLower = userMsg.toLowerCase();
 
-        // Keywords match dynamically against user-configured Company Profile
-        if (textLower.includes('cost') || textLower.includes('price') || textLower.includes('pricing') || textLower.includes('how much') || textLower.includes('rate') || textLower.includes('package')) {
+        // 1. Try matching against linked Knowledge Base chunks
+        let kbReply = '';
+        if (linkedKbIds && linkedKbIds.length > 0) {
+          const matchingChunk = mockKbChunks.find(chunk => {
+            if (!linkedKbIds.includes(chunk.sourceId)) return false;
+            const contentLower = chunk.content.toLowerCase();
+            
+            // Check specific high-priority keywords
+            if (textLower.includes('emergency') && contentLower.includes('emergency')) return true;
+            if ((textLower.includes('insurance') || textLower.includes('delta') || textLower.includes('aetna') || textLower.includes('cigna') || textLower.includes('metlife')) && contentLower.includes('insurance')) return true;
+            if (textLower.includes('clean') && contentLower.includes('cleaning')) return true;
+            if ((textLower.includes('vance') || textLower.includes('elizabeth') || textLower.includes('founded')) && contentLower.includes('founded')) return true;
+            
+            // General word match for terms with length > 4
+            const words = textLower.replace(/[?,.!-]/g, '').split(/\s+/).filter(w => w.length > 4);
+            return words.some(word => contentLower.includes(word));
+          });
+          if (matchingChunk) {
+            kbReply = `[Linked KB: ${matchingChunk.sourceName}] ${matchingChunk.content}`;
+          }
+        }
+
+        if (kbReply) {
+          reply = kbReply;
+        } else if (textLower.includes('cost') || textLower.includes('price') || textLower.includes('pricing') || textLower.includes('how much') || textLower.includes('rate') || textLower.includes('package')) {
           reply = `Here is our pricing information: ${companyPricing || 'Please contact our office for details.'} Would you like to schedule an appointment/tour?`;
         } else if (textLower.includes('hour') || textLower.includes('open') || textLower.includes('time') || textLower.includes('when') || textLower.includes('days') || textLower.includes('schedule')) {
           reply = `Our working hours are: ${companyHours || 'Please consult our website.'}`;
@@ -660,6 +726,60 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
                     <option key={a.id} value={a.id}>{a.name} ({a.department} Voice AI)</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Link Knowledge Base Section */}
+              <div style={{ width: '100%' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <BookOpen size={14} style={{ color: 'var(--primary-color)' }} /> Link Knowledge Base Context
+                </label>
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '8px', 
+                  background: 'rgba(0,0,0,0.15)', 
+                  border: '1px solid var(--border-glass)', 
+                  padding: '10px 12px', 
+                  borderRadius: '6px',
+                  maxHeight: '120px',
+                  overflowY: 'auto'
+                }}>
+                  {knowledgeSources && knowledgeSources.length > 0 ? (
+                    knowledgeSources.map((source) => {
+                      const isLinked = linkedKbIds.includes(source.id);
+                      return (
+                        <label 
+                          key={source.id} 
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            fontSize: '0.72rem', 
+                            cursor: 'pointer',
+                            color: isLinked ? 'var(--primary-color)' : 'var(--text-secondary)'
+                          }}
+                        >
+                          <input 
+                            type="checkbox" 
+                            checked={isLinked} 
+                            onChange={() => handleToggleLinkKb(source.id)} 
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {source.name}
+                          </span>
+                        </label>
+                      );
+                    })
+                  ) : (
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>No knowledge sources found. Add them in Knowledge Base tab.</span>
+                  )}
+                </div>
+                {linkedKbIds.length > 0 && (
+                  <span style={{ fontSize: '0.65rem', color: 'var(--success-color)', display: 'block', marginTop: '6px', fontWeight: 500 }}>
+                    ✓ Linked {linkedKbIds.length} KB source(s) for call context.
+                  </span>
+                )}
               </div>
 
               {/* Virtual Screen showing incoming/active calls */}

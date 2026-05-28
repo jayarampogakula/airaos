@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-cbc';
-const ENCRYPTION_KEY = Buffer.alloc(32, process.env.ENCRYPTION_KEY || 'aira-os-telephony-encryption-key-32');
+const ENCRYPTION_KEY = Buffer.alloc(32, process.env.ENCRYPTION_KEY || 'gati-os-telephony-encryption-key-32');
 const IV_LENGTH = 16;
 
 const SENSITIVE_KEYS = [

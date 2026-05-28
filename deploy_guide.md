@@ -1,6 +1,6 @@
 # Hostinger VPS Production Deployment Guide
 
-AiraOS is built as a static Single Page React Application (SPA) powered by Vite. You can deploy it to your Hostinger VPS using one of the two standard methods below.
+GatiDesk is built as a static Single Page React Application (SPA) powered by Vite. You can deploy it to your Hostinger VPS using one of the two standard methods below.
 
 ---
 

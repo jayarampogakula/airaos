@@ -72,12 +72,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       return localCustomDomain;
     }
     
-    if (tenant.domain && !tenant.domain.endsWith('airaos.com')) {
+    if (tenant.domain && !tenant.domain.endsWith('gatidesk.com')) {
       return tenant.domain;
     }
     
     if (tenant.websiteConfig?.isWebsiteGenerated) {
-      return tenant.domain.replace(/\.?airaos\.com$/, `.${getBaseDomain()}`);
+      return tenant.domain.replace(/\.?gatidesk\.com$/, `.${getBaseDomain()}`);
     }
     
     return '';
@@ -88,7 +88,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setChatMessages([
       {
         sender: 'bot',
-        text: platformSupportBot?.welcomeMessage || 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?'
+        text: platformSupportBot?.welcomeMessage || 'Hi! I am the GatiDesk Platform Assistant. How can I help you integrate SIP, Twilio, configure BYO, or understand our packages and rates today?'
       }
     ]);
   }, [platformSupportBot]);

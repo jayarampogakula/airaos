@@ -100,7 +100,7 @@ export const TenantSettingsView: React.FC<TenantSettingsViewProps> = ({
                   className="form-input" 
                   value={domain} 
                   onChange={(e) => setDomain(e.target.value)} 
-                  placeholder="e.g. smile-dentals.cleveradai.in"
+                  placeholder="e.g. smile-dentals.gatidesk.in"
                 />
                 <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
                   Your website domain. Displayed on the dashboard overview page.
@@ -204,7 +204,7 @@ export const TenantSettingsView: React.FC<TenantSettingsViewProps> = ({
           <div className="glass-panel" style={{ padding: '20px', background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)' }}>
             <h3 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px', color: 'var(--text-primary)' }}>Enterprise Cloud OS</h3>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-              AiraOS operates as a fully sandboxed, highly compliant digital communication operating system. Your system parameters are backed up continuously to encrypted storage blocks.
+              GatiDesk operates as a fully sandboxed, highly compliant digital communication operating system. Your system parameters are backed up continuously to encrypted storage blocks.
             </p>
           </div>
         </div>

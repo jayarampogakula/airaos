@@ -1,6 +1,6 @@
-# AiraOS Local Stack Setup & Deployment Guide
+# GatiDesk Local Stack Setup & Deployment Guide
 
-This guide describes how to set up the entire self-hosted stack (**Dify**, **Cal.com**, **Chatwoot**, **Twenty CRM**, and **Dograh**) locally on a Windows laptop using **WSL2 (Windows Subsystem for Linux)**, **Ubuntu**, and **Coolify** (or Docker Compose), and connect them to the **AiraOS** React frontend.
+This guide describes how to set up the entire self-hosted stack (**Dify**, **Cal.com**, **Chatwoot**, **Twenty CRM**, and **Dograh**) locally on a Windows laptop using **WSL2 (Windows Subsystem for Linux)**, **Ubuntu**, and **Coolify** (or Docker Compose), and connect them to the **GatiDesk** React frontend.
 
 ---
 
@@ -9,7 +9,7 @@ This guide describes how to set up the entire self-hosted stack (**Dify**, **Cal
 ```mermaid
 graph TD
     subgraph Windows Host
-        AiraOS[AiraOS Frontend React/Vite - Port 5173]
+        GatiDesk[GatiDesk Frontend React/Vite - Port 5173]
         Browser[Web Browser]
     end
 
@@ -27,12 +27,12 @@ graph TD
         end
     end
 
-    Browser -->|Access App| AiraOS
-    AiraOS -->|API Calls & Iframes| Dify
-    AiraOS -->|API Calls & Iframes| Cal
-    AiraOS -->|API Calls & Iframes| Chatwoot
-    AiraOS -->|API Calls & Iframes| Twenty
-    AiraOS -->|API Calls & Iframes| Dograh
+    Browser -->|Access App| GatiDesk
+    GatiDesk -->|API Calls & Iframes| Dify
+    GatiDesk -->|API Calls & Iframes| Cal
+    GatiDesk -->|API Calls & Iframes| Chatwoot
+    GatiDesk -->|API Calls & Iframes| Twenty
+    GatiDesk -->|API Calls & Iframes| Dograh
     Coolify -->|Orchestrates| Docker
 ```
 
@@ -136,7 +136,7 @@ You can deploy the tools using Coolify's built-in service templates or launch th
 * **Ports mapped:** Port `5678` (n8n console).
 * **Configuration:**
   1. Access the console at `http://localhost:5678` and configure your credentials.
-  2. In AiraOS, when you enter this URL in the integration settings, it unlocks the **Open Visual Designer** link directly under the **Automation Workflows** tab.
+  2. In GatiDesk, when you enter this URL in the integration settings, it unlocks the **Open Visual Designer** link directly under the **Automation Workflows** tab.
   3. Under **Settings -> API Keys**, generate a new token to connect your local flows.
 
 ### 6. Dograh (Open-Source Voice AI Platform)
@@ -162,15 +162,15 @@ Dograh (now Voxfra) runs best via Docker Compose. You can run it inside WSL2 Ubu
 
 ---
 
-## Step 5: Connect Services to AiraOS React Frontend
+## Step 5: Connect Services to GatiDesk React Frontend
 
-Now that all services are running locally inside WSL2 Docker containers, you need to plug their endpoints into AiraOS.
+Now that all services are running locally inside WSL2 Docker containers, you need to plug their endpoints into GatiDesk.
 
-1. Run the AiraOS frontend locally on Windows:
+1. Run the GatiDesk frontend locally on Windows:
    ```powershell
    npm run dev
    ```
-2. Open AiraOS in your browser: `http://localhost:5173`.
+2. Open GatiDesk in your browser: `http://localhost:5173`.
 3. Log in or append `?role=superadmin#admin` to the URL to access the **Super Admin Platform Control** dashboard:
    ```
    http://localhost:5173/?role=superadmin#admin
@@ -189,7 +189,7 @@ Now that all services are running locally inside WSL2 Docker containers, you nee
    | **OpenAI Integration** | *N/A* | `sk-proj-your_actual_openai_key` |
 
 6. Click **Save Integration Mapping**.
-7. The dashboard stores these mappings in local storage and instantly switches AiraOS views from mock/simulated interfaces to rendering your **live local microservice connections** (such as loading the Cal.com iframe in the scheduler, referencing Chatwoot live chats, and displaying the Dograh Voice status as **Online**).
+7. The dashboard stores these mappings in local storage and instantly switches GatiDesk views from mock/simulated interfaces to rendering your **live local microservice connections** (such as loading the Cal.com iframe in the scheduler, referencing Chatwoot live chats, and displaying the Dograh Voice status as **Online**).
 
 ---
 

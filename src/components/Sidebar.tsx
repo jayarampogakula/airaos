@@ -63,22 +63,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: "💬 Communications",
       tabs: [
-        { id: 'inbox', label: 'Omnichannel Inbox', icon: Inbox },
-        { id: 'voice', label: 'Voice Calls', icon: Phone },
-        { id: 'workflow', label: 'Workflow Automation', icon: Workflow }
+        { id: 'inbox', label: 'GatiDesk Inbox', icon: Inbox },
+        { id: 'voice', label: 'GATI Voice Gateway', icon: Phone },
+        { id: 'workflow', label: 'GATI Flows', icon: Workflow }
       ]
     },
     {
       title: "👥 CRM & Sales",
       tabs: [
-        { id: 'crm', label: 'CRM Pipeline', icon: Users },
+        { id: 'crm', label: 'GATI CRM Pipeline', icon: Users },
         { id: 'scheduler', label: 'Calendar Scheduler', icon: Calendar }
       ]
     },
     {
       title: "🤖 AI Agents",
       tabs: [
-        { id: 'employees', label: 'AI Agents', icon: Bot },
+        { id: 'employees', label: 'GATI AI Agents', icon: Bot },
         { id: 'knowledge', label: 'Knowledge Base', icon: Database },
         { id: 'crew', label: 'Agent Orchestrator', icon: Network }
       ]
@@ -158,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             boxShadow: 'var(--shadow-glow)'
           }}
         >
-          A
+          G
         </div>
         <div>
           <h1 
@@ -172,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               gap: '4px'
             }}
           >
-            AiraOS
+            GatiDesk
             <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: 'var(--text-secondary)' }}>
               {appVersionString}
             </span>

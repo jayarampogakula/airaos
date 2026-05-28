@@ -120,7 +120,7 @@ function compileDefaultWebsiteHTML(tenantId, name, primaryColor, config) {
     </div>
     
     <div class="footer">
-      Powered by AiraOS AI Website Publisher
+      Powered by GatiDesk AI Website Publisher
     </div>
   </div>
   <script src="/widget.js" data-tenant-id="${tenantId}" data-color="${themeAccent}" data-title="${config.businessName} AI Assistant"></script>
@@ -180,7 +180,7 @@ function createTenant(id, name, plan = 'Growth', primaryColor = '#0ea5e9', logo 
     id,
     name,
     slug: slugify(name),
-    domain: `${slugify(name)}.airaos.com`,
+    domain: `${slugify(name)}.gatidesk.com`,
     plan,
     status: 'active',
     logo,
@@ -215,6 +215,8 @@ export function ensureSaasSchema(data) {
     conversations: [],
     appointments: [],
     workflows: [],
+    workflow_runs: [],
+    workflow_versions: [],
     teamMembers: [],
     notifications: [],
     working_shifts: {},
@@ -518,6 +520,8 @@ export function ensureSaasSchema(data) {
   }));
   db.appointments = withTenantId(db.appointments, (app) => db.contacts.find((c) => c.id === app.contactId)?.tenantId || defaultTenantId);
   db.workflows = withTenantId(db.workflows, () => defaultTenantId);
+  db.workflow_runs = withTenantId(db.workflow_runs || [], () => defaultTenantId);
+  db.workflow_versions = withTenantId(db.workflow_versions || [], () => defaultTenantId);
   db.teamMembers = withTenantId(db.teamMembers, () => defaultTenantId);
   db.notifications = withTenantId(db.notifications, () => defaultTenantId);
   db.channelConfigs = withTenantId(db.channelConfigs, () => defaultTenantId);
@@ -568,28 +572,28 @@ export function ensureSaasSchema(data) {
       {
         id: 'u-admin',
         name: 'Admin',
-        email: 'admin@airaos.com',
+        email: 'admin@gatidesk.com',
         passwordHash: hashPassword('password123'),
         createdAt: new Date().toISOString()
       },
       {
         id: 'u-smile',
         name: 'Smile Owner',
-        email: 'dental@airaos.com',
+        email: 'dental@gatidesk.com',
         passwordHash: hashPassword('smile123'),
         createdAt: new Date().toISOString()
       },
       {
         id: 'u-kp',
         name: 'KP Owner',
-        email: 'sales@airaos.com',
+        email: 'sales@gatidesk.com',
         passwordHash: hashPassword('apex123'),
         createdAt: new Date().toISOString()
       },
       {
         id: 'u-abc',
         name: 'ABC Owner',
-        email: 'tech@airaos.com',
+        email: 'tech@gatidesk.com',
         passwordHash: hashPassword('byte123'),
         createdAt: new Date().toISOString()
       }

@@ -1262,7 +1262,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             <div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)' }}>Platform Support Assistant Settings</h3>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                Configure the receptionist chatbot that helps users (tenants) with AiraOS settings (integrating Twilio, custom BYO Carrier, rates, etc.).
+                Configure the receptionist chatbot that helps users (tenants) with GatiDesk settings (integrating Twilio, custom BYO Carrier, rates, etc.).
               </p>
             </div>
           </div>

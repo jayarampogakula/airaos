@@ -35,7 +35,7 @@ export const AIBrainView: React.FC<AIBrainViewProps> = ({ tenant }) => {
   }
   
   const [playgroundHistory, setPlaygroundHistory] = useState<PlaygroundMessage[]>([
-    { role: 'assistant', text: `Hi there! I am connected to the current AiraOS AI Brain. Test my reasoning and grounding by asking questions.` }
+    { role: 'assistant', text: `Hi there! I am connected to the current GatiDesk AI Brain. Test my reasoning and grounding by asking questions.` }
   ]);
   const [isQuerying, setIsQuerying] = useState(false);
 

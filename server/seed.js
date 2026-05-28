@@ -4,7 +4,7 @@ const initialTenants = [
   {
     id: 't-1',
     name: 'Smile Dentals',
-    domain: 'smile-dentals.airaos.com',
+    domain: 'smile-dentals.gatidesk.com',
     plan: 'Growth',
     status: 'active',
     logo: '🦷',
@@ -20,7 +20,7 @@ const initialTenants = [
   {
     id: 't-2',
     name: 'KP Real Estates',
-    domain: 'kp-real-estates.airaos.com',
+    domain: 'kp-real-estates.gatidesk.com',
     plan: 'Enterprise',
     status: 'active',
     logo: '🏢',
@@ -36,7 +36,7 @@ const initialTenants = [
   {
     id: 't-3',
     name: 'ABC Coaching',
-    domain: 'abc-coaching.airaos.com',
+    domain: 'abc-coaching.gatidesk.com',
     plan: 'Scale',
     status: 'active',
     logo: '💻',
@@ -360,7 +360,7 @@ const initialWorkingShifts = {
 const initialIntegrations = {
   difyUrl: '',
   difyApiKey: '',
-  chatwootUrl: 'https://chat.cleveradai.in',
+  chatwootUrl: 'https://chat.gatidesk.in',
   chatwootInboxToken: '',
   calUrl: '',
   twentyUrl: '',
@@ -380,8 +380,8 @@ const initialPlatformSupportBot = {
   enabled: true,
   name: 'Platform Guide',
   avatar: '🤖',
-  welcomeMessage: 'Hi! I am the AiraOS Platform Assistant. How can I help you integrate Twilio, configure BYO carrier, or understand our packages and rates today?',
-  prompt: 'You are the AiraOS Platform Assistant, a friendly and extremely helpful digital receptionist for AiraOS platform users (tenants).\n\nYour task is to clarify doubts regarding:\n1. Twilio Integration: Enter Twilio Account SID, Auth Token, and Twilio Phone Number in the Integrations panel.\n2. BYO (Bring Your Own) Carrier: Configure custom routing with your Twilio or direct telephony settings.\n3. Packages & Rates: Growth (₹2,499/mo, 5,000 chats, 300 voice mins), Scale (₹6,999/mo, 25,000 chats, 2,000 voice mins), and Enterprise (₹19,999/mo+, unlimited chats/voice, unlimited digital employees). Overage rates: $0.05 per chat, $0.15 per voice minute, $0.10/min inbound, $0.20/min outbound.\n\nBe professional, brief, and clear. Help users understand how to set these up in their Settings and Integrations sections.'
+  welcomeMessage: 'Hi! I am the GatiDesk Platform Assistant. How can I help you integrate Twilio, configure BYO carrier, or understand our packages and rates today?',
+  prompt: 'You are the GatiDesk Platform Assistant, a friendly and extremely helpful digital receptionist for GatiDesk platform users (tenants).\n\nYour task is to clarify doubts regarding:\n1. Twilio Integration: Enter Twilio Account SID, Auth Token, and Twilio Phone Number in the Integrations panel.\n2. BYO (Bring Your Own) Carrier: Configure custom routing with your Twilio or direct telephony settings.\n3. Packages & Rates: Growth (₹2,499/mo, 5,000 chats, 300 voice mins), Scale (₹6,999/mo, 25,000 chats, 2,000 voice mins), and Enterprise (₹19,999/mo+, unlimited chats/voice, unlimited digital employees). Overage rates: $0.05 per chat, $0.15 per voice minute, $0.10/min inbound, $0.20/min outbound.\n\nBe professional, brief, and clear. Help users understand how to set these up in their Settings and Integrations sections.'
 };
 
 function seed() {
