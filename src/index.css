@@ -801,4 +801,99 @@ button, input, textarea, select {
 .bg-red-500\/5 { background-color: rgba(239, 68, 68, 0.05); }
 .hover\:bg-red-500\/10:hover { background-color: rgba(239, 68, 68, 0.1); }
 
+/* Sidebar Collapse and general buttons Helper */
+@media (max-width: 768px) {
+  .desktop-collapse-btn {
+    display: none !important;
+  }
+}
+
+/* Tab button and link resets */
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+/* Subtab styles and text colors */
+.bg-\[\#6366f1\] { background-color: #6366f1 !important; }
+.text-white { color: #ffffff !important; }
+.text-slate-200 { color: #e2e8f0 !important; }
+.text-slate-300 { color: #cbd5e1 !important; }
+.text-slate-400 { color: #94a3b8 !important; }
+.text-slate-500 { color: #64748b !important; }
+.bg-slate-800 { background-color: #1e293b !important; }
+.hover\:bg-slate-800:hover { background-color: #1e293b !important; }
+.border { border: 1px solid rgba(255, 255, 255, 0.08) !important; }
+.rounded { border-radius: 4px !important; }
+.text-\[0\.68rem\] { font-size: 0.68rem !important; }
+.text-\[0\.62rem\] { font-size: 0.62rem !important; }
+.text-\[0\.65rem\] { font-size: 0.65rem !important; }
+.text-\[0\.72rem\] { font-size: 0.72rem !important; }
+.pl-8 { padding-left: 32px !important; }
+.left-2\.5 { left: 10px !important; }
+.top-2 { top: 8px !important; }
+.text-\[\#6366f1\] { color: #6366f1 !important; }
+.font-bold { font-weight: 700 !important; }
+.hover\:underline:hover { text-decoration: underline !important; }
+.tracking-wider { letter-spacing: 0.05em !important; }
+.uppercase { text-transform: uppercase !important; }
+.block { display: block !important; }
+.mb-3 { margin-bottom: 12px !important; }
+.text-left { text-align: left !important; }
+.select-none { user-select: none !important; -webkit-user-select: none !important; }
+
+/* Palette Node Category Colors */
+.border-\[\#0ea5e9\]\/20 { border-color: rgba(14, 165, 233, 0.2) !important; }
+.text-\[\#0ea5e9\] { color: #0ea5e9 !important; }
+.bg-\[\#0ea5e9\]\/5 { background-color: rgba(14, 165, 233, 0.05) !important; }
+.hover\:bg-\[\#0ea5e9\]\/10:hover { background-color: rgba(14, 165, 233, 0.1) !important; }
+
+.border-\[\#6366f1\]\/20 { border-color: rgba(99, 102, 241, 0.2) !important; }
+.text-\[\#6366f1\] { color: #6366f1 !important; }
+.bg-\[\#6366f1\]\/5 { background-color: rgba(99, 102, 241, 0.05) !important; }
+.hover\:bg-\[\#6366f1\]\/10:hover { background-color: rgba(99, 102, 241, 0.1) !important; }
+
+.border-\[\#a855f7\]\/20 { border-color: rgba(168, 85, 247, 0.2) !important; }
+.text-\[\#a855f7\] { color: #a855f7 !important; }
+.bg-\[\#a855f7\]\/5 { background-color: rgba(168, 85, 247, 0.05) !important; }
+.hover\:bg-\[\#a855f7\]\/10:hover { background-color: rgba(168, 85, 247, 0.1) !important; }
+
+.border-\[\#f59e0b\]\/20 { border-color: rgba(245, 158, 11, 0.2) !important; }
+.text-\[\#f59e0b\] { color: #f59e0b !important; }
+.bg-\[\#f59e0b\]\/5 { background-color: rgba(245, 158, 11, 0.05) !important; }
+.hover\:bg-\[\#f59e0b\]\/10:hover { background-color: rgba(245, 158, 11, 0.1) !important; }
+
+.border-\[\#10b981\]\/20 { border-color: rgba(16, 185, 129, 0.2) !important; }
+.text-\[\#10b981\] { color: #10b981 !important; }
+.bg-\[\#10b981\]\/5 { background-color: rgba(16, 185, 129, 0.05) !important; }
+.hover\:bg-\[\#10b981\]\/10:hover { background-color: rgba(16, 185, 129, 0.1) !important; }
+
+/* Mobile responsiveness for visual flow builder columns */
+@media (max-width: 768px) {
+  .workflow-designer-container {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+  .workflow-sidebar-palette {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 240px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-glass) !important;
+  }
+  .workflow-property-editor {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 300px !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border-glass) !important;
+  }
+}
+
+
+
+
 

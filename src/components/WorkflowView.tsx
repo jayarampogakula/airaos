@@ -1125,9 +1125,9 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
 
         {/* Canvas Designer Tab Panel */}
         {activeSubTab === 'canvas' && (
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden workflow-designer-container">
             {/* Left Column: Workflows directories and category node palette */}
-            <div className="w-[300px] border-r border-white/5 p-4 flex flex-col gap-4 overflow-y-auto bg-slate-950/40 select-none">
+            <div className="w-[300px] border-r border-white/5 p-4 flex flex-col gap-4 overflow-y-auto bg-slate-950/40 select-none workflow-sidebar-palette">
               
               {/* Directory Select */}
               <div className="mb-2">
@@ -1313,7 +1313,7 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
 
             {/* Right Column: Node Property Form Editor Panel */}
             {selectedNodeId && selectedWf && (
-              <div className="w-[320px] border-l border-white/5 p-4 overflow-y-auto bg-slate-950/40 text-left relative select-none">
+              <div className="w-[320px] border-l border-white/5 p-4 overflow-y-auto bg-slate-950/40 text-left relative select-none workflow-property-editor">
                 
                 {/* Popover Variable Picker */}
                 {showVariablePicker && (

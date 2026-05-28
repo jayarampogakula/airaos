@@ -52,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onClose
 }) => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   const groups = [
     {
@@ -132,15 +133,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div 
       className={`sidebar-container glass-panel ${isOpen ? 'open' : ''}`}
+      style={{
+        width: isCollapsed ? '76px' : '260px',
+        minWidth: isCollapsed ? '76px' : '260px',
+        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        overflow: 'hidden'
+      }}
     >
       {/* Brand Header */}
       <div 
         style={{ 
-          padding: '20px 24px', 
+          padding: isCollapsed ? '20px 10px' : '20px 24px', 
           borderBottom: '1px solid var(--border-glass)',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px'
+          gap: '12px',
+          justifyContent: isCollapsed ? 'center' : 'flex-start'
         }}
       >
         <div 
@@ -155,33 +163,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
             fontSize: '1.25rem',
             color: 'white',
             fontWeight: '800',
-            boxShadow: 'var(--shadow-glow)'
+            boxShadow: 'var(--shadow-glow)',
+            flexShrink: 0
           }}
         >
           G
         </div>
-        <div>
-          <h1 
-            style={{ 
-              fontSize: '1.15rem', 
-              fontWeight: '800', 
-              fontFamily: 'Space Grotesk, sans-serif',
-              letterSpacing: '0.05em',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            GatiDesk
-            <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: 'var(--text-secondary)' }}>
-              {appVersionString}
-            </span>
-          </h1>
-        </div>
+        {!isCollapsed && (
+          <div>
+            <h1 
+              style={{ 
+                fontSize: '1.15rem', 
+                fontWeight: '800', 
+                fontFamily: 'Space Grotesk, sans-serif',
+                letterSpacing: '0.05em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              GatiDesk
+              <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: 'var(--text-secondary)' }}>
+                {appVersionString}
+              </span>
+            </h1>
+          </div>
+        )}
       </div>
 
       {/* Account / Tenant Switcher */}
-      <div style={{ padding: '16px', position: 'relative' }}>
+      <div style={{ padding: isCollapsed ? '16px 8px' : '16px', position: 'relative' }}>
         {currentRole === 'tenant' ? (
           <>
             <button
@@ -190,34 +201,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
               style={{
                 width: '100%',
                 display: 'flex',
-                justifyContent: 'space-between',
+                justifyContent: isCollapsed ? 'center' : 'space-between',
                 alignItems: 'center',
-                padding: '10px 14px',
+                padding: isCollapsed ? '10px' : '10px 14px',
                 backgroundColor: 'rgba(255, 255, 255, 0.02)',
                 borderColor: 'var(--border-glass)',
                 cursor: 'pointer'
               }}
+              title={selectedTenant.name}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left' }}>
                 <span style={{ fontSize: '1.2rem' }}>{selectedTenant.logo}</span>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '130px' }}>
-                    {selectedTenant.name}
+                {!isCollapsed && (
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '130px' }}>
+                      {selectedTenant.name}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                      {selectedTenant.plan} Tenant
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                    {selectedTenant.plan} Tenant
-                  </div>
-                </div>
+                )}
               </div>
-              {dropdownOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              {!isCollapsed && (dropdownOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
             </button>
             {dropdownOpen && (
               <div
                 className="glass-card"
                 style={{
                   position: 'absolute',
-                  left: '16px',
-                  right: '16px',
+                  left: isCollapsed ? '4px' : '16px',
+                  right: isCollapsed ? '4px' : '16px',
                   top: '72px',
                   zIndex: 50,
                   padding: '6px',
@@ -233,9 +247,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     key={tenant.id}
                     className="btn"
                     onClick={() => {
-                      onSelectTenant(tenant.id);
-                      setDropdownOpen(false);
-                      if (onClose) onClose();
+                       onSelectTenant(tenant.id);
+                       setDropdownOpen(false);
+                       if (onClose) onClose();
                     }}
                     style={{
                       display: 'flex',
@@ -246,12 +260,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       borderRadius: '6px',
                       backgroundColor: tenant.id === selectedTenant.id ? 'var(--primary-glow)' : 'transparent',
                       color: 'var(--text-primary)',
-                      justifyContent: 'flex-start',
+                      justifyContent: isCollapsed ? 'center' : 'flex-start',
                       fontSize: '0.78rem'
                     }}
+                    title={tenant.name}
                   >
                     <span>{tenant.logo}</span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tenant.name}</span>
+                    {!isCollapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tenant.name}</span>}
                   </button>
                 ))}
               </div>
@@ -264,34 +279,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
               width: '100%',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
               gap: '10px',
-              padding: '10px 14px',
+              padding: isCollapsed ? '10px' : '10px 14px',
               backgroundColor: 'rgba(255, 255, 255, 0.02)',
               border: '1px solid var(--border-glass)',
               borderRadius: 'var(--radius-sm)'
             }}
+            title="Super Admin"
           >
-            <ShieldAlert size={18} className="badge-danger" style={{ color: 'var(--danger-color)' }} />
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--danger-color)' }}>
-                Super Admin
+            <ShieldAlert size={18} className="badge-danger" style={{ color: 'var(--danger-color)', flexShrink: 0 }} />
+            {!isCollapsed && (
+              <div>
+                <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--danger-color)' }}>
+                  Super Admin
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                  Agency Owner Console
+                </div>
               </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                Agency Owner Console
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
 
-
+      {/* Collapse/Expand Toggle Button (Desktop helper) */}
+      <div className="desktop-collapse-btn" style={{ padding: '0 16px 12px 16px' }}>
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="btn btn-secondary"
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: isCollapsed ? '0px' : '8px',
+            padding: '6px',
+            fontSize: '0.72rem',
+            backgroundColor: 'rgba(255,255,255,0.01)',
+            borderColor: 'var(--border-glass)',
+            color: 'var(--text-secondary)'
+          }}
+          title={isCollapsed ? 'Expand sidebar menu' : 'Collapse sidebar menu'}
+        >
+          {isCollapsed ? '➡️' : '⬅️ Collapse Sidebar'}
+        </button>
+      </div>
 
       {/* Navigation Items */}
       <div 
         style={{ 
           flex: 1, 
           overflowY: 'auto', 
-          padding: '0 16px',
+          padding: isCollapsed ? '0 8px' : '0 16px',
           display: 'flex',
           flexDirection: 'column',
           gap: '12px'
@@ -300,9 +340,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {currentRole === 'tenant' ? (
           groups.map((group, gIdx) => (
             <div key={gIdx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ fontSize: '0.62rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 14px 2px 8px' }}>
-                {group.title}
-              </div>
+              {!isCollapsed && (
+                <div style={{ fontSize: '0.62rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 14px 2px 8px' }}>
+                  {group.title}
+                </div>
+              )}
               {group.tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -314,9 +356,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     style={{
                       width: '100%',
                       display: 'flex',
-                      justifyContent: 'flex-start',
+                      justifyContent: isCollapsed ? 'center' : 'flex-start',
                       alignItems: 'center',
-                      gap: '12px',
+                      gap: isCollapsed ? '0px' : '12px',
                       padding: '8px 12px',
                       fontSize: '0.8rem',
                       fontWeight: isActive ? '600' : '500',
@@ -326,9 +368,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                       transition: 'all 0.15s ease'
                     }}
+                    title={tab.label}
                   >
-                    <Icon size={16} style={{ color: isActive ? 'var(--primary-color)' : 'var(--text-muted)' }} />
-                    {tab.label}
+                    <Icon size={16} style={{ color: isActive ? 'var(--primary-color)' : 'var(--text-muted)', flexShrink: 0 }} />
+                    {!isCollapsed && tab.label}
                   </button>
                 );
               })}
@@ -346,9 +389,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 style={{
                   width: '100%',
                   display: 'flex',
-                  justifyContent: 'flex-start',
+                  justifyContent: isCollapsed ? 'center' : 'flex-start',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: isCollapsed ? '0px' : '12px',
                   padding: '10px 14px',
                   fontSize: '0.85rem',
                   fontWeight: isActive ? '600' : '500',
@@ -358,9 +401,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                   transition: 'all 0.15s ease'
                 }}
+                title={tab.label}
               >
-                <Icon size={18} style={{ color: isActive ? 'var(--primary-color)' : 'var(--text-muted)' }} />
-                {tab.label}
+                <Icon size={18} style={{ color: isActive ? 'var(--primary-color)' : 'var(--text-muted)', flexShrink: 0 }} />
+                {!isCollapsed && tab.label}
               </button>
             );
           })
@@ -377,7 +421,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '8px',
+            gap: isCollapsed ? '0px' : '8px',
             padding: '8px 12px',
             fontSize: '0.8rem',
             backgroundColor: 'rgba(239, 68, 68, 0.05)',
@@ -385,8 +429,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             color: 'var(--danger-color)',
             cursor: 'pointer'
           }}
+          title="Log Out"
         >
-          <span>🚪</span> Log Out
+          <span>🚪</span> {!isCollapsed && 'Log Out'}
         </button>
       </div>
     </div>
