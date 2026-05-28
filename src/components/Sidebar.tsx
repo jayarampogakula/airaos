@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       tabs: [
         { id: 'inbox', label: 'GatiDesk Inbox', icon: Inbox },
         { id: 'voice', label: 'GATI Voice Gateway', icon: Phone },
-        { id: 'workflow', label: 'GATI Flows', icon: Workflow }
+        { id: 'workflow', label: 'GATI Automation', icon: Workflow }
       ]
     },
     {

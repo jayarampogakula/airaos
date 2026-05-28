@@ -228,6 +228,29 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       });
   }, []);
 
+  const [healthStatus, setHealthStatus] = useState<any>(null);
+  const [loadingHealth, setLoadingHealth] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'infrastructure') {
+      setLoadingHealth(true);
+      fetch('/api/health')
+        .then(res => {
+          if (res.ok) return res.json();
+          throw new Error('Unhealthy');
+        })
+        .then(data => {
+          setHealthStatus(data);
+          setLoadingHealth(false);
+        })
+        .catch(err => {
+          console.warn('Health check endpoint failed:', err);
+          setHealthStatus({ status: 'unhealthy', dbStatus: 'error', uptime: 0, dbSize: 0 });
+          setLoadingHealth(false);
+        });
+    }
+  }, [activeTab]);
+
   const [infraGuideOpen, setInfraGuideOpen] = useState(false);
 
   const marketplaceTemplates = [
@@ -745,6 +768,21 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.15)', borderRadius: '6px' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🚀</span>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>GatiDesk App Container</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                        {loadingHealth ? 'Querying Coolify health endpoint...' : healthStatus ? `Uptime: ${Math.floor(healthStatus.uptime || 0)}s • DB: ${healthStatus.dbStatus || 'unknown'} • Size: ${healthStatus.dbSize || 0} bytes` : 'Coolify Node running on port 3001'}
+                      </div>
+                    </div>
+                  </div>
+                  <span className={`badge ${healthStatus?.status === 'healthy' ? 'badge-success' : 'badge-warning'}`}>
+                    {loadingHealth ? 'Checking...' : healthStatus ? (healthStatus.status === 'healthy' ? 'Healthy (100% checkup)' : 'Degraded') : 'Healthy'}
+                  </span>
+                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', borderRadius: '6px' }}>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <span style={{ fontSize: '1.2rem' }}>🐳</span>
@@ -844,7 +882,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
                 <div style={{ display: 'flex', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   <CheckCircle2 size={16} style={{ color: 'var(--success-color)', flexShrink: 0 }} />
-                  <span>All routes resolving under SSL. Global Traefik routing tables synced. No network leakage detected.</span>
+                  <span>All routes resolving under SSL. App server health checks active. Global Traefik routing tables synced.</span>
                 </div>
               </div>
             </div>

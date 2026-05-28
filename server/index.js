@@ -65,11 +65,29 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Health Check Endpoints
+app.get('/health', (req, res) => res.status(200).send('OK'));
+app.get('/api/health', (req, res) => {
+  try {
+    const db = readDb();
+    res.json({
+      status: 'healthy',
+      timestamp: new Date(),
+      uptime: process.uptime(),
+      dbSize: JSON.stringify(db).length,
+      dbStatus: db ? 'connected' : 'error'
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'unhealthy', error: err.message });
+  }
+});
+
 // Subdomain and custom DNS website routing middleware
 app.use((req, res, next) => {
   if (req.path.startsWith('/api') || 
       req.path.startsWith('/assets') || 
       req.path.startsWith('/website') ||
+      req.path === '/health' ||
       req.path.includes('.') || 
       req.hostname === 'localhost' || 
       req.hostname === '127.0.0.1') {

@@ -23,5 +23,9 @@ RUN node server/seed.js
 # Expose port 3001 for Express server
 EXPOSE 3001
 
+# Health check configuration for Docker/Coolify container orchestrators
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "fetch('http://localhost:3001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+
 # Start the Express production server
 CMD ["node", "server/index.js"]

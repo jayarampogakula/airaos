@@ -1125,7 +1125,7 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
 
         {/* Canvas Designer Tab Panel */}
         {activeSubTab === 'canvas' && (
-          <>
+          <div className="flex-1 flex overflow-hidden">
             {/* Left Column: Workflows directories and category node palette */}
             <div className="w-[300px] border-r border-white/5 p-4 flex flex-col gap-4 overflow-y-auto bg-slate-950/40 select-none">
               
@@ -1916,7 +1916,7 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
       </div>
