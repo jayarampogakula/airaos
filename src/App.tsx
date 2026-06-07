@@ -22,6 +22,7 @@ import { TenantSettingsView } from './components/TenantSettingsView';
 import { TenantSupportView } from './components/TenantSupportView';
 import { useAuth } from './auth/AuthProvider';
 import { ProtectedRoute } from './auth/ProtectedRoute';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 
 import { 
@@ -59,6 +60,7 @@ function App() {
     return localStorage.getItem('agentstack_isImpersonating') === 'true';
   });
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [workspaceDropdownOpen, setWorkspaceDropdownOpen] = useState<boolean>(false);
 
 
   // Sync to localStorage
@@ -1083,8 +1085,95 @@ function App() {
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary-glow)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: 'var(--primary-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative' }}>
+            {currentRole === 'tenant' && (
+              <>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setWorkspaceDropdownOpen(prev => !prev)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '6px 12px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    borderColor: 'var(--border-glass)',
+                    cursor: 'pointer',
+                    borderRadius: 'var(--radius-sm)'
+                  }}
+                >
+                  <span style={{ fontSize: '1.1rem' }}>{selectedTenant.logo}</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-primary)' }}>
+                    {selectedTenant.name}
+                  </span>
+                  <span style={{ fontSize: '0.65rem', padding: '1px 5px', background: 'var(--primary-glow)', borderRadius: '4px', color: 'var(--primary-color)', fontWeight: 'bold' }}>
+                    {selectedTenant.plan}
+                  </span>
+                  {workspaceDropdownOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                </button>
+
+                {workspaceDropdownOpen && (
+                  <div
+                    className="glass-card"
+                    style={{
+                      position: 'absolute',
+                      right: '46px',
+                      top: '46px',
+                      zIndex: 150,
+                      padding: '6px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      backgroundColor: '#0a0d16',
+                      border: '1px solid var(--border-glass)',
+                      width: '220px',
+                      boxShadow: 'var(--shadow-lg)'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.6rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '6px 8px 4px 8px', borderBottom: '1px solid var(--border-glass)', marginBottom: '4px' }}>
+                      Switch Workspace
+                    </div>
+                    {tenants.map((tenant) => (
+                      <button
+                        key={tenant.id}
+                        className="btn"
+                        onClick={() => {
+                          switchTenant(tenant.id)
+                            .then(() => {
+                              setSelectedTenantId(tenant.id);
+                              setActiveTab('dashboard');
+                              setWorkspaceDropdownOpen(false);
+                            })
+                            .catch((err) => console.warn('Could not switch workspace.', err));
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          width: '100%',
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: tenant.id === selectedTenant.id ? 'var(--primary-glow)' : 'transparent',
+                          color: 'var(--text-primary)',
+                          justifyContent: 'flex-start',
+                          fontSize: '0.78rem',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <span style={{ fontSize: '1.1rem' }}>{tenant.logo}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: '600' }}>{tenant.name}</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{tenant.plan} Plan</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Profile Avatar */}
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary-glow)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: 'var(--primary-color)', flexShrink: 0 }}>
               {currentRole === 'superadmin' ? 'SA' : selectedTenant.name.charAt(0)}
             </div>
           </div>

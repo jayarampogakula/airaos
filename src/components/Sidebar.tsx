@@ -51,7 +51,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose
 }) => {
-  const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   const groups = [
@@ -191,117 +190,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
 
-      {/* Account / Tenant Switcher */}
-      <div style={{ padding: isCollapsed ? '16px 8px' : '16px', position: 'relative' }}>
-        {currentRole === 'tenant' ? (
-          <>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setDropdownOpen(prev => !prev)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                justifyContent: isCollapsed ? 'center' : 'space-between',
-                alignItems: 'center',
-                padding: isCollapsed ? '10px' : '10px 14px',
-                backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                borderColor: 'var(--border-glass)',
-                cursor: 'pointer'
-              }}
-              title={selectedTenant.name}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left' }}>
-                <span style={{ fontSize: '1.2rem' }}>{selectedTenant.logo}</span>
-                {!isCollapsed && (
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '130px' }}>
-                      {selectedTenant.name}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                      {selectedTenant.plan} Tenant
-                    </div>
-                  </div>
-                )}
-              </div>
-              {!isCollapsed && (dropdownOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
-            </button>
-            {dropdownOpen && (
-              <div
-                className="glass-card"
-                style={{
-                  position: 'absolute',
-                  left: isCollapsed ? '4px' : '16px',
-                  right: isCollapsed ? '4px' : '16px',
-                  top: '72px',
-                  zIndex: 50,
-                  padding: '6px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  backgroundColor: '#0a0d16',
-                  border: '1px solid var(--border-glass)'
-                }}
-              >
-                {tenants.map((tenant) => (
-                  <button
-                    key={tenant.id}
-                    className="btn"
-                    onClick={() => {
-                       onSelectTenant(tenant.id);
-                       setDropdownOpen(false);
-                       if (onClose) onClose();
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      width: '100%',
-                      padding: '8px',
-                      borderRadius: '6px',
-                      backgroundColor: tenant.id === selectedTenant.id ? 'var(--primary-glow)' : 'transparent',
-                      color: 'var(--text-primary)',
-                      justifyContent: isCollapsed ? 'center' : 'flex-start',
-                      fontSize: '0.78rem'
-                    }}
-                    title={tenant.name}
-                  >
-                    <span>{tenant.logo}</span>
-                    {!isCollapsed && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tenant.name}</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
-        ) : (
-          <div
-            className="glass-card"
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isCollapsed ? 'center' : 'flex-start',
-              gap: '10px',
-              padding: isCollapsed ? '10px' : '10px 14px',
-              backgroundColor: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid var(--border-glass)',
-              borderRadius: 'var(--radius-sm)'
-            }}
-            title="Super Admin"
-          >
-            <ShieldAlert size={18} className="badge-danger" style={{ color: 'var(--danger-color)', flexShrink: 0 }} />
-            {!isCollapsed && (
-              <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--danger-color)' }}>
-                  Super Admin
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                  Agency Owner Console
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+
 
       {/* Collapse/Expand Toggle Button (Desktop helper) */}
       <div className="desktop-collapse-btn" style={{ padding: '0 16px 12px 16px' }}>
