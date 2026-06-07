@@ -1,27 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { DashboardView } from './components/DashboardView';
-import { AIBrainView } from './components/AIBrainView';
-import { EmployeeBuilderView } from './components/EmployeeBuilderView';
-import { CommunicationHubView } from './components/CommunicationHubView';
-import { CRMPipelineView } from './components/CRMPipelineView';
-import { SchedulerView } from './components/SchedulerView';
-import { WorkflowView } from './components/WorkflowView';
-import { VoiceAIView } from './components/VoiceAIView';
-import { KnowledgeBaseView } from './components/KnowledgeBaseView';
-import { WidgetBuilderView } from './components/WidgetBuilderView';
-import { WhiteLabelView } from './components/WhiteLabelView';
-import { LandingPageView } from './components/LandingPageView';
-import { SuperAdminView } from './components/SuperAdminView';
-import { TeamAccessView } from './components/TeamAccessView';
-import { IntegrationsView } from './components/IntegrationsView';
-import { CrewAIView } from './components/CrewAIView';
-import { BillingUpgradeView } from './components/BillingUpgradeView';
-import { PhonePeSimulator } from './components/PhonePeSimulator';
-import { TenantSettingsView } from './components/TenantSettingsView';
-import { TenantSupportView } from './components/TenantSupportView';
 import { useAuth } from './auth/AuthProvider';
-import { ProtectedRoute } from './auth/ProtectedRoute';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 
@@ -31,6 +10,38 @@ import {
   mockKnowledgeSources, mockKbChunks, mockSystemMetrics, mockBillingLimits 
 } from './mockData';
 import { Tenant, Agent, Contact, Deal, Conversation, Appointment, Workflow, KnowledgeSource, KbChunk, SystemMetrics, ChatMessage } from './types';
+
+const lazyNamed = <T extends React.ComponentType<any>>(
+  loader: () => Promise<Record<string, T>>,
+  exportName: string
+) => lazy(async () => ({ default: (await loader())[exportName] }));
+
+const DashboardView = lazyNamed(() => import('./components/DashboardView'), 'DashboardView');
+const AIBrainView = lazyNamed(() => import('./components/AIBrainView'), 'AIBrainView');
+const EmployeeBuilderView = lazyNamed(() => import('./components/EmployeeBuilderView'), 'EmployeeBuilderView');
+const CommunicationHubView = lazyNamed(() => import('./components/CommunicationHubView'), 'CommunicationHubView');
+const CRMPipelineView = lazyNamed(() => import('./components/CRMPipelineView'), 'CRMPipelineView');
+const SchedulerView = lazyNamed(() => import('./components/SchedulerView'), 'SchedulerView');
+const WorkflowView = lazyNamed(() => import('./components/WorkflowView'), 'WorkflowView');
+const VoiceAIView = lazyNamed(() => import('./components/VoiceAIView'), 'VoiceAIView');
+const KnowledgeBaseView = lazyNamed(() => import('./components/KnowledgeBaseView'), 'KnowledgeBaseView');
+const WidgetBuilderView = lazyNamed(() => import('./components/WidgetBuilderView'), 'WidgetBuilderView');
+const WhiteLabelView = lazyNamed(() => import('./components/WhiteLabelView'), 'WhiteLabelView');
+const LandingPageView = lazyNamed(() => import('./components/LandingPageView'), 'LandingPageView');
+const SuperAdminView = lazyNamed(() => import('./components/SuperAdminView'), 'SuperAdminView');
+const TeamAccessView = lazyNamed(() => import('./components/TeamAccessView'), 'TeamAccessView');
+const IntegrationsView = lazyNamed(() => import('./components/IntegrationsView'), 'IntegrationsView');
+const CrewAIView = lazyNamed(() => import('./components/CrewAIView'), 'CrewAIView');
+const BillingUpgradeView = lazyNamed(() => import('./components/BillingUpgradeView'), 'BillingUpgradeView');
+const PhonePeSimulator = lazyNamed(() => import('./components/PhonePeSimulator'), 'PhonePeSimulator');
+const TenantSettingsView = lazyNamed(() => import('./components/TenantSettingsView'), 'TenantSettingsView');
+const TenantSupportView = lazyNamed(() => import('./components/TenantSupportView'), 'TenantSupportView');
+
+const ViewFallback = () => (
+  <div className="h-full flex items-center justify-center text-sm text-slate-400">
+    Loading workspace...
+  </div>
+);
 
 function App() {
   const {
@@ -623,7 +634,7 @@ function App() {
 
   const handleAddVoiceConversation = (contactName: string, phone: string, scriptGoal: string, transcript: ChatMessage[], feedback?: string, email?: string) => {
     // Find or create contact
-    let contact = contacts.find(c => c.phone === phone || c.name.toLowerCase() === contactName.toLowerCase());
+    const contact = contacts.find(c => c.phone === phone || c.name.toLowerCase() === contactName.toLowerCase());
     let finalContact: Contact;
     
     if (!contact) {
@@ -987,11 +998,19 @@ function App() {
   };
 
   if (!isAuthenticated || viewMode === 'marketing') {
-    return <LandingPageView onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <LandingPageView onLoginSuccess={handleLoginSuccess} />
+      </Suspense>
+    );
   }
 
   if (window.location.hash.startsWith('#phonepe-checkout')) {
-    return <PhonePeSimulator />;
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <PhonePeSimulator />
+      </Suspense>
+    );
   }
 
   return (
@@ -1181,6 +1200,7 @@ function App() {
 
         {/* View body */}
         <div className="content-body">
+          <Suspense fallback={<ViewFallback />}>
           {currentRole === 'tenant' ? (
             <>
               {activeTab === 'dashboard' && (
@@ -1378,6 +1398,7 @@ function App() {
               }}
             />
           )}
+          </Suspense>
         </div>
 
       </div>

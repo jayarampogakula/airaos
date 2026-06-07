@@ -86,7 +86,8 @@ export const NativeBookingCalendar: React.FC<NativeBookingCalendarProps> = ({
       // Parse slot hour and convert to ISO dateTime format (YYYY-MM-DDTHH:MM)
       // selectedSlot format: "02:30 PM"
       const [time, modifier] = selectedSlot.split(' ');
-      let [hours, minutes] = time.split(':').map(Number);
+      const [rawHours, minutes] = time.split(':').map(Number);
+      let hours = rawHours;
       if (modifier === 'PM' && hours < 12) hours += 12;
       if (modifier === 'AM' && hours === 12) hours = 0;
       

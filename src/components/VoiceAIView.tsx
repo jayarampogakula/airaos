@@ -343,11 +343,11 @@ export const VoiceAIView: React.FC<VoiceAIViewProps> = ({
   const acceptInboundCall = () => {
     setInboundCallStatus('connected');
     if (voiceRequireLeadCapture) {
-      let greeting = `Hello! Thank you for calling ${tenantName}. I am ${selectedAgent?.name || 'Sarah'}, your digital assistant. Before we proceed, could you please tell me your first and last name?`;
+      const greeting = `Hello! Thank you for calling ${tenantName}. I am ${selectedAgent?.name || 'Sarah'}, your digital assistant. Before we proceed, could you please tell me your first and last name?`;
       setInboundLogs([{ sender: 'agent', text: greeting }]);
       setLeadCaptureStep(1);
     } else {
-      let greeting = `Hello! Thank you for calling ${tenantName}. I am ${selectedAgent?.name || 'Sarah'}, your digital assistant. How can I help you today?`;
+      const greeting = `Hello! Thank you for calling ${tenantName}. I am ${selectedAgent?.name || 'Sarah'}, your digital assistant. How can I help you today?`;
       setInboundLogs([{ sender: 'agent', text: greeting }]);
       setLeadCaptureStep(0);
     }

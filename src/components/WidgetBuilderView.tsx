@@ -42,8 +42,8 @@ const getBackendOrigin = () => {
 
 const compileWebsiteHTML = (config: any) => {
   let themeBg = '#0b1329';
-  let themeText = '#f8fafc';
-  let themeTextSec = '#94a3b8';
+  const themeText = '#f8fafc';
+  const themeTextSec = '#94a3b8';
   let themeAccent = '#0ea5e9';
   let themeCardBg = 'rgba(14, 165, 233, 0.03)';
   let themeCardBorder = 'rgba(14, 165, 233, 0.15)';
@@ -908,8 +908,8 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   // Render mock business site based on active inputs and theme selection
   const renderMockupWebsite = () => {
     let themeBg = '#0b1329';
-    let themeText = '#f8fafc';
-    let themeTextSec = '#94a3b8';
+    const themeText = '#f8fafc';
+    const themeTextSec = '#94a3b8';
     let themeAccent = widgetColor;
     let themeCardBg = 'rgba(255, 255, 255, 0.02)';
     let themeCardBorder = 'rgba(255, 255, 255, 0.05)';
