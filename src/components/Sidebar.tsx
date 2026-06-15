@@ -1,9 +1,10 @@
 import React from 'react';
-import { 
-  LayoutDashboard, Inbox, Phone, Workflow, Users, Calendar, 
+import {
+  LayoutDashboard, Inbox, Phone, Workflow, Users, Calendar,
   Bot, Database, Network, MessageSquareCode, Globe, BrainCircuit,
   PlugZap, Shield, Palette, CreditCard, Settings, LifeBuoy,
-  ChevronDown, ChevronRight, AlertCircle, ShieldAlert, Key, ShoppingBag, MessageSquare
+  ChevronDown, ChevronRight, AlertCircle, ShieldAlert, Key, ShoppingBag, MessageSquare,
+  TrendingUp, Target, Eye, RefreshCw, Play, BarChart3, Megaphone, GitBranch, Zap, Clock
 } from 'lucide-react';
 import { Tenant, User } from '../types';
 
@@ -55,63 +56,82 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const groups = [
     {
-      title: "🏠 Dashboard",
+      title: '🏠 Dashboard',
       tabs: [
-        { id: 'dashboard', label: 'Overview', icon: LayoutDashboard }
+        { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+        { id: 'revenue_dashboard', label: 'Revenue Dashboard', icon: TrendingUp, badge: 'NEW' }
       ]
     },
     {
-      title: "💬 Communications",
+      title: '📥 Inbox & Channels',
       tabs: [
-        { id: 'inbox', label: 'GatiDesk Inbox', icon: Inbox },
-        { id: 'voice', label: 'GATI Voice Gateway', icon: Phone },
-        { id: 'workflow', label: 'GATI Automation', icon: Workflow }
+        { id: 'inbox', label: 'Unified Inbox', icon: Inbox },
+        { id: 'voice', label: 'Voice Gateway', icon: Phone },
+        { id: 'workflow', label: 'Automation', icon: Workflow }
       ]
     },
     {
-      title: "👥 CRM & Sales",
+      title: '🎯 Lead Engine',
       tabs: [
-        { id: 'crm', label: 'GATI CRM Pipeline', icon: Users },
+        { id: 'lead_sources', label: 'Lead Sources', icon: Target, badge: 'NEW' },
+        { id: 'visitor_intel', label: 'Visitor Intelligence', icon: Eye, badge: 'NEW' },
+        { id: 'lead_scoring', label: 'AI Lead Scoring', icon: Zap, badge: 'NEW' },
+        { id: 'missed_recovery', label: 'Missed Lead Recovery', icon: RefreshCw, badge: 'NEW' }
+      ]
+    },
+    {
+      title: '👥 CRM & Sales',
+      tabs: [
+        { id: 'crm', label: 'CRM Pipeline', icon: Users },
         { id: 'scheduler', label: 'Calendar Scheduler', icon: Calendar }
       ]
     },
     {
-      title: "🤖 AI Agents",
+      title: '📣 Marketing',
       tabs: [
-        { id: 'employees', label: 'GATI AI Agents', icon: Bot },
-        { id: 'knowledge', label: 'Knowledge Base', icon: Database },
+        { id: 'marketing_campaigns', label: 'Campaign Builder', icon: Megaphone, badge: 'NEW' }
+      ]
+    },
+    {
+      title: '🤖 AI Agents',
+      tabs: [
+        { id: 'employees', label: 'AI Agent Builder', icon: Bot },
+        { id: 'multi_agents', label: 'Multi-Agent Ecosystem', icon: GitBranch, badge: 'NEW' },
+        { id: 'knowledge', label: 'Knowledge Hub', icon: Database },
+        { id: 'conv_replay', label: 'Conversation Replay', icon: Play, badge: 'NEW' },
         { id: 'crew', label: 'Agent Orchestrator', icon: Network }
       ]
     },
     {
-      title: "🌐 Channels & Widgets",
+      title: '🌐 Channels & Widgets',
       tabs: [
-        { id: 'widget', label: 'Chatbot Widget Builder', icon: MessageSquareCode },
+        { id: 'widget', label: 'Chat Widget Builder', icon: MessageSquareCode },
         { id: 'website', label: 'Website Builder', icon: Globe }
       ]
     },
     {
-      title: "🧠 AI Models",
+      title: '📊 Analytics',
+      tabs: [
+        { id: 'analytics_center', label: 'Analytics Center', icon: BarChart3, badge: 'NEW' }
+      ]
+    },
+    {
+      title: '🧠 AI Models',
       tabs: [
         { id: 'brain', label: 'AI Brain', icon: BrainCircuit }
       ]
     },
     {
-      title: "🔌 Integrations",
+      title: '🔌 Platform',
       tabs: [
-        { id: 'integrations', label: 'Integrations', icon: PlugZap }
-      ]
-    },
-    {
-      title: "👨‍💼 Administration",
-      tabs: [
-        { id: 'team', label: 'Team Access', icon: Shield },
+        { id: 'integrations', label: 'Integrations', icon: PlugZap },
+        { id: 'team', label: 'Team & Permissions', icon: Shield },
         { id: 'whitelabel', label: 'White Label', icon: Palette },
         { id: 'billing', label: 'Billing & Credits', icon: CreditCard }
       ]
     },
     {
-      title: "⚙️ System",
+      title: '⚙️ System',
       tabs: [
         { id: 'tenant_settings', label: 'Settings', icon: Settings },
         { id: 'tenant_support', label: 'Help & Support', icon: LifeBuoy }
@@ -122,15 +142,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const adminTabs = [
     { id: 'tenants', label: 'Manage Tenants', icon: Users },
     { id: 'plans', label: 'Billing & Plans', icon: Settings },
-    { id: 'infrastructure', label: 'Infrastructure status', icon: Database },
+    { id: 'infrastructure', label: 'Infrastructure Status', icon: Database },
     { id: 'settings', label: 'API & LLM Settings', icon: Key },
-    { id: 'marketplace', label: 'Marketplace templates', icon: ShoppingBag },
+    { id: 'marketplace', label: 'Marketplace Templates', icon: ShoppingBag },
     { id: 'support_bot', label: 'Platform Support Bot', icon: MessageSquare }
   ];
 
-
   return (
-    <div 
+    <div
       className={`sidebar-container glass-panel ${isOpen ? 'open' : ''}`}
       style={{
         width: isCollapsed ? '76px' : '260px',
@@ -140,9 +159,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }}
     >
       {/* Brand Header */}
-      <div 
-        style={{ 
-          padding: isCollapsed ? '20px 10px' : '20px 24px', 
+      <div
+        style={{
+          padding: isCollapsed ? '20px 10px' : '20px 24px',
           borderBottom: '1px solid var(--border-glass)',
           display: 'flex',
           alignItems: 'center',
@@ -150,11 +169,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           justifyContent: isCollapsed ? 'center' : 'flex-start'
         }}
       >
-        <div 
-          style={{ 
-            width: '36px', 
-            height: '36px', 
-            borderRadius: '10px', 
+        <div
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '10px',
             background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)',
             display: 'flex',
             alignItems: 'center',
@@ -170,10 +189,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         {!isCollapsed && (
           <div>
-            <h1 
-              style={{ 
-                fontSize: '1.15rem', 
-                fontWeight: '800', 
+            <h1
+              style={{
+                fontSize: '1.15rem',
+                fontWeight: '800',
                 fontFamily: 'Space Grotesk, sans-serif',
                 letterSpacing: '0.05em',
                 display: 'flex',
@@ -186,13 +205,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {appVersionString}
               </span>
             </h1>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '2px' }}>AI Sales Operating System</p>
           </div>
         )}
       </div>
 
-
-
-      {/* Collapse/Expand Toggle Button (Desktop helper) */}
+      {/* Collapse/Expand Toggle Button */}
       <div className="desktop-collapse-btn" style={{ padding: '0 16px 12px 16px' }}>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -216,10 +234,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation Items */}
-      <div 
-        style={{ 
-          flex: 1, 
-          overflowY: 'auto', 
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
           padding: isCollapsed ? '0 8px' : '0 16px',
           display: 'flex',
           flexDirection: 'column',
@@ -230,7 +248,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           groups.map((group, gIdx) => (
             <div key={gIdx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {!isCollapsed && (
-                <div style={{ fontSize: '0.62rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 14px 2px 8px' }}>
+                <div style={{
+                  fontSize: '0.62rem', fontWeight: '800', color: 'var(--text-muted)',
+                  textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 14px 2px 8px'
+                }}>
                   {group.title}
                 </div>
               )}
@@ -247,7 +268,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       display: 'flex',
                       justifyContent: isCollapsed ? 'center' : 'flex-start',
                       alignItems: 'center',
-                      gap: isCollapsed ? '0px' : '12px',
+                      gap: isCollapsed ? '0px' : '10px',
                       padding: '8px 12px',
                       fontSize: '0.8rem',
                       fontWeight: isActive ? '600' : '500',
@@ -260,7 +281,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     title={tab.label}
                   >
                     <Icon size={16} style={{ color: isActive ? 'var(--primary-color)' : 'var(--text-muted)', flexShrink: 0 }} />
-                    {!isCollapsed && tab.label}
+                    {!isCollapsed && (
+                      <span style={{ flex: 1, textAlign: 'left' }}>{tab.label}</span>
+                    )}
+                    {!isCollapsed && (tab as any).badge && (
+                      <span style={{
+                        fontSize: '0.55rem',
+                        padding: '1px 5px',
+                        background: 'linear-gradient(135deg, #6366f1, #06b6d4)',
+                        borderRadius: '50px',
+                        color: 'white',
+                        fontWeight: '700',
+                        letterSpacing: '0.05em'
+                      }}>
+                        {(tab as any).badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}

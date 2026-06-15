@@ -36,6 +36,17 @@ const BillingUpgradeView = lazyNamed(() => import('./components/BillingUpgradeVi
 const PhonePeSimulator = lazyNamed(() => import('./components/PhonePeSimulator'), 'PhonePeSimulator');
 const TenantSettingsView = lazyNamed(() => import('./components/TenantSettingsView'), 'TenantSettingsView');
 const TenantSupportView = lazyNamed(() => import('./components/TenantSupportView'), 'TenantSupportView');
+// ── NEW AI Sales OS Modules ──
+const LeadSourcesView = lazyNamed(() => import('./components/LeadSourcesView'), 'LeadSourcesView');
+const VisitorIntelligenceView = lazyNamed(() => import('./components/VisitorIntelligenceView'), 'VisitorIntelligenceView');
+const LeadScoringView = lazyNamed(() => import('./components/LeadScoringView'), 'LeadScoringView');
+const MultiAgentEcosystemView = lazyNamed(() => import('./components/MultiAgentEcosystemView'), 'MultiAgentEcosystemView');
+const ConversationReplayView = lazyNamed(() => import('./components/ConversationReplayView'), 'ConversationReplayView');
+const MissedLeadRecoveryView = lazyNamed(() => import('./components/MissedLeadRecoveryView'), 'MissedLeadRecoveryView');
+const RevenueDashboardView = lazyNamed(() => import('./components/RevenueDashboardView'), 'RevenueDashboardView');
+const MarketingCampaignView = lazyNamed(() => import('./components/MarketingCampaignView'), 'MarketingCampaignView');
+const AnalyticsCenterView = lazyNamed(() => import('./components/AnalyticsCenterView'), 'AnalyticsCenterView');
+const CustomerTimelineView = lazyNamed(() => import('./components/CustomerTimelineView'), 'CustomerTimelineView');
 
 const ViewFallback = () => (
   <div className="h-full flex items-center justify-center text-sm text-slate-400">
@@ -365,7 +376,8 @@ function App() {
     const tenantTabs = [
       'dashboard', 'brain', 'employees', 'inbox', 'crm', 
       'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations', 'crew', 'billing',
-      'tenant_settings', 'tenant_support'
+      'tenant_settings', 'tenant_support',
+      'revenue_dashboard', 'lead_sources', 'visitor_intel', 'lead_scoring', 'missed_recovery', 'marketing_campaigns', 'multi_agents', 'conv_replay', 'analytics_center'
     ];
 
     if (currentRole === 'superadmin') {
@@ -1367,6 +1379,62 @@ function App() {
               {activeTab === 'tenant_support' && (
                 <TenantSupportView
                   tenant={selectedTenant}
+                />
+              )}
+              {activeTab === 'revenue_dashboard' && (
+                <RevenueDashboardView
+                  tenantId={selectedTenantId}
+                  contacts={contacts}
+                  deals={deals}
+                  appointments={appointments}
+                />
+              )}
+              {activeTab === 'lead_sources' && (
+                <LeadSourcesView
+                  tenantId={selectedTenantId}
+                />
+              )}
+              {activeTab === 'visitor_intel' && (
+                <VisitorIntelligenceView
+                  tenantId={selectedTenantId}
+                />
+              )}
+              {activeTab === 'lead_scoring' && (
+                <LeadScoringView
+                  contacts={contacts}
+                  tenantId={selectedTenantId}
+                />
+              )}
+              {activeTab === 'missed_recovery' && (
+                <MissedLeadRecoveryView
+                  tenantId={selectedTenantId}
+                />
+              )}
+              {activeTab === 'marketing_campaigns' && (
+                <MarketingCampaignView
+                  tenantId={selectedTenantId}
+                  contacts={contacts}
+                />
+              )}
+              {activeTab === 'multi_agents' && (
+                <MultiAgentEcosystemView
+                  agents={agents}
+                  tenantId={selectedTenantId}
+                />
+              )}
+              {activeTab === 'conv_replay' && (
+                <ConversationReplayView
+                  conversations={conversations}
+                  tenantId={selectedTenantId}
+                />
+              )}
+              {activeTab === 'analytics_center' && (
+                <AnalyticsCenterView
+                  tenantId={selectedTenantId}
+                  contacts={contacts}
+                  deals={deals}
+                  conversations={conversations}
+                  appointments={appointments}
                 />
               )}
             </>

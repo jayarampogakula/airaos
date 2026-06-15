@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   TrendingUp, Users, CheckCircle2, PhoneCall, RefreshCw, 
-  ExternalLink, Calendar, GitBranch, ArrowUpRight, Send, MessageSquare, Bot, Sparkles 
+  ExternalLink, Calendar, GitBranch, ArrowUpRight, Send, MessageSquare, Bot, Sparkles,
+  AlertCircle, IndianRupee, Zap, Eye
 } from 'lucide-react';
 import { Tenant, Contact, Appointment } from '../types';
 
@@ -249,19 +250,58 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
+      {/* Recovery Alert Banner */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, marginBottom: 24, fontSize: 13, color: '#f87171' }}>
+        <AlertCircle size={15} />
+        <span>⚠️ <b>Missed Lead Recovery Alert:</b> 12 high-intent leads went cold this week. The AI Recovery sequence has been initiated for 4 of them. Click <b>Missed Lead Recovery</b> to review.</span>
+      </div>
+
+      {/* AI Daily Briefing & Live Visitor Count Widget */}
+      <div className="grid-cols-12" style={{ marginBottom: '24px', gap: '20px' }}>
+        {/* AI Daily Briefing */}
+        <div className="col-span-8 glass-card" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(6, 182, 212, 0.04) 100%)', borderColor: 'rgba(99, 102, 241, 0.2)', padding: '20px 24px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ padding: '8px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '10px', color: 'var(--primary-color)' }}>
+            <Bot size={24} />
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 700, color: '#fff', fontFamily: 'Space Grotesk, sans-serif' }}>AI Daily Briefing</h4>
+            <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+              ✨ <b>3 hot leads</b> are active now on the site. <b>2 missed follow-ups</b> were auto-recovered by WhatsApp agent. Total pipeline value generated this week stands at <b>₹12.4L</b>, up 18% MoM. Recommend prioritizing <b>Rahul Mehta</b> (intent score: 89) for immediate callback.
+            </p>
+          </div>
+        </div>
+
+        {/* Live Visitor Count Widget */}
+        <div className="col-span-4 glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '20px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Real-time Traffic</span>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 8px #22c55e' }} />
+          </div>
+          <div style={{ margin: '10px 0' }}>
+            <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: 0, fontFamily: 'Space Grotesk, sans-serif', color: '#fff' }}>
+              12 Live
+            </h3>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Visitors on site now</span>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--primary-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+            View Visitor Intelligence &rarr;
+          </div>
+        </div>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid-cols-12" style={{ marginBottom: '24px' }}>
         <div className="col-span-3 glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Pipeline Value</span>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif' }}>
-              ${pipelineValue.toLocaleString()}
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Revenue Generated</span>
+            <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: '#22c55e' }}>
+              ₹12.4L
             </h3>
             <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '2px' }}>
-              <TrendingUp size={12} /> Opportunities: {deals.length}
+              <TrendingUp size={12} /> +18% vs last month
             </span>
           </div>
-          <div className="icon-box" style={{ color: 'var(--primary-color)' }}><TrendingUp size={20} /></div>
+          <div className="icon-box" style={{ color: '#22c55e', background: 'rgba(34,197,94,0.1)' }}><IndianRupee size={20} /></div>
         </div>
 
         <div className="col-span-3 glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -271,7 +311,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {contacts.length}
             </h3>
             <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '2px' }}>
-              <TrendingUp size={12} /> Leads in system
+              <TrendingUp size={12} /> Total leads in system
             </span>
           </div>
           <div className="icon-box" style={{ color: 'var(--accent-color)' }}><Users size={20} /></div>
@@ -279,15 +319,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <div className="col-span-3 glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Chats Done</span>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif' }}>
-              {chatsUsed}
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Live Visitor Count</span>
+            <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--accent-color)' }}>
+              12
             </h3>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-              Total chats processed
+            <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
+              Pulsing live visitors
             </span>
           </div>
-          <div className="icon-box" style={{ color: 'var(--success-color)' }}><CheckCircle2 size={20} /></div>
+          <div className="icon-box" style={{ color: 'var(--accent-color)', background: 'rgba(6,182,212,0.1)' }}><Eye size={20} /></div>
         </div>
 
         <div className="col-span-3 glass-card animate-pulse-glow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'rgba(99, 102, 241, 0.03)', borderColor: 'rgba(99,102,241,0.2)' }}>

@@ -11,6 +11,7 @@ import { encryptCredentials, decryptCredentials } from './vault.js';
 import { enqueueWorkflowTrigger, registerTelemetrySocket } from './workflowEngine.js';
 import { WebSocketServer } from 'ws';
 import url from 'url';
+import { registerSalesOSRoutes } from './salesOsRoutes.js';
 export const CHANNEL_TYPES = ['website', 'whatsapp', 'gmail', 'outlook', 'smtp', 'telegram', 'instagram', 'facebook', 'sms'];
 
 export function displayChannelName(type) {
@@ -2627,6 +2628,9 @@ app.post('/api/voice/outbound', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Register Sales OS routes
+registerSalesOSRoutes(app, { authMiddleware, tenantMiddleware, readDb, writeDb });
 
 // Path-based tenant slug routing fallback (e.g. gatidesk.in/smile-dentals)
 app.get('/:slug', (req, res, next) => {

@@ -228,6 +228,18 @@ export function ensureSaasSchema(data) {
     users: [],
     memberships: [],
     roles: [],
+    // ── NEW: AI Sales OS Tables ──
+    lead_sources: [],           // Lead attribution tracking
+    visitor_sessions: [],       // Website visitor intelligence
+    lead_scores: [],            // AI scoring results per contact
+    customer_timeline: [],      // Per-contact event history
+    campaigns: [],              // Email/WhatsApp/SMS campaigns
+    recovery_workflows: [],     // Missed lead recovery configs
+    revenue_metrics: [],        // Aggregated revenue data
+    conversation_replays: [],   // AI reasoning logs per conversation
+    audit_logs: [],             // Team activity audit trail
+    departments: [],            // Team department definitions
+    marketplace_items: [],      // Installable templates/agents/workflows
     platformSettings: {
       growthPrice: 2499,
       growthChats: 5000,

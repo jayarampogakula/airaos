@@ -5,6 +5,7 @@ import {
   Brain, AlertTriangle, FileText, CheckCircle2, BarChart3, Clock, MapPin, Briefcase, Shield
 } from 'lucide-react';
 import { Contact, Deal, Agent } from '../types';
+import { CustomerTimelineView } from './CustomerTimelineView';
 
 interface CRMPipelineViewProps {
   contacts: Contact[];
@@ -42,6 +43,7 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'deals' | 'contacts' | 'dropoff'>('deals');
   const [searchTerm, setSearchTerm] = useState('');
+  const [drawerTab, setDrawerTab] = useState<'timeline' | 'notes'>('timeline');
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
@@ -514,10 +516,24 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
                         }}
                         style={{ cursor: 'pointer' }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', gap: '8px' }}>
                           <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                             {deal.name}
                           </span>
+                          {contact && (
+                            <span style={{
+                              fontSize: '0.65rem',
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              fontWeight: 'bold',
+                              background: (contact.leadScore || 65) >= 80 ? 'rgba(16, 185, 129, 0.15)' : (contact.leadScore || 65) >= 65 ? 'rgba(249, 115, 22, 0.15)' : (contact.leadScore || 65) >= 45 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                              color: (contact.leadScore || 65) >= 80 ? '#10b981' : (contact.leadScore || 65) >= 65 ? '#f97316' : (contact.leadScore || 65) >= 45 ? '#f59e0b' : '#9ca3af',
+                              border: `1px solid ${(contact.leadScore || 65) >= 80 ? 'rgba(16, 185, 129, 0.3)' : (contact.leadScore || 65) >= 65 ? 'rgba(249, 115, 22, 0.3)' : (contact.leadScore || 65) >= 45 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(107, 114, 128, 0.3)'}`,
+                              whiteSpace: 'nowrap'
+                            }}>
+                              🎯 {contact.leadScore || 65}
+                            </span>
+                          )}
                         </div>
 
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
@@ -592,6 +608,7 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
                   <th>Phone Number</th>
                   <th>Company</th>
                   <th>Tags</th>
+                  <th>Source</th>
                   <th>Captured Date</th>
                 </tr>
               </thead>
@@ -640,6 +657,16 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
                           <span key={idx} className="badge badge-primary" style={{ fontSize: '0.65rem' }}>{t}</span>
                         ))}
                       </div>
+                    </td>
+                    <td>
+                      <span className="badge" style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.65rem',
+                        textTransform: 'capitalize'
+                      }}>
+                        {contact.source ? contact.source.replace(/_/g, ' ') : 'organic'}
+                      </span>
                     </td>
                     <td style={{ color: 'var(--text-muted)' }}>
                       {new Date(contact.createdAt).toLocaleDateString()}
@@ -951,201 +978,352 @@ export const CRMPipelineView: React.FC<CRMPipelineViewProps> = ({
               </button>
             </div>
 
-            {/* Profile Info */}
-            {isEditing ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem', overflowY: 'auto', maxHeight: '320px', paddingRight: '4px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Name:</label>
-                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editName} onChange={(e) => setEditName(e.target.value)} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Email:</label>
-                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Phone:</label>
-                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Company:</label>
-                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editCompany} onChange={(e) => setEditCompany(e.target.value)} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>City:</label>
-                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editCity} onChange={(e) => setEditCity(e.target.value)} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Project:</label>
-                  <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editProject} onChange={(e) => setEditProject(e.target.value)} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Assigned Employee:</label>
-                  <select className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editAgentId} onChange={(e) => setEditAgentId(e.target.value)}>
-                    <option value="">Unassigned</option>
-                    {agents.map(a => <option key={a.id} value={a.id}>{a.name} ({a.department})</option>)}
-                  </select>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                  <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem', flex: 1 }} onClick={() => handleSaveContactEdit(contact.id)}>Save</button>
-                  <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.75rem', flex: 1 }} onClick={() => setIsEditing(false)}>Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Email:</span>
-                  <span style={{ color: 'white', fontWeight: '500' }}>{contact.email}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Phone:</span>
-                  <span style={{ color: 'white', fontWeight: '500' }}>{contact.phone}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Company:</span>
-                  <span style={{ color: 'white', fontWeight: '500' }}>{contact.company}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>City:</span>
-                  <span style={{ color: 'white', fontWeight: '500' }}>{contact.city || 'Not Specified'}</span>
-                </div>
-                {tenantId === 't-2' && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Real Estate Project:</span>
-                    <span style={{ color: 'var(--primary-color)', fontWeight: 'bold' }}>{contact.project || 'Not Specified'}</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Assigned Employee:</span>
-                  <span style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>
-                    {agentObj ? `${agentObj.name} (${agentObj.department})` : 'Unassigned'}
-                  </span>
-                </div>
-                <button className="btn btn-secondary" style={{ marginTop: '8px', padding: '6px', fontSize: '0.75rem' }} onClick={() => handleStartEdit(contact)}>
-                  ✏️ Edit Profile Info
-                </button>
-              </div>
-            )}
-
-            {/* Tags */}
-            <div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>TAGS:</span>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {contact.tags.map((t, idx) => (
-                  <span key={idx} className="badge badge-primary" style={{ fontSize: '0.65rem' }}>{t}</span>
-                ))}
-              </div>
-            </div>
-
-            {/* AI Follow-up Campaign Form */}
+            {/* Scrollable Drawer Body */}
             <div style={{
-              background: 'rgba(14, 165, 233, 0.03)',
-              border: '1px solid rgba(14, 165, 233, 0.15)',
-              borderRadius: '8px',
-              padding: '16px',
+              flex: 1,
+              overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
-              gap: '10px'
-            }} key={contact.id}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                <Brain size={16} />
-                <span>AI Follow-up Campaign</span>
-              </div>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
-                Trigger an automated AI outbound follow-up message to this contact to progress their deal stage based on sentiment analysis.
-              </p>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>CAMPAIGN OBJECTIVE:</label>
-                <input 
-                  type="text" 
-                  value={campaignObjective} 
-                  onChange={(e) => setCampaignObjective(e.target.value)}
-                  placeholder="e.g. Schedule whitening checkup / confirm property budget"
-                  style={{
-                    background: '#111827',
-                    border: '1px solid var(--border-glass)',
+              gap: '16px',
+              paddingRight: '4px'
+            }}>
+              {/* AI Lead Intelligence Info */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--border-glass)',
+                borderRadius: '8px',
+                padding: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>AI LEAD SCORES:</span>
+                  <span style={{
+                    fontSize: '0.65rem',
+                    padding: '2px 6px',
                     borderRadius: '4px',
-                    padding: '8px',
-                    fontSize: '0.75rem',
-                    color: 'white',
-                    outline: 'none'
-                  }}
-                  disabled={isCampaignRunning}
-                />
-              </div>
-
-              <button
-                onClick={() => handleRunCampaign(contact.id)}
-                className="btn btn-primary"
-                style={{
-                  fontSize: '0.75rem',
-                  padding: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)',
-                  border: 'none',
-                  color: 'white',
-                  cursor: isCampaignRunning ? 'not-allowed' : 'pointer'
-                }}
-                disabled={isCampaignRunning || !campaignObjective.trim()}
-              >
-                {isCampaignRunning ? 'AI Campaign Running...' : 'Run Outbound AI Campaign'}
-              </button>
-
-              {campaignLogs.length > 0 && (
-                <div style={{
-                  background: 'rgba(0,0,0,0.2)',
-                  borderRadius: '4px',
-                  padding: '8px',
-                  fontSize: '0.65rem',
-                  color: '#10b981',
-                  fontFamily: 'monospace',
-                  maxHeight: '120px',
-                  overflowY: 'auto',
-                  border: '1px solid var(--border-glass)'
-                }}>
-                  {campaignLogs.map((log, i) => (
-                    <div key={i} style={{ marginBottom: '4px' }}>{log}</div>
-                  ))}
+                    fontWeight: 'bold',
+                    background: (contact.leadScore || 65) >= 80 ? 'rgba(16, 185, 129, 0.15)' : (contact.leadScore || 65) >= 65 ? 'rgba(249, 115, 22, 0.15)' : (contact.leadScore || 65) >= 45 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                    color: (contact.leadScore || 65) >= 80 ? '#10b981' : (contact.leadScore || 65) >= 65 ? '#f97316' : (contact.leadScore || 65) >= 45 ? '#f59e0b' : '#9ca3af',
+                    textTransform: 'uppercase'
+                  }}>
+                    {(contact.leadScore || 65) >= 80 ? 'Sales Ready' : (contact.leadScore || 65) >= 65 ? 'Hot' : (contact.leadScore || 65) >= 45 ? 'Warm' : 'Cold'} ({(contact.leadScore || 65)}/100)
+                  </span>
                 </div>
-              )}
-            </div>
-
-            {/* Notes & Feedback Logs */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>
-                FEEDBACK LOGS & NOTES:
-              </span>
-              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
-                {contact.notes.map((note, idx) => {
-                  const isCallFeedback = note.startsWith('Call Feedback:') || note.startsWith('Voice Call finished:') || note.includes('Inbound Call') || note.includes('Campaign');
-                  return (
-                    <div 
-                      key={idx} 
-                      style={{ 
-                        padding: '10px', 
-                        borderRadius: '6px', 
-                        background: isCallFeedback ? 'rgba(99, 102, 241, 0.04)' : 'rgba(255,255,255,0.02)',
-                        border: isCallFeedback ? '1px solid rgba(99,102,241,0.2)' : '1px solid var(--border-glass)',
-                        fontSize: '0.75rem',
-                        lineHeight: '1.3'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isCallFeedback ? 'var(--primary-color)' : 'var(--text-muted)', fontWeight: 'bold', marginBottom: '4px', fontSize: '0.65rem' }}>
-                        <span>{isCallFeedback ? '📞 Phone Call Log' : '📝 Note'}</span>
-                      </div>
-                      <div style={{ color: 'white' }}>{note}</div>
-                    </div>
-                  );
-                })}
-                {contact.notes.length === 0 && (
-                  <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                    No feedback logs or notes linked to this profile.
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>ATTRIBUTION:</span>
+                  <span className="badge" style={{ fontSize: '0.65rem', textTransform: 'capitalize', background: 'rgba(255, 255, 255, 0.05)', color: 'white' }}>
+                    {contact.source ? contact.source.replace(/_/g, ' ') : 'organic'}
+                  </span>
+                </div>
+                {contact.utmSource && (
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <span><b>Source:</b> {contact.utmSource}</span>
+                    <span><b>Medium:</b> {contact.utmMedium || 'none'}</span>
+                    <span><b>Campaign:</b> {contact.utmCampaign || 'none'}</span>
                   </div>
                 )}
               </div>
+
+              {/* AI Pipeline Assistant Card */}
+              {(() => {
+                const contactDeals = deals.filter(d => d.contactId === contact.id);
+                if (contactDeals.length === 0) return null;
+                return contactDeals.map(d => {
+                  const probability = d.closeProbability !== undefined ? d.closeProbability : Math.round((contact.leadScore || 65) * 0.9);
+                  const isStalled = d.stalledFlag !== undefined ? d.stalledFlag : (d.stage !== 'won' && d.stage !== 'lost' && Math.random() > 0.6);
+                  const stalledDays = d.stalledDays !== undefined ? d.stalledDays : (isStalled ? Math.floor(Math.random() * 10) + 5 : 0);
+                  const recommendedAction = d.aiNextAction || (d.stage === 'proposal' ? 'Send WhatsApp whitening promo coupon' : d.stage === 'lead' ? 'Book introductory call / site visit' : 'Follow up regarding payment details');
+                  const summaryText = d.aiSummary || `Lead has shown high intent, but is waiting on confirmation. Recommended to trigger follow-up.`;
+
+                  return (
+                    <div key={d.id} style={{
+                      background: 'rgba(139, 92, 246, 0.03)',
+                      border: '1px solid rgba(139, 92, 246, 0.15)',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a78bfa', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                        <Brain size={14} />
+                        <span>AI Pipeline Assistant</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Deal: <b>{d.name}</b></span>
+                        <span style={{ color: '#a78bfa', fontWeight: 'bold' }}>{probability}% Close Probability</span>
+                      </div>
+                      {isStalled && (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          color: '#f87171',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.65rem',
+                          fontWeight: 'bold',
+                          border: '1px solid rgba(239, 68, 68, 0.2)'
+                        }}>
+                          <AlertTriangle size={12} />
+                          <span>Stalled Deal: {stalledDays} days in {d.stage.toUpperCase()} stage</span>
+                        </div>
+                      )}
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                        <b>AI Summary:</b> {summaryText}
+                      </div>
+                      <div style={{
+                        fontSize: '0.7rem',
+                        background: 'rgba(255,255,255,0.02)',
+                        padding: '6px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid var(--border-glass)',
+                        color: 'var(--text-primary)'
+                      }}>
+                        💡 <b>Next Recommended Action:</b> {recommendedAction}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+
+              {/* Profile Info */}
+              {isEditing ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem', paddingRight: '4px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Name:</label>
+                    <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editName} onChange={(e) => setEditName(e.target.value)} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Email:</label>
+                    <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Phone:</label>
+                    <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Company:</label>
+                    <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editCompany} onChange={(e) => setEditCompany(e.target.value)} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>City:</label>
+                    <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editCity} onChange={(e) => setEditCity(e.target.value)} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Project:</label>
+                    <input className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editProject} onChange={(e) => setEditProject(e.target.value)} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Assigned Employee:</label>
+                    <select className="form-input" style={{ fontSize: '0.75rem', padding: '6px' }} value={editAgentId} onChange={(e) => setEditAgentId(e.target.value)}>
+                      <option value="">Unassigned</option>
+                      {agents.map(a => <option key={a.id} value={a.id}>{a.name} ({a.department})</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem', flex: 1 }} onClick={() => handleSaveContactEdit(contact.id)}>Save</button>
+                    <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.75rem', flex: 1 }} onClick={() => setIsEditing(false)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Email:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>{contact.email}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Phone:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>{contact.phone}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Company:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>{contact.company}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>City:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>{contact.city || 'Not Specified'}</span>
+                  </div>
+                  {tenantId === 't-2' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Real Estate Project:</span>
+                      <span style={{ color: 'var(--primary-color)', fontWeight: 'bold' }}>{contact.project || 'Not Specified'}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Assigned Employee:</span>
+                    <span style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>
+                      {agentObj ? `${agentObj.name} (${agentObj.department})` : 'Unassigned'}
+                    </span>
+                  </div>
+                  <button className="btn btn-secondary" style={{ marginTop: '8px', padding: '6px', fontSize: '0.75rem' }} onClick={() => handleStartEdit(contact)}>
+                    ✏️ Edit Profile Info
+                  </button>
+                </div>
+              )}
+
+              {/* Tags */}
+              <div>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>TAGS:</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {contact.tags.map((t, idx) => (
+                    <span key={idx} className="badge badge-primary" style={{ fontSize: '0.65rem' }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Follow-up Campaign Form */}
+              <div style={{
+                background: 'rgba(14, 165, 233, 0.03)',
+                border: '1px solid rgba(14, 165, 233, 0.15)',
+                borderRadius: '8px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }} key={contact.id}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                  <Brain size={16} />
+                  <span>AI Follow-up Campaign</span>
+                </div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
+                  Trigger an automated AI outbound follow-up message to this contact to progress their deal stage based on sentiment analysis.
+                </p>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>CAMPAIGN OBJECTIVE:</label>
+                  <input 
+                    type="text" 
+                    value={campaignObjective} 
+                    onChange={(e) => setCampaignObjective(e.target.value)}
+                    placeholder="e.g. Schedule whitening checkup / confirm property budget"
+                    style={{
+                      background: '#111827',
+                      border: '1px solid var(--border-glass)',
+                      borderRadius: '4px',
+                      padding: '8px',
+                      fontSize: '0.75rem',
+                      color: 'white',
+                      outline: 'none'
+                    }}
+                    disabled={isCampaignRunning}
+                  />
+                </div>
+
+                <button
+                  onClick={() => handleRunCampaign(contact.id)}
+                  className="btn btn-primary"
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%)',
+                    border: 'none',
+                    color: 'white',
+                    cursor: isCampaignRunning ? 'not-allowed' : 'pointer'
+                  }}
+                  disabled={isCampaignRunning || !campaignObjective.trim()}
+                >
+                  {isCampaignRunning ? 'AI Campaign Running...' : 'Run Outbound AI Campaign'}
+                </button>
+
+                {campaignLogs.length > 0 && (
+                  <div style={{
+                    background: 'rgba(0,0,0,0.2)',
+                    borderRadius: '4px',
+                    padding: '8px',
+                    fontSize: '0.65rem',
+                    color: '#10b981',
+                    fontFamily: 'monospace',
+                    maxHeight: '120px',
+                    overflowY: 'auto',
+                    border: '1px solid var(--border-glass)'
+                  }}>
+                    {campaignLogs.map((log, i) => (
+                      <div key={i} style={{ marginBottom: '4px' }}>{log}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Drawer Tabs Selection */}
+              <div style={{
+                display: 'flex',
+                background: 'rgba(255,255,255,0.02)',
+                padding: '3px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-glass)'
+              }}>
+                <button
+                  onClick={() => setDrawerTab('timeline')}
+                  className="btn"
+                  style={{
+                    flex: 1,
+                    padding: '6px',
+                    fontSize: '0.7rem',
+                    backgroundColor: drawerTab === 'timeline' ? 'var(--primary-color)' : 'transparent',
+                    color: drawerTab === 'timeline' ? 'white' : 'var(--text-secondary)'
+                  }}
+                >
+                  🕒 Journey Timeline
+                </button>
+                <button
+                  onClick={() => setDrawerTab('notes')}
+                  className="btn"
+                  style={{
+                    flex: 1,
+                    padding: '6px',
+                    fontSize: '0.7rem',
+                    backgroundColor: drawerTab === 'notes' ? 'var(--primary-color)' : 'transparent',
+                    color: drawerTab === 'notes' ? 'white' : 'var(--text-secondary)'
+                  }}
+                >
+                  📝 Notes & Logs
+                </button>
+              </div>
+
+              {/* Conditionally Rendered Timeline / Notes */}
+              {drawerTab === 'timeline' ? (
+                <div style={{ flex: 1 }}>
+                  <CustomerTimelineView contactId={contact.id} contactName={contact.name} isEmbedded={true} />
+                </div>
+              ) : (
+                /* Notes & Feedback Logs */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {contact.notes.map((note, idx) => {
+                    const isCallFeedback = note.startsWith('Call Feedback:') || note.startsWith('Voice Call finished:') || note.includes('Inbound Call') || note.includes('Campaign');
+                    return (
+                      <div 
+                        key={idx} 
+                        style={{ 
+                          padding: '10px', 
+                          borderRadius: '6px', 
+                          background: isCallFeedback ? 'rgba(99, 102, 241, 0.04)' : 'rgba(255,255,255,0.02)',
+                          border: isCallFeedback ? '1px solid rgba(99,102,241,0.2)' : '1px solid var(--border-glass)',
+                          fontSize: '0.75rem',
+                          lineHeight: '1.3'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isCallFeedback ? 'var(--primary-color)' : 'var(--text-muted)', fontWeight: 'bold', marginBottom: '4px', fontSize: '0.65rem' }}>
+                          <span>{isCallFeedback ? '📞 Phone Call Log' : '📝 Note'}</span>
+                        </div>
+                        <div style={{ color: 'white' }}>{note}</div>
+                      </div>
+                    );
+                  })}
+                  {contact.notes.length === 0 && (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                      No feedback logs or notes linked to this profile.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         );
