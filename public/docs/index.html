@@ -14,7 +14,7 @@
       --bg-primary: #070a13;
       --bg-secondary: #0d1222;
       --bg-tertiary: #171f38;
-      --bg-glass: rgba(13, 18, 34, 0.75);
+      --bg-glass: rgba(13, 18, 34, 0.85);
       --border-glass: rgba(255, 255, 255, 0.08);
       
       --text-primary: #f8fafc;
@@ -302,6 +302,76 @@
       margin-bottom: 8px;
     }
 
+    /* Usecase Cards & Code blocks */
+    .use-case-card {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 18px;
+      margin-top: 16px;
+      margin-bottom: 16px;
+    }
+
+    .use-case-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: rgba(6, 182, 212, 0.15);
+      color: #22d3ee;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .use-case-title {
+      font-weight: 700;
+      font-size: 0.92rem;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .use-case-content {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .code-block {
+      background: #04060b;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-family: 'Space Mono', monospace, Courier, monospace;
+      font-size: 0.78rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin-top: 12px;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    .playbook-alert {
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 20px;
+      border-left: 4px solid;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    
+    .playbook-alert.tip {
+      background: rgba(16, 185, 129, 0.06);
+      border-color: var(--success-color);
+      color: #a7f3d0;
+    }
+
+    .playbook-alert.warning {
+      background: rgba(245, 158, 11, 0.06);
+      border-color: var(--warning-color);
+      color: #fde68a;
+    }
+
     /* Option Item reference list */
     .option-header {
       display: flex;
@@ -369,7 +439,7 @@
     }
 
     .accent-text {
-      color: var(--primary-color);
+      color: #818cf8;
       font-weight: 600;
     }
 
@@ -453,6 +523,17 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Clinic Front-Desk Daily Sync (Smile Dentals)</div>
+        <div class="use-case-content">
+          Every morning at 08:45 AM, the lead receptionist logs into GatiDesk. 
+          The AI Daily Briefing card highlights: 
+          <i>"Arjun Mehta (WhatsApp Lead) engaged with Receptionist Sarah. Intent: high. Keywords: 'pricing', 'dental implants'. Recommended action: Outbound follow-up via voice carrier."</i> 
+          The receptionist immediately checks the live briefing table, reviews the chat logs, and places a direct call to secure a high-value consultation slot.
+        </div>
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -460,6 +541,10 @@
           <li><b>Step 2: Monitor Resource Quotas:</b> Scroll to the "Resource Limits" card in the right column to monitor chat and voice calling limits before launching marketing campaigns.</li>
           <li><b>Step 3: Consult the Platform Guide:</b> Use the built-in search widget or type "How to integrate Twilio?" to receive real-time configuration steps from the chatbot.</li>
         </ul>
+      </div>
+
+      <div class="playbook-alert tip">
+        <strong>💡 Pro-Tip:</strong> The AI Briefing is generated automatically by analyzing conversation sentiment, intent score peaks, and calendar triggers from the past 12 hours. Review it first thing to avoid missing active buyer signals.
       </div>
 
       <div class="glass-card">
@@ -493,6 +578,23 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Ad Spend Optimization (Elite Realty Group)</div>
+        <div class="use-case-content">
+          The Marketing Director reviews monthly campaign spend. Facebook Ads generated ₹9,40,000 in revenue from 234 leads (ROI: 6.2x). Google Ads generated ₹4,10,000 from 87 leads (ROI: 3.8x). 
+          Based on the comparative ROI metrics shown in the 'Lead Source ROI' table, the Director shifts 30% of the Google Ads budget directly into Facebook Lead Campaigns for the upcoming month.
+        </div>
+      </div>
+
+      <div class="code-block">
+// Sample Revenue Ledger CSV Structure
+Date,Source,Spend,Leads,Revenue,CAC,ROI
+2026-06-15,Facebook Ads,₹150000,234,₹940000,₹641,6.26x
+2026-06-15,Google Ads,₹108000,87,₹410000,₹1241,3.80x
+2026-06-15,Website Chat,₹35000,189,₹720000,₹185,20.57x
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -520,7 +622,7 @@
     <!-- SECTION: Visitor Intelligence -->
     <section id="visitor-intel">
       <h2>👁️ Visitor Intelligence</h2>
-      <p class="sec-desc">Real-time traffic analyzer tracing website visitor paths, referral parameters, and AI scores.</p>
+      <p class="sec-desc">Real-time traffic analyzer tracing website visitor paths, referral parameters, and AI intent scores.</p>
       
       <div class="meta-details">
         <div class="meta-block">
@@ -530,6 +632,17 @@
         <div class="meta-block">
           <div class="meta-title when">When to use this section?</div>
           <div class="meta-content">During active sales periods. Monitor this list live to spot high-intent visitors and intercept them before they close their browser tab.</div>
+        </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">VIP Prospect Interception (CloudScribe SaaS)</div>
+        <div class="use-case-content">
+          An anonymous visitor lands on the site. The timeline tracker indicates they visited `/features`, followed by `/pricing`, and spent 4 minutes reviewing the API documentation. 
+          The AI Intent Engine calculates an Intent Score of 89 (marked as "Sales Ready"). 
+          A sales agent clicks **Engage Now**, opening a direct chat window, and sends: <i>"Hi there! I notice you're looking at our API integration. Would you like a quick 5-minute sandbox test key?"</i> 
+          The prospect responds immediately, accelerating the deal conversion cycle.
         </div>
       </div>
 
@@ -569,6 +682,17 @@
         <div class="meta-block">
           <div class="meta-title when">When to use this section?</div>
           <div class="meta-content">When setting up new ad campaigns on Facebook Ads Manager or Google Ads. Generate tracking parameters here to link with ad destination URLs.</div>
+        </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Omnichannel Campaign Tracking (Glamour Retail)</div>
+        <div class="use-case-content">
+          The team launches a summer campaign across email and Instagram. They configure tracking URLs:
+          <br>Email: <code>?utm_source=newsletter&utm_medium=email&utm_campaign=summer_sale</code>
+          <br>Instagram: <code>?utm_source=instagram&utm_medium=social_cpc&utm_campaign=summer_sale</code>
+          <br>When leads submit forms, GatiDesk registers their exact click path. The Lead Attribution table credits the correct revenue percentages to each platform.
         </div>
       </div>
 
@@ -612,6 +736,16 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Customer Satisfaction Audit (Apex Support Center)</div>
+        <div class="use-case-content">
+          The Support Lead reviews the **Agent Analytics** tab. 
+          Data indicates Sarah (AI Receptionist) has handled 1,247 chats this month, maintaining a CSAT score of 4.6/5. However, escalations spike on Tuesdays between 2 PM and 4 PM. 
+          The Lead modifies the routing criteria to allocate 2 extra human agents during this specific weekly window to handle hot lead handoffs.
+        </div>
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -648,6 +782,16 @@
         <div class="meta-block">
           <div class="meta-title when">When to use this section?</div>
           <div class="meta-content">Whenever support representatives or sales executives need to chat with leads, answer inquiries, or review bot-to-human escalation flags.</div>
+        </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Support Escalation Handling (BetaTech Software)</div>
+        <div class="use-case-content">
+          A client messages on WhatsApp: <i>"My payment went through but order says pending."</i> 
+          Sarah (the AI billing assistant) flags the keyword "payment pending" and marks the chat as escalated. 
+          An active support representative notices the red alert badge in the Unified Inbox, clicks <b>Assign Agent</b> to take ownership, checks the billing system, and writes back directly from the console to resolve the issue.
         </div>
       </div>
 
@@ -693,6 +837,16 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Outbound Calling Provisioning (Smile Dentals)</div>
+        <div class="use-case-content">
+          The clinic acquires a new phone number to run automated reminders. 
+          Under Voice Gateway, they enter their Twilio Sid/Token, click **Buy DID Number**, select a local phone number, and link it. 
+          Now, whenever an appointment trigger runs on the Flow Canvas, GatiDesk makes a call using this number and streams Sarah’s AI voice agent instructions to patient cellphones.
+        </div>
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -731,6 +885,34 @@
           <div class="meta-title when">When to use this section?</div>
           <div class="meta-content">When setting up lead nurturing workflows (e.g., sending a welcome email when a form is submitted, waiting 2 days, and sending a follow-up SMS).</div>
         </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Lead Nurturing Automation Flow</div>
+        <div class="use-case-content">
+          The administrator builds a flow: 
+          <br><b>Trigger:</b> Website Form Submitted.
+          <br><b>Action 1:</b> Send welcome email immediately.
+          <br><b>Action 2:</b> Wait 2 Days.
+          <br><b>AI Classifier:</b> Classify reply. If the lead is classified as "Interested", routing triggers "Assign to Sales Team". If classified as "Not Interested", it routes to the "Deactivate Lead" sequence.
+        </div>
+      </div>
+
+      <div class="code-block">
+// Sample Workflow Canvas JSON Payload representation
+{
+  "flowId": "lead-nurture-seq",
+  "nodes": [
+    { "id": "n-1", "type": "trigger", "label": "Form Submitted" },
+    { "id": "n-2", "type": "action", "label": "Send Email", "config": { "template": "welcome_onboarding" } },
+    { "id": "n-3", "type": "ai", "label": "Classify Intent" }
+  ],
+  "edges": [
+    { "source": "n-1", "target": "n-2" },
+    { "source": "n-2", "target": "n-3" }
+  ]
+}
       </div>
 
       <div class="glass-card">
@@ -775,6 +957,19 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Targeting High Value Leads (B2B SaaS)</div>
+        <div class="use-case-content">
+          The scoring system is configured to identify Enterprise leads. 
+          When Amit Singh submits a demo request mentioning a budget of <code>₹5,00,000</code>, the system applies multiple rules:
+          <br>Budget > ₹5L: <b>+20 points</b>
+          <br>CEO Title: <b>+15 points</b>
+          <br>Visited Pricing 3x: <b>+18 points</b>
+          <br>Total Score updates to 91 (Sales Ready). Amit is automatically routed to a senior Account Executive.
+        </div>
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -812,6 +1007,17 @@
         <div class="meta-block">
           <div class="meta-title when">When to use this section?</div>
           <div class="meta-content">When a lead stops responding to emails or misses their scheduled tour, and you want to trigger an automated re-engagement campaign.</div>
+        </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Re-engaging Cold Inquiries (Glamour Retail)</div>
+        <div class="use-case-content">
+          A lead signs up but doesn't complete their booking. After 14 days of inactivity, the "Cold Lead Reactivation" workflow triggers:
+          <br><b>Day 14:</b> Sends a friendly WhatsApp message: <i>"Hi {contact_name}, we reserved a special discount slot for you. Still interested?"</i>
+          <br><b>Day 17 (If no reply):</b> Sends an SMS reminder: <i>"Only 3 slots remaining. Tap to book."</i>
+          <br>If they reply, the system pauses the sequence and alerts the sales team.
         </div>
       </div>
 
@@ -856,6 +1062,17 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Sales Pipeline Management (Smile Dentals)</div>
+        <div class="use-case-content">
+          The sales manager logs in to see the active pipeline. 
+          There are 12 deals in the <b>Proposal</b> stage. 
+          One deal, valued at ₹2,50,000, has stalled for 7 days. 
+          The manager drags the card to the <b>Negotiation</b> stage and assigns a follow-up task to trigger an automated proposal reminder email.
+        </div>
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -895,6 +1112,16 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Meeting Scheduling (BetaTech Support)</div>
+        <div class="use-case-content">
+          The support engineer links their Outlook account. They set their availability to <b>9:00 AM - 5:00 PM, Monday-Friday</b>. 
+          When a customer requests a technical review, the engineer shares their booking link. 
+          The customer selects a slot, and GatiDesk automatically generates a Microsoft Teams invite and blocks the engineer's calendar.
+        </div>
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -931,6 +1158,16 @@
         <div class="meta-block">
           <div class="meta-title when">When to use this section?</div>
           <div class="meta-content">When launching marketing blasts (e.g., holiday sales announcements, newsletter distributions, webinar invites) across multiple channels.</div>
+        </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Product Launch Blast (SaaS Launch)</div>
+        <div class="use-case-content">
+          The product marketer drafts a campaign named "June Update". 
+          They select the <b>Email</b> channel, write a subject line, and click **Generate with AI** to write the email copy. 
+          They target leads with a score > 50 and schedule the broadcast for 10:00 AM on Tuesday.
         </div>
       </div>
 
@@ -975,6 +1212,17 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Medical Receptionist Custom Prompt (Smile Dentals)</div>
+        <div class="use-case-content">
+          The clinic administrator deploys a new agent named "Sarah". 
+          They write a custom prompt instruction: 
+          <i>"You are Sarah, the AI Office Receptionist. Answer FAQs, explain clinical services, check availability, and book appointments using the Calendar Scheduler. Always qualify if they have insurance."</i>
+          The administrator selects the "Nova" calm voice and assigns the agent to the website chat widget.
+        </div>
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -1011,6 +1259,17 @@
         <div class="meta-block">
           <div class="meta-title when">When to use this section?</div>
           <div class="meta-content">When adding new routing keywords (e.g., routing "pricing" queries to the sales agent, or "invoice" queries to the billing agent).</div>
+        </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Keyword Routing Optimization</div>
+        <div class="use-case-content">
+          The administrator sets up routing rules:
+          <br>Rule 1: If message contains "book" or "schedule" -> route to <b>Appointment Agent</b>.
+          <br>Rule 2: If message contains "invoice" or "billing" -> route to <b>Billing Agent</b>.
+          <br>This ensures conversations are handled by the agent trained on that specific knowledge source.
         </div>
       </div>
 
@@ -1053,6 +1312,18 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Debugging a Low Confidence Answer</div>
+        <div class="use-case-content">
+          An agent answers: <i>"I'm not sure about our pricing policy."</i> 
+          The administrator opens the Replay Debugger and selects that session. 
+          The trace highlights: 
+          <br><b>Step 3: Knowledge Lookup:</b> Search query: "pricing policy". Confidence score: <b>42%</b>. 
+          The administrator notes that the pricing guide PDF was not indexed properly, and resolves to re-upload it.
+        </div>
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -1089,6 +1360,16 @@
         <div class="meta-block">
           <div class="meta-title when">When to use this section?</div>
           <div class="meta-content">When uploading company files, FAQs, or syncing your website link structures to train AI agents.</div>
+        </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Indexing a Support Wiki</div>
+        <div class="use-case-content">
+          The support lead wants the AI agent to know the latest refund policy. 
+          Instead of writing prompts, they input <code>https://support.mycompany.com/refunds</code> into the URL crawler. 
+          GatiDesk indexes the site and updates the agent's knowledge base instantly.
         </div>
       </div>
 
@@ -1131,6 +1412,15 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">LLM Model Upgrades (BetaTech)</div>
+        <div class="use-case-content">
+          To improve response accuracy, the team upgrades their LLM engine. 
+          Under AI Settings, they enter their Anthropic API key, select <b>Claude 3.5 Sonnet</b> from the dropdown, set Temperature to <code>0.3</code> (for high accuracy), and click **Save Brain Configuration**.
+        </div>
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
@@ -1170,11 +1460,25 @@
         </div>
       </div>
 
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Embedding Chat Widget on Website</div>
+        <div class="use-case-content">
+          To integrate the chatbot, the administrator selects the brand color (e.g. <code>#6366f1</code>), enters the widget header name "Smile Assistant", and clicks **Copy Embed Code**. 
+          They open their website's index.html and paste the script tag right before the closing <code>&lt;/body&gt;</code> tag.
+        </div>
+      </div>
+
+      <div class="code-block">
+&lt;!-- GatiDesk Embed Code --&gt;
+&lt;script src="https://app.cleveradai.in/widget.js" data-tenant-id="tenant_01h8x" async&gt;&lt;/script&gt;
+      </div>
+
       <div class="glass-card">
         <h3>How to use (Step-by-Step Guide)</h3>
         <ul class="step-guide">
           <li><b>Step 1: Customize Styling:</b> Set widget headers, color themes, and chatbot avatar names using the styling controls.</li>
-          <li><b>Step 2: Preview live chat:</b> Use the smartphone beaker mockup on the right to test chat and voice call integrations live.</li>
+          <li><b>Step 2: Preview live chat:</b> Use the smartphone mockup on the right to test chat and voice call integrations live.</li>
           <li><b>Step 3: Embed widget:</b> Click "Copy Embed Code" and paste the code block into your website's HTML body tag.</li>
         </ul>
       </div>
@@ -1206,6 +1510,16 @@
         <div class="meta-block">
           <div class="meta-title when">When to use this section?</div>
           <div class="meta-content">When connecting custom domain DNS routing or changing white-label configuration settings.</div>
+        </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Configuring White-Label Domain</div>
+        <div class="use-case-content">
+          To brand the platform as their own, a partner points a CNAME record:
+          <br>Host: <code>chat.partnerdomain.com</code> -> Value: <code>app.cleveradai.in</code>.
+          <br>Under Platform Settings, they enter <code>chat.partnerdomain.com</code> and click **Setup Custom Domain** to complete the verification.
         </div>
       </div>
 
@@ -1286,6 +1600,8 @@
         const metaBlocks = section.querySelectorAll('.meta-block');
         const stepGuides = section.querySelectorAll('.step-guide li');
         const tableRows = section.querySelectorAll('tbody tr');
+        const useCases = section.querySelectorAll('.use-case-card');
+        const codeBlocks = section.querySelectorAll('.code-block');
         
         let sectionMatches = false;
         if (h2.textContent.toLowerCase().includes(query) || (desc && desc.textContent.toLowerCase().includes(query))) {
@@ -1317,6 +1633,32 @@
           if (li.textContent.toLowerCase().includes(query)) {
             hasMatch = true;
             if (query !== '') applyHighlight(li, query);
+          }
+        });
+
+        // Search use cases
+        useCases.forEach(uc => {
+          const title = uc.querySelector('.use-case-title');
+          const content = uc.querySelector('.use-case-content');
+          resetHighlights(title);
+          resetHighlights(content);
+          if (title.textContent.toLowerCase().includes(query) || content.textContent.toLowerCase().includes(query)) {
+            hasMatch = true;
+            if (query !== '') {
+              applyHighlight(title, query);
+              applyHighlight(content, query);
+            }
+          }
+        });
+
+        // Search code blocks
+        codeBlocks.forEach(cb => {
+          resetHighlights(cb);
+          if (cb.textContent.toLowerCase().includes(query)) {
+            hasMatch = true;
+            if (query !== '') {
+              applyHighlight(cb, query);
+            }
           }
         });
 

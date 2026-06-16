@@ -1356,7 +1356,7 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
                   snapGrid={[15, 15]}
                 >
                   <Background variant={BackgroundVariant.Dots} color="#38bdf8" gap={20} size={1.2} style={{ opacity: 0.12 }} />
-                  <Controls className="bg-slate-900 border border-white/5 rounded-lg overflow-hidden text-slate-200 fill-slate-200 [&_button]:bg-slate-900 [&_button]:border-white/5 [&_button:hover]:bg-slate-800" />
+                  <Controls />
                   <MiniMap
                     nodeStrokeColor={(n) => {
                       if (n.data?.type === 'trigger') return '#0ea5e9';
@@ -1365,9 +1365,14 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
                       if (n.data?.type === 'condition') return '#f59e0b';
                       return '#10b981';
                     }}
-                    nodeColor={() => '#090d16'}
-                    maskColor="rgba(10, 15, 29, 0.6)"
-                    className="bg-slate-900/90 border border-white/5 rounded-lg overflow-hidden"
+                    nodeColor={(n) => {
+                      if (n.data?.type === 'trigger') return 'rgba(14, 165, 233, 0.25)';
+                      if (n.data?.type === 'action') return 'rgba(99, 102, 241, 0.25)';
+                      if (n.data?.type === 'ai') return 'rgba(168, 85, 247, 0.25)';
+                      if (n.data?.type === 'condition') return 'rgba(245, 158, 11, 0.25)';
+                      return 'rgba(16, 185, 129, 0.25)';
+                    }}
+                    maskColor="rgba(10, 15, 29, 0.7)"
                   />
                 </ReactFlow>
               ) : (
