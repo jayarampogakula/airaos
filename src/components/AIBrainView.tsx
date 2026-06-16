@@ -46,7 +46,7 @@ export const AIBrainView: React.FC<AIBrainViewProps> = ({ tenant }) => {
   }
   
   const [playgroundHistory, setPlaygroundHistory] = useState<PlaygroundMessage[]>([
-    { role: 'assistant', text: `Hi there! I am connected to the current GatiDesk AI Brain. Test my reasoning and grounding by asking questions.` }
+    { role: 'assistant', text: `Hi there! I am connected to the current GatiDesk AI Settings. Test my reasoning and grounding by asking questions.` }
   ]);
   const [isQuerying, setIsQuerying] = useState(false);
 
@@ -85,7 +85,7 @@ export const AIBrainView: React.FC<AIBrainViewProps> = ({ tenant }) => {
         console.error(err);
         setPlaygroundHistory(prev => [...prev, { 
           role: 'assistant', 
-          text: 'Error: Could not connect to the local AI Brain backend. Make sure the backend server is running.',
+          text: 'Error: Could not connect to the local AI Settings backend. Make sure the backend server is running.',
           reasoning: 'Connection to backend failed.' 
         }]);
         setIsQuerying(false);
@@ -96,8 +96,8 @@ export const AIBrainView: React.FC<AIBrainViewProps> = ({ tenant }) => {
     <div className="animate-fade-in" style={{ height: '100%' }}>
       <div className="view-header">
         <div>
-          <h2 className="view-title">AI Brain Settings</h2>
-          <p className="view-subtitle">Powered by Dify. Configure LLM orchestration, model weights, safety guardrails, and prompts.</p>
+          <h2 className="view-title">AI Settings</h2>
+          <p className="view-subtitle">Configure LLM orchestration, model routing, safety guardrails, and agent prompts.</p>
         </div>
       </div>
 
@@ -285,7 +285,7 @@ export const AIBrainView: React.FC<AIBrainViewProps> = ({ tenant }) => {
             {isQuerying && (
               <div style={{ display: 'flex', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', alignItems: 'center', fontFamily: 'monospace' }}>
                 <span className="node-running" style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-color)', display: 'inline-block' }}></span>
-                <span>AI Brain thinking... Executing Vector RAG index...</span>
+                <span>AI Settings thinking... Executing Vector RAG index...</span>
               </div>
             )}
           </div>

@@ -101,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'knowledge', label: 'Knowledge Hub', icon: Database },
         { id: 'conv_replay', label: 'Conversation Replay', icon: Play, badge: 'NEW' },
         { id: 'crew', label: 'Agent Orchestrator', icon: Network },
-        { id: 'brain', label: 'AI Brain Settings', icon: BrainCircuit }
+        { id: 'brain', label: 'AI Settings', icon: BrainCircuit }
       ]
     },
     {

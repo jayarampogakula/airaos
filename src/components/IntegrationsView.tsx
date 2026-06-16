@@ -382,7 +382,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                 gap: '6px'
               }}
             >
-              <Sparkles size={14} /> AI Brain
+              <Sparkles size={14} /> AI Settings
             </button>
             <button
               type="button"
@@ -1158,7 +1158,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
             <h3 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '12px' }}>Workspace Key Overview</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>AI Brain</span>
+                <span style={{ color: 'var(--text-secondary)' }}>AI Settings</span>
                 <span style={{ fontWeight: 'bold', color: (config.activeModelProvider === 'gemini' ? (config.geminiApiKey || globalHasApiKey) : config.activeModelProvider === 'deepseek' ? (config.deepseekApiKey || globalHasApiKey) : (config.difyApiKey || globalHasApiKey)) ? 'var(--success-color)' : 'var(--danger-color)' }}>
                   {(config.activeModelProvider === 'gemini' ? (config.geminiApiKey || globalHasApiKey) : config.activeModelProvider === 'deepseek' ? (config.deepseekApiKey || globalHasApiKey) : (config.difyApiKey || globalHasApiKey)) 
                     ? `Configured (${config.activeModelProvider.toUpperCase()})` 
