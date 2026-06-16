@@ -505,6 +505,7 @@
       <span class="nav-header">⚙️ Settings</span>
       <a href="#ai-settings" class="nav-item">⚙️ AI Settings</a>
       <a href="#integrations" class="nav-item">🔌 Integrations</a>
+      <a href="#use-case-flows" class="nav-item">🏢 Use Case Flows</a>
       <a href="#team" class="nav-item">🛡️ Team & Permissions</a>
       <a href="#whitelabel" class="nav-item">🎨 White Label</a>
       <a href="#billing" class="nav-item">💳 Billing & Credits</a>
@@ -1532,9 +1533,10 @@ Date,Source,Spend,Leads,Revenue,CAC,ROI
         <h3>1. WhatsApp Cloud API Integration</h3>
         <p class="sec-desc">Direct connectivity to Meta Business Cloud without intermediate brokers.</p>
         <ul class="step-guide">
-          <li><b>Step 1: Save Keys:</b> Navigate to Settings &gt; Integrations, expand "WhatsApp Settings", and enter your Page Token and Phone Number ID.</li>
-          <li><b>Step 2: Configure Webhook:</b> Copy your dynamic Webhook URL (<code>https://app.cleveradai.in/api/whatsapp/webhook?tenantId=YOUR_TENANT_ID</code>) and paste it into Meta's App Settings. Set the Verification Token to <code>gatidesk_verify_token</code>.</li>
-          <li><b>Step 3: Subscribe to Fields:</b> In Meta portal, check the <code>messages</code> change field. Real-time customer texts will now automatically spawn CRM chats.</li>
+          <li><b>Step 1: Get Meta Credentials:</b> Navigate to the <a href="https://developers.facebook.com/" target="_blank">Meta Developer Portal</a>. Create a Business App, select the <b>WhatsApp</b> product, and link your Business Account. Copy the <b>Phone Number ID</b> and <b>WhatsApp Business Account ID</b> under WhatsApp > API Setup.</li>
+          <li><b>Step 2: Generate Access Token:</b> In Meta Business Suite > Users > System Users, select your system user and click <b>Generate Token</b>. Enable <code>whatsapp_business_messaging</code> and <code>whatsapp_business_management</code> scopes. Copy this token and enter it in GatiDesk under WhatsApp Settings.</li>
+          <li><b>Step 3: Webhook Verification:</b> Copy the Webhook URL from GatiDesk (<code>https://app.cleveradai.in/api/whatsapp/webhook?tenantId=YOUR_TENANT_ID</code>) and paste it into Meta's Webhook callback URL. Set the Verify Token to <code>gatidesk_verify_token</code>, save, and subscribe to the <code>messages</code> field.</li>
+          <li><b>Step 4: Setup Walkthrough:</b> Review the <a href="https://www.youtube.com/watch?v=9g2_wWlh1bE" target="_blank">WhatsApp Cloud API Video Setup Tutorial 🎥</a> for step-by-step guidance.</li>
         </ul>
       </div>
 
@@ -1542,9 +1544,10 @@ Date,Source,Spend,Leads,Revenue,CAC,ROI
         <h3>2. Gmail OAuth Inbox Sync</h3>
         <p class="sec-desc">Bi-directional Google OAuth synchronization using secure REST tokens.</p>
         <ul class="step-guide">
-          <li><b>Step 1: Authenticate Workspace:</b> Under Integrations, click the primary <b>"Connect Gmail"</b> button to launch Google's secure OAuth flow.</li>
-          <li><b>Step 2: Approve Permissions:</b> Log in with your corporate support account, verify scopes (Gmail read & send), and complete auth callback redirection.</li>
-          <li><b>Step 3: Pub/Sub Webhooks:</b> Register watch webhook callbacks targeted on <code>https://app.cleveradai.in/api/gmail/webhook?tenantId=YOUR_TENANT_ID</code>. Incoming buyer mails will trigger real-time inbox threads.</li>
+          <li><b>Step 1: Google Cloud Setup:</b> Go to the <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>. Create a project, search for the <b>Gmail API</b>, and click <b>Enable</b>.</li>
+          <li><b>Step 2: OAuth Credentials:</b> Navigate to APIs & Services > Credentials. Click <b>+ Create Credentials</b> > OAuth Client ID. Select <b>Web Application</b>. Under Authorized Redirect URIs, add: <code>https://app.cleveradai.in/api/gmail/connect</code>.</li>
+          <li><b>Step 3: Connect Workspace:</b> Copy the Client ID & Client Secret into GatiDesk. Go to Settings > Integrations and click <b>"Connect Gmail"</b> to authorize scopes (read and send emails).</li>
+          <li><b>Step 4: Setup Walkthrough:</b> Review the <a href="https://www.youtube.com/watch?v=k8vI1g9Mshw" target="_blank">Google OAuth Client ID & Secret Video Tutorial 🎥</a>.</li>
         </ul>
       </div>
 
@@ -1560,11 +1563,12 @@ Date,Source,Spend,Leads,Revenue,CAC,ROI
 
       <div class="glass-card">
         <h3>4. Twilio Voice & Carrier SIP Factory</h3>
-        <p class="sec-desc">Provider-agnostic telephony routing supporting Twilio, Exotel, Plivo, Telnyx, Vonage, or direct trunk SIP trunks.</p>
+        <p class="sec-desc">Provider-agnostic telephony routing supporting Twilio or custom SIP.</p>
         <ul class="step-guide">
-          <li><b>Step 1: Telephony Keys:</b> Input your carrier credentials (e.g. Twilio SID & Token, or SIP SIP host details) and select your active telephony provider.</li>
-          <li><b>Step 2: Inbound Webhook:</b> Copy the voice routing URL (<code>https://app.cleveradai.in/api/voice/inbound?tenantId=YOUR_TENANT_ID</code>) and configure it as the HTTP POST webhook for incoming calls in your carrier console.</li>
-          <li><b>Step 3: Audio Streams:</b> Establish connection targets on <code>wss://app.cleveradai.in/api/voice/stream</code> to enable voice agents to handle real-time audio streams.</li>
+          <li><b>Step 1: Get Twilio Credentials:</b> Log in to the <a href="https://console.twilio.com/" target="_blank">Twilio Console</a>. Locate and copy the <b>Account SID</b> and <b>Auth Token</b> from the dashboard. Go to Phone Numbers and purchase or select a voice number.</li>
+          <li><b>Step 2: Inbound Webhook:</b> Enter keys in GatiDesk. Copy the voice routing URL (<code>https://app.cleveradai.in/api/voice/inbound?tenantId=YOUR_TENANT_ID</code>) and paste it under Twilio > Active Numbers > Voice "A Call Comes In" webhook settings, set request type to <b>HTTP POST</b>.</li>
+          <li><b>Step 3: Alternate BYO SIP:</b> To use custom VoIP SIP servers, input your host server domain, username, and password in GatiDesk BYO Carrier Settings.</li>
+          <li><b>Step 4: Setup Walkthrough:</b> Review the <a href="https://www.youtube.com/watch?v=kYI27wB31h8" target="_blank">Twilio Account & Webhook Video Tutorial 🎥</a>.</li>
         </ul>
       </div>
 
@@ -1580,6 +1584,35 @@ Date,Source,Spend,Leads,Revenue,CAC,ROI
             <tr><td class="accent-text">Verify Webhook</td><td>Button</td><td>Tests local webhook routing health.</td><td>Flashes green if the server receives verification.</td></tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Use Case Flows -->
+    <section id="use-case-flows">
+      <h2>🏢 Production Domain Use Case Flows</h2>
+      <p class="sec-desc">Step-by-step sequence of how GatiDesk routes contacts, books schedules, and updates pipelines.</p>
+
+      <div class="glass-card">
+        <h3>🏥 Clinic Flow (Smile Dental Clinic)</h3>
+        <p class="sec-desc">Automated patient booking and FAQ answering journey:</p>
+        <ul class="step-guide">
+          <li><b>1. Inbound Web Query:</b> Patient chats on the widget: <i>"how much is teeth cleaning?"</i> The AI scans the clinical knowledge PDF and quotes <code>$120</code>.</li>
+          <li><b>2. Appointment Scheduling:</b> Patient requests to book a session. The AI displays slots and the patient selects <code>2:30 PM (Tomorrow - Teeth Cleaning)</code>.</li>
+          <li><b>3. CRM Creation:</b> GatiDesk adds contact <b>Rahul Mehta</b> to the CRM database under <b>Lead</b> stage with a deal value of <b>$120</b>.</li>
+          <li><b>4. WhatsApp Confirmation:</b> A WhatsApp template reminder is automatically fired to Rahul's mobile: <i>"Hi Rahul, your appointment is confirmed for tomorrow at 2:30 PM."</i></li>
+          <li><b>5. Payment & Checkout:</b> Once checkout is triggered, GatiDesk sends a PhonePe payment link for <code>$120</code> directly to the patient's phone.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>🏠 Real Estate Flow (Apex Heights Listings)</h3>
+        <p class="sec-desc">Ad click to tour booking and CRM conversion journey:</p>
+        <ul class="step-guide">
+          <li><b>1. Facebook Ad Ingest:</b> Buyer submits details on Facebook Lead Ads. GatiDesk ingests via <code>/api/facebook/webhook</code>, creating a contact rated <code>Hot Lead (87)</code>.</li>
+          <li><b>2. WhatsApp outreach:</b> The AI coordinator <b>Marcus</b> reaches out: <i>"Hi Priya, our penthouses start at $850,000. Would you like to schedule a tour?"</i></li>
+          <li><b>3. Grounding & Objections:</b> Buyer asks about dimensions and pools. AI searches <code>Penthouse_Brochure_A.pdf</code> and confirms the 3,400 sq.ft. area and infinity balcony pool.</li>
+          <li><b>4. Tour Booking:</b> Buyer confirms: <i>"10:00 AM works."</i> The broker's calendar updates, and the deal moves to <b>Proposal</b> stage in the CRM.</li>
+        </ul>
       </div>
     </section>
 
