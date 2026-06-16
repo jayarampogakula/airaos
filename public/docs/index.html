@@ -467,35 +467,48 @@
     </div>
     
     <nav class="nav-links">
-      <span class="nav-header">Dashboard & Analytics</span>
+      <span class="nav-header">📊 Dashboard</span>
       <a href="#dashboard" class="nav-item active">🏠 Overview</a>
       <a href="#revenue" class="nav-item">💰 Revenue Hub</a>
-      <a href="#visitor-intel" class="nav-item">👁️ Visitor Intelligence</a>
-      <a href="#lead-sources" class="nav-item">🎯 Lead Attribution</a>
       <a href="#analytics-center" class="nav-item">📊 Analytics Hub</a>
       
-      <span class="nav-header">Inbox & Channels</span>
+      <span class="nav-header">🎯 Leads</span>
+      <a href="#lead-sources" class="nav-item">🎯 Lead Sources</a>
+      <a href="#visitor-intel" class="nav-item">👁️ Website Visitors</a>
+      <a href="#lead-scoring" class="nav-item">🧠 Lead Qualification</a>
+      <a href="#missed-lead" class="nav-item">🔁 Lead Recovery</a>
+      
+      <span class="nav-header">👤 Contacts</span>
+      <a href="#contacts-db" class="nav-item">👤 All Contacts</a>
+      
+      <span class="nav-header">💬 Conversations</span>
       <a href="#unified-inbox" class="nav-item">📥 Unified Inbox</a>
-      <a href="#voice-gateway" class="nav-item">📞 Voice Gateway</a>
-      <a href="#automation" class="nav-item">⚡ Flow Canvas</a>
+      <a href="#voice-gateway" class="nav-item">📞 Voice AI</a>
       
-      <span class="nav-header">Lead Engine & CRM</span>
-      <a href="#lead-scoring" class="nav-item">🧠 AI Lead Scoring</a>
-      <a href="#missed-lead" class="nav-item">🔁 Missed Lead Recovery</a>
+      <span class="nav-header">💼 Sales</span>
       <a href="#crm-pipeline" class="nav-item">👥 Pipeline Board</a>
-      <a href="#calendar" class="nav-item">📅 Scheduler Calendar</a>
+      <a href="#calendar" class="nav-item">📅 Calendar Scheduler</a>
       
-      <span class="nav-header">Marketing & AI</span>
-      <a href="#marketing" class="nav-item">📣 Campaign Composer</a>
+      <span class="nav-header">📣 Marketing</span>
+      <a href="#marketing" class="nav-item">📣 Campaigns</a>
+      <a href="#automation" class="nav-item">⚡ Automation</a>
+      
+      <span class="nav-header">🤖 AI Employees</span>
       <a href="#agent-builder" class="nav-item">🤖 Agent Builder</a>
-      <a href="#ecosystem" class="nav-item">🤝 Multi-Agent Hub</a>
-      <a href="#replay-center" class="nav-item">⏪ Replay Debugger</a>
+      <a href="#ecosystem" class="nav-item">🤝 AI Team</a>
       <a href="#knowledge-hub" class="nav-item">📚 Knowledge Hub</a>
-      <a href="#ai-settings" class="nav-item">⚙️ AI Settings</a>
+      <a href="#replay-center" class="nav-item">⏪ Orchestrator (Replay)</a>
       
-      <span class="nav-header">Widgets & Admin</span>
-      <a href="#widget-builder" class="nav-item">💬 Chat Widget Builder</a>
-      <a href="#tenant-settings" class="nav-item">🔌 Platform Settings</a>
+      <span class="nav-header">🌐 Channels</span>
+      <a href="#widget-builder" class="nav-item">💬 Chat Widget</a>
+      
+      <span class="nav-header">⚙️ Settings</span>
+      <a href="#ai-settings" class="nav-item">⚙️ AI Settings</a>
+      <a href="#integrations" class="nav-item">🔌 Integrations</a>
+      <a href="#team" class="nav-item">🛡️ Team & Permissions</a>
+      <a href="#whitelabel" class="nav-item">🎨 White Label</a>
+      <a href="#billing" class="nav-item">💳 Billing & Credits</a>
+      <a href="#tenant-settings" class="nav-item">⚙️ System Settings</a>
       <a href="#support" class="nav-item">🎧 Help & Support</a>
     </nav>
   </aside>
@@ -619,9 +632,9 @@ Date,Source,Spend,Leads,Revenue,CAC,ROI
       </div>
     </section>
 
-    <!-- SECTION: Visitor Intelligence -->
+    <!-- SECTION: Website Visitors -->
     <section id="visitor-intel">
-      <h2>👁️ Visitor Intelligence</h2>
+      <h2>👁️ Website Visitors</h2>
       <p class="sec-desc">Real-time traffic analyzer tracing website visitor paths, referral parameters, and AI intent scores.</p>
       
       <div class="meta-details">
@@ -769,6 +782,49 @@ Date,Source,Spend,Leads,Revenue,CAC,ROI
       </div>
     </section>
 
+    <!-- SECTION: All Contacts -->
+    <section id="contacts-db">
+      <h2>👤 All Contacts Database</h2>
+      <p class="sec-desc">Centralized data registry compiling user profiles, activity tags, contact coordinates, and communication channels into a unified system record.</p>
+      
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To maintain an accurate database of all customers and leads, tracking their lead qualification levels, assigned AI employees, and historical notes in one consolidated profile.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">Use this whenever you need to manually insert a new prospect, audit a contact's tags or notes, check deal pipeline progress, or change the assigned AI agent for a customer.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title how">How to use this section?</div>
+          <div class="meta-content">
+            <ol>
+              <li><b>Filter Records:</b> Use search inputs or drop-downs to filter by qualification level, lead source, or assigned agent.</li>
+              <li><b>View Profile Detail:</b> Click on any contact row to open the split profile drawer on the right.</li>
+              <li><b>Manage Interaction Notes:</b> Select the Notes sub-tab in the drawer to log follow-up results or comments.</li>
+              <li><b>Update AI Assignments:</b> Navigate to the Info sub-tab to select a new AI receptionist or representative from the dropdown list.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
+        <table class="control-table">
+          <thead>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="accent-text">Add Contact</td><td>Button</td><td>Opens the modal wizard to manually insert a contact.</td><td>Creates a new CRM record and auto-generates a $500 starting pipeline deal.</td></tr>
+            <tr><td class="accent-text">Contact Row</td><td>Row Selection</td><td>Opens the slide-out detail panel for the chosen contact.</td><td>Loads the profile metadata, timeline events, and tag settings in the sidebar.</td></tr>
+            <tr><td class="accent-text">Add Note</td><td>Button</td><td>Appends a new notes string to the contact profile history.</td><td>Updates the Notes list immediately and stores the timestamped log.</td></tr>
+            <tr><td class="accent-text">Add Tag</td><td>Button</td><td>Applies a text tag chip to categorize the contact.</td><td>Inserts a colored tag chip under the contact's details info.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- SECTION: Unified Inbox -->
     <section id="unified-inbox">
       <h2>📥 Unified Inbox</h2>
@@ -821,9 +877,9 @@ Date,Source,Spend,Leads,Revenue,CAC,ROI
       </div>
     </section>
 
-    <!-- SECTION: Voice Gateway -->
+    <!-- SECTION: Voice AI -->
     <section id="voice-gateway">
-      <h2>📞 Voice Gateway</h2>
+      <h2>📞 Voice AI</h2>
       <p class="sec-desc">Telephony carrier control board managing Twilio bindings and SIP phone routing.</p>
       
       <div class="meta-details">
@@ -941,9 +997,9 @@ Date,Source,Spend,Leads,Revenue,CAC,ROI
       </div>
     </section>
 
-    <!-- SECTION: AI Lead Scoring -->
+    <!-- SECTION: Lead Qualification -->
     <section id="lead-scoring">
-      <h2>🧠 AI Lead Scoring</h2>
+      <h2>🧠 Lead Qualification</h2>
       <p class="sec-desc">Configurator for scoring incoming leads dynamically based on website page visits, budgets, role designations, and reply timings.</p>
       
       <div class="meta-details">

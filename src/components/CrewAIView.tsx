@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Play, CheckCircle2, User, FileText, ChevronRight, Plus, Trash2, AlertTriangle, Layers, Brain } from 'lucide-react';
 import { Agent, Contact } from '../types';
+import { ConversationReplayView } from './ConversationReplayView';
 
 interface CrewAgent {
   id: string;
@@ -18,9 +19,11 @@ interface CrewAIViewProps {
   agents: Agent[];
   contacts: Contact[];
   tenantId?: string;
+  conversations?: any[];
 }
 
-export const CrewAIView: React.FC<CrewAIViewProps> = ({ agents, contacts, tenantId }) => {
+export const CrewAIView: React.FC<CrewAIViewProps> = ({ agents, contacts, tenantId, conversations }) => {
+  const [activeSubView, setActiveSubView] = useState<'orchestrator' | 'replay'>('orchestrator');
   const [crewAgents, setCrewAgents] = useState<string[]>([agents[0]?.id || '', agents[1]?.id || ''].filter(Boolean));
   const [tasks, setTasks] = useState<CrewTask[]>([
     {
@@ -221,7 +224,46 @@ export const CrewAIView: React.FC<CrewAIViewProps> = ({ agents, contacts, tenant
         </div>
       </div>
 
-      <div className="grid-cols-12" style={{ gap: '20px' }}>
+      {/* Sub navigation tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-glass)', marginBottom: '24px', gap: '16px' }}>
+        <button
+          onClick={() => setActiveSubView('orchestrator')}
+          className="btn"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            borderBottom: activeSubView === 'orchestrator' ? '2px solid var(--primary-color)' : 'none',
+            color: activeSubView === 'orchestrator' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            fontWeight: activeSubView === 'orchestrator' ? '600' : '500',
+            fontSize: '0.85rem',
+            padding: '8px 16px',
+            borderRadius: 0,
+            cursor: 'pointer'
+          }}
+        >
+          Agent Orchestrator
+        </button>
+        <button
+          onClick={() => setActiveSubView('replay')}
+          className="btn"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            borderBottom: activeSubView === 'replay' ? '2px solid var(--primary-color)' : 'none',
+            color: activeSubView === 'replay' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            fontWeight: activeSubView === 'replay' ? '600' : '500',
+            fontSize: '0.85rem',
+            padding: '8px 16px',
+            borderRadius: 0,
+            cursor: 'pointer'
+          }}
+        >
+          AI Conversation Replays
+        </button>
+      </div>
+
+      {activeSubView === 'orchestrator' && (
+        <div className="grid-cols-12" style={{ gap: '20px' }}>
         
         {/* Left Column: Crew Builder Form */}
         <div className="col-span-5" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -443,6 +485,11 @@ export const CrewAIView: React.FC<CrewAIViewProps> = ({ agents, contacts, tenant
         </div>
 
       </div>
+      )}
+
+      {activeSubView === 'replay' && (
+        <ConversationReplayView conversations={conversations} tenantId={tenantId} />
+      )}
     </div>
   );
 };

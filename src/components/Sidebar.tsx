@@ -56,63 +56,68 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const groups = [
     {
-      title: '🏠 Dashboard & Analytics',
+      title: '📊 Dashboard',
       tabs: [
         { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-        { id: 'revenue_dashboard', label: 'Revenue Dashboard', icon: TrendingUp },
-        { id: 'analytics_center', label: 'Analytics Center', icon: BarChart3 }
+        { id: 'revenue_dashboard', label: 'Revenue', icon: TrendingUp },
+        { id: 'analytics_center', label: 'Analytics', icon: BarChart3 }
       ]
     },
     {
-      title: '📥 Inbox & Channels',
-      tabs: [
-        { id: 'inbox', label: 'Unified Inbox', icon: Inbox },
-        { id: 'voice', label: 'Voice Gateway', icon: Phone },
-        { id: 'workflow', label: 'Automation', icon: Workflow }
-      ]
-    },
-    {
-      title: '🎯 Lead Engine',
+      title: '🎯 Leads',
       tabs: [
         { id: 'lead_sources', label: 'Lead Sources', icon: Target },
-        { id: 'visitor_intel', label: 'Visitor Intelligence', icon: Eye },
-        { id: 'lead_scoring', label: 'AI Lead Scoring', icon: Zap },
-        { id: 'missed_recovery', label: 'Missed Lead Recovery', icon: RefreshCw }
+        { id: 'visitor_intel', label: 'Website Visitors', icon: Eye },
+        { id: 'lead_scoring', label: 'Lead Qualification', icon: Zap },
+        { id: 'missed_recovery', label: 'Lead Recovery', icon: RefreshCw }
       ]
     },
     {
-      title: '👥 CRM & Sales',
+      title: '👤 Contacts',
       tabs: [
-        { id: 'crm', label: 'CRM Pipeline', icon: Users },
-        { id: 'scheduler', label: 'Calendar Scheduler', icon: Calendar }
+        { id: 'contacts', label: 'All Contacts', icon: Users }
+      ]
+    },
+    {
+      title: '💬 Conversations',
+      tabs: [
+        { id: 'inbox', label: 'Unified Inbox', icon: Inbox },
+        { id: 'voice', label: 'Voice AI', icon: Phone }
+      ]
+    },
+    {
+      title: '💼 Sales',
+      tabs: [
+        { id: 'crm', label: 'Pipeline', icon: GitBranch },
+        { id: 'scheduler', label: 'Calendar', icon: Calendar }
       ]
     },
     {
       title: '📣 Marketing',
       tabs: [
-        { id: 'marketing_campaigns', label: 'Campaign Builder', icon: Megaphone }
+        { id: 'marketing_campaigns', label: 'Campaigns', icon: Megaphone },
+        { id: 'workflow', label: 'Automation', icon: Workflow }
       ]
     },
     {
-      title: '🤖 AI Agents',
+      title: '🤖 AI Employees',
       tabs: [
-        { id: 'employees', label: 'AI Agent Builder', icon: Bot },
-        { id: 'multi_agents', label: 'Multi-Agent Ecosystem', icon: GitBranch },
+        { id: 'employees', label: 'Agent Builder', icon: Bot },
+        { id: 'multi_agents', label: 'AI Team', icon: Network },
         { id: 'knowledge', label: 'Knowledge Hub', icon: Database },
-        { id: 'conv_replay', label: 'Conversation Replay', icon: Play },
-        { id: 'crew', label: 'Agent Orchestrator', icon: Network },
-        { id: 'brain', label: 'AI Settings', icon: BrainCircuit }
+        { id: 'crew', label: 'Orchestrator', icon: GitBranch }
       ]
     },
     {
-      title: '🌐 Channels & Widgets',
+      title: '🌐 Channels',
       tabs: [
-        { id: 'widget', label: 'Chat Widget Builder', icon: MessageSquareCode }
+        { id: 'widget', label: 'Chat Widget', icon: MessageSquareCode }
       ]
     },
     {
-      title: '🔌 Platform & Settings',
+      title: '⚙️ Settings',
       tabs: [
+        { id: 'brain', label: 'AI Settings', icon: BrainCircuit },
         { id: 'integrations', label: 'Integrations', icon: PlugZap },
         { id: 'team', label: 'Team & Permissions', icon: Shield },
         { id: 'whitelabel', label: 'White Label', icon: Palette },

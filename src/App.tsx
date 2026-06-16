@@ -47,6 +47,7 @@ const RevenueDashboardView = lazyNamed(() => import('./components/RevenueDashboa
 const MarketingCampaignView = lazyNamed(() => import('./components/MarketingCampaignView'), 'MarketingCampaignView');
 const AnalyticsCenterView = lazyNamed(() => import('./components/AnalyticsCenterView'), 'AnalyticsCenterView');
 const CustomerTimelineView = lazyNamed(() => import('./components/CustomerTimelineView'), 'CustomerTimelineView');
+const ContactsView = lazyNamed(() => import('./components/ContactsView'), 'ContactsView');
 
 const ViewFallback = () => (
   <div className="h-full flex items-center justify-center text-sm text-slate-400">
@@ -1341,6 +1342,7 @@ function App() {
                   agents={getFilteredAgents()}
                   contacts={getFilteredContacts()}
                   tenantId={selectedTenantId}
+                  conversations={conversations}
                 />
               )}
               {activeTab === 'billing' && (
@@ -1415,6 +1417,20 @@ function App() {
                   deals={deals}
                   conversations={conversations}
                   appointments={appointments}
+                />
+              )}
+              {activeTab === 'contacts' && (
+                <ContactsView
+                  contacts={getFilteredContacts()}
+                  deals={getFilteredDeals()}
+                  conversations={getFilteredConversations()}
+                  appointments={getFilteredAppointments()}
+                  agents={getFilteredAgents()}
+                  onAddContact={handleAddContact}
+                  onUpdateContact={handleUpdateContact}
+                  onAddContactNote={handleAddContactNote}
+                  onAddContactTag={handleAddContactTag}
+                  tenantId={selectedTenantId}
                 />
               )}
             </>

@@ -40,11 +40,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   usageLimits,
   conversations
 }) => {
-  const pipelineValue = deals.reduce((acc, d) => acc + d.value, 0);
+  const pipelineValue = deals.filter(d => d.stage !== 'won' && d.stage !== 'lost').reduce((acc, d) => acc + (d.value || 0), 0);
   const activeAppsCount = appointments.filter(a => a.status === 'scheduled').length;
   const conversionRate = contacts.length > 0 
     ? ((activeAppsCount / contacts.length) * 100).toFixed(1)
     : '0.0';
+
+  const leadsToday = contacts.filter(c => {
+    const d = new Date(c.createdAt);
+    const today = new Date();
+    return d.toDateString() === today.toDateString();
+  }).length;
+
+  const activeConversations = conversations.filter(c => c.status !== 'closed').length;
+
+  const appointmentsToday = appointments.filter(a => {
+    const d = new Date(a.dateTime);
+    const today = new Date();
+    return d.toDateString() === today.toDateString() && a.status === 'scheduled';
+  }).length;
 
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'bot'; text: string }>>([]);
   const [chatInput, setChatInput] = useState('');
@@ -293,56 +307,54 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="grid-cols-12" style={{ marginBottom: '24px' }}>
         <div className="col-span-3 glass-card animate-fade-in delay-400 hover-gati-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Revenue Generated</span>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: '#22c55e' }}>
-              ₹12.4L
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Leads Today</span>
+            <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--primary-color)' }}>
+              {leadsToday}
             </h3>
-            <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '2px' }}>
-              <TrendingUp size={12} /> +18% vs last month
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+              Leads captured in last 24h
             </span>
           </div>
-          <div className="icon-box" style={{ color: '#22c55e', background: 'rgba(34,197,94,0.1)' }}><IndianRupee size={20} /></div>
+          <div className="icon-box" style={{ color: 'var(--primary-color)', backgroundColor: 'var(--primary-glow)' }}><Users size={20} /></div>
         </div>
 
         <div className="col-span-3 glass-card animate-fade-in delay-400 hover-gati-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>CRM Contacts</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Active Conversations</span>
             <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif' }}>
-              {contacts.length}
+              {activeConversations}
             </h3>
-            <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '2px' }}>
-              <TrendingUp size={12} /> Total leads in system
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+              Conversations being handled
             </span>
           </div>
-          <div className="icon-box" style={{ color: 'var(--accent-color)' }}><Users size={20} /></div>
+          <div className="icon-box" style={{ color: 'var(--accent-color)' }}><MessageSquare size={20} /></div>
         </div>
 
         <div className="col-span-3 glass-card animate-fade-in delay-500 hover-gati-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Live Visitor Count</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Appointments Today</span>
             <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--accent-color)' }}>
-              12
+              {appointmentsToday}
             </h3>
-            <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} className="animate-status-pulse"></span>
-              Pulsing live visitors
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+              Bookings scheduled for today
             </span>
           </div>
-          <div className="icon-box" style={{ color: 'var(--accent-color)', background: 'rgba(6,182,212,0.1)' }}><Eye size={20} /></div>
+          <div className="icon-box" style={{ color: 'var(--accent-color)', background: 'rgba(6,182,212,0.1)' }}><Calendar size={20} /></div>
         </div>
 
-        <div className="col-span-3 glass-card animate-fade-in delay-500 hover-gati-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'rgba(99, 102, 241, 0.03)', borderColor: 'rgba(99,102,241,0.2)' }}>
+        <div className="col-span-3 glass-card animate-fade-in delay-500 hover-gati-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'rgba(34, 197, 94, 0.03)', borderColor: 'rgba(34, 197, 94, 0.2)' }}>
           <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Conversions</span>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--primary-color)' }}>
-              {activeAppsCount}
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Pipeline Value</span>
+            <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: '#22c55e' }}>
+              ${pipelineValue.toLocaleString()}
             </h3>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success-color)', display: 'inline-block' }}></span>
-              Rate: {conversionRate}%
+              Value of all active deals
             </span>
           </div>
-          <div className="icon-box" style={{ color: 'var(--primary-color)', backgroundColor: 'var(--primary-glow)' }}><PhoneCall size={20} /></div>
+          <div className="icon-box" style={{ color: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.1)' }}><TrendingUp size={20} /></div>
         </div>
       </div>
 
