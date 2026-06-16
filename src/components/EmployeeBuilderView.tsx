@@ -27,10 +27,9 @@ export const EmployeeBuilderView: React.FC<EmployeeBuilderViewProps> = ({
   const [endTime, setEndTime] = useState('18:00');
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [selectedKb, setSelectedKb] = useState<string[]>([]);
-
-  // Sub-tabs: Hired Employees vs Templates Marketplace
   const [activeViewTab, setActiveViewTab] = useState<'hired' | 'marketplace'>('hired');
   const [successInstall, setSuccessInstall] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const marketplaceTemplates = [
     { 
@@ -131,8 +130,59 @@ export const EmployeeBuilderView: React.FC<EmployeeBuilderViewProps> = ({
       personality: 'Preconfigured marketplace E-Commerce Assistant.',
       prompt: 'You are Aria, the AI E-Commerce Lead Qualifier. Assist shoppers with apparel style and size recommendations, qualify budgets, and push qualified deals to CRM.',
       tools: ['Create CRM Lead', 'Update CRM Contact']
+    },
+    {
+      name: 'Enterprise Sales Representative (Sophie)',
+      desc: 'General B2B/B2C sales executive. Qualifies inbound leads, handles pricing objections, details product features, and logs deals directly in the CRM Pipeline.',
+      sector: 'Sales',
+      agentName: 'Sophie',
+      department: 'Sales',
+      voice: 'Echo (US Female, warm)',
+      personality: 'Highly persuasive, professional, articulate, and focused on discovering customer needs.',
+      prompt: 'You are Sophie, the Enterprise Sales Agent. Your core role is to qualify leads, handle pricing/feature questions, explain service packages, handle objections, and create a CRM deal for warm prospects.',
+      tools: ['Create CRM Lead', 'Update CRM Contact']
+    },
+    {
+      name: 'Billing & Account Administrator (Liam)',
+      desc: 'Accounts expert. Resolves invoice disputes, coordinates checkout payment gateway links, answers billing policy FAQs, and processes refund queries.',
+      sector: 'Finance',
+      agentName: 'Liam',
+      department: 'Billing',
+      voice: 'Alloy (US Male, energetic)',
+      personality: 'Helpful, detail-oriented, patient, and precise with transaction calculations.',
+      prompt: 'You are Liam, the Billing and Accounts Assistant. Assist customers with invoice questions, generate PhonePe/payment gateway links, check receipt/payment statuses, and handle refund inquiries politely.',
+      tools: ['Generate Invoice Link', 'Search Docs Database']
+    },
+    {
+      name: 'Customer Support Specialist (Emma)',
+      desc: 'Front-line user success bot. Resolves common FAQs, troubleshoots product errors using knowledge bases, and smoothly handoffs complex queries to human managers.',
+      sector: 'Customer Success',
+      agentName: 'Emma',
+      department: 'Support',
+      voice: 'Nova (UK Female, calm)',
+      personality: 'Warm, empathetic, patient, and methodical in troubleshooting customer issues.',
+      prompt: 'You are Emma, the Customer Support Agent. Answer product questions, resolve technical inquiries, search the knowledge base documentation, and escalate to a human manager if the customer asks for a live operator.',
+      tools: ['Search Docs Database', 'Create Support Ticket']
+    },
+    {
+      name: 'Admissions & Appointment Scheduler (Ethan)',
+      desc: 'Full scheduler coordinator. Manages slot bookings, references calendars, coordinates availability, and initiates SMS/WhatsApp confirmations.',
+      sector: 'Operations',
+      agentName: 'Ethan',
+      department: 'Reception',
+      voice: 'Fable (British Male, clear)',
+      personality: 'Organized, welcoming, clear, and prompt with appointment booking details.',
+      prompt: 'You are Ethan, the Appointment Booking Assistant. Check staff calendar availability, select convenient slots with the user, book appointments, and send booking confirmations.',
+      tools: ['Book Appointment', 'Check Availability', 'Send WhatsApp Confirmation']
     }
   ];
+
+  const filteredTemplates = marketplaceTemplates.filter(tpl => 
+    tpl.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    tpl.desc.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    tpl.sector.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    tpl.department.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleInstallTemplate = (tpl: typeof marketplaceTemplates[0]) => {
     const newAgent: Agent = {
@@ -443,34 +493,62 @@ export const EmployeeBuilderView: React.FC<EmployeeBuilderViewProps> = ({
             </div>
           )}
 
-          <div className="grid-cols-12">
-            {marketplaceTemplates.map((tpl, i) => (
-              <div key={i} className="col-span-4 glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '200px' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span className="badge badge-primary" style={{ fontSize: '0.6rem' }}>{tpl.sector}</span>
-                    <span style={{ fontSize: '1.1rem' }}>🤖</span>
-                  </div>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '6px' }}>{tpl.name}</h4>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '10px' }}>
-                    {tpl.desc}
-                  </p>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span>🗣️ Voice: {tpl.voice.split(' ')[0]}</span>
-                    <span>🛠️ Tools: {tpl.tools.join(', ')}</span>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => handleInstallTemplate(tpl)}
-                  className="btn btn-primary"
-                  style={{ width: '100%', fontSize: '0.75rem', padding: '6px', marginTop: '16px' }}
-                >
-                  One-Click Hire
-                </button>
-              </div>
-            ))}
+          {/* Search Bar Input */}
+          <div style={{ marginBottom: '8px' }}>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="🔍 Search marketplace templates by role, sector, department, tools..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--border-glass)',
+                color: 'white',
+                fontSize: '0.85rem',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
           </div>
+
+          {filteredTemplates.length > 0 ? (
+            <div className="grid-cols-12">
+              {filteredTemplates.map((tpl, i) => (
+                <div key={i} className="col-span-4 glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '200px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span className="badge badge-primary" style={{ fontSize: '0.6rem' }}>{tpl.sector}</span>
+                      <span style={{ fontSize: '1.1rem' }}>🤖</span>
+                    </div>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '6px' }}>{tpl.name}</h4>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '10px' }}>
+                      {tpl.desc}
+                    </p>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span>🗣️ Voice: {tpl.voice.split(' ')[0]}</span>
+                      <span>🛠️ Tools: {tpl.tools.join(', ')}</span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleInstallTemplate(tpl)}
+                    className="btn btn-primary"
+                    style={{ width: '100%', fontSize: '0.75rem', padding: '6px', marginTop: '16px' }}
+                  >
+                    One-Click Hire
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--bg-glass, rgba(255,255,255,0.02))', borderRadius: '12px', border: '1px solid var(--border-glass)', fontSize: '0.85rem' }}>
+              No templates found matching "{searchQuery}"
+            </div>
+          )}
         </div>
       )}
 
