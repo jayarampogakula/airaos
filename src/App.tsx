@@ -375,7 +375,7 @@ function App() {
     const superadminTabs = ['tenants', 'plans', 'infrastructure', 'settings', 'marketplace', 'support_bot'];
     const tenantTabs = [
       'dashboard', 'brain', 'employees', 'inbox', 'crm', 
-      'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'website', 'whitelabel', 'team', 'integrations', 'crew', 'billing',
+      'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'whitelabel', 'team', 'integrations', 'crew', 'billing',
       'tenant_settings', 'tenant_support',
       'revenue_dashboard', 'lead_sources', 'visitor_intel', 'lead_scoring', 'missed_recovery', 'marketing_campaigns', 'multi_agents', 'conv_replay', 'analytics_center'
     ];
@@ -1323,27 +1323,7 @@ function App() {
                   onUpdateTenant={(updates) => handleUpdateBranding(selectedTenantId, updates)}
                 />
               )}
-              {activeTab === 'website' && (
-                <WidgetBuilderView
-                  mode="website"
-                  tenant={selectedTenant}
-                  agents={getFilteredAgents()}
-                  onAddAppointment={handleAddAppointment}
-                  conversations={conversations}
-                  onAddMessage={handleAddMessage}
-                  websiteEditsLimit={getUsageLimits().websitesLimit || 2}
-                  websiteEditsUsed={getUsageLimits().websitesUsed || 0}
-                  onIncrementWebsiteEdits={() => {
-                    setWebsiteRefreshesCount(prev => ({
-                      ...prev,
-                      [selectedTenantId]: (prev[selectedTenantId] || 0) + 1
-                    }));
-                  }}
-                  onAddContact={handleAddContact}
-                  onSwitchTab={setActiveTab}
-                  onUpdateTenant={(updates) => handleUpdateBranding(selectedTenantId, updates)}
-                />
-              )}
+
               {activeTab === 'whitelabel' && (
                 <WhiteLabelView
                   tenant={selectedTenant}

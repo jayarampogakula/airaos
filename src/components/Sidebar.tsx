@@ -107,8 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: '🌐 Channels & Widgets',
       tabs: [
-        { id: 'widget', label: 'Chat Widget Builder', icon: MessageSquareCode },
-        { id: 'website', label: 'Website Builder', icon: Globe }
+        { id: 'widget', label: 'Chat Widget Builder', icon: MessageSquareCode }
       ]
     },
     {
