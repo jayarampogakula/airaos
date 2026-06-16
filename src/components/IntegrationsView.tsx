@@ -382,7 +382,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ tenant, curr
                 gap: '6px'
               }}
             >
-              <Sparkles size={14} /> AI Settings
+              <Sparkles size={14} /> AI Model Keys
             </button>
             <button
               type="button"

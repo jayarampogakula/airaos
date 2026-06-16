@@ -378,7 +378,8 @@ function App() {
       'dashboard', 'brain', 'employees', 'inbox', 'crm', 
       'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'whitelabel', 'team', 'integrations', 'crew', 'billing',
       'tenant_settings', 'tenant_support',
-      'revenue_dashboard', 'lead_sources', 'visitor_intel', 'lead_scoring', 'missed_recovery', 'marketing_campaigns', 'multi_agents', 'conv_replay', 'analytics_center'
+      'revenue_dashboard', 'lead_sources', 'visitor_intel', 'lead_scoring', 'missed_recovery', 'marketing_campaigns', 'multi_agents', 'conv_replay', 'analytics_center',
+      'contacts'
     ];
 
     if (currentRole === 'superadmin') {
