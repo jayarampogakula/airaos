@@ -657,7 +657,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSendChat = () => {
+  const handleSendChat = async () => {
     if (!chatInput.trim()) return;
 
     const userText = chatInput;
@@ -665,11 +665,61 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
     setChatInput('');
     setIsTyping(true);
 
+    // Try calling the live AI Brain backend endpoint first
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userText,
+          tenantId: tenant.id,
+          agentId: selectedAgentId || 'a-1',
+          history: (activeConversation?.messages || []).map((m: any) => ({
+            sender: m.sender,
+            text: m.text
+          }))
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.text) {
+          // Check if booking slot buttons should be offered
+          let slots: string[] | undefined = undefined;
+          const lower = userText.toLowerCase();
+          const isBookingKeyword = lower.includes('book') || lower.includes('appointment') || lower.includes('schedule') || lower.includes('reserve');
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const dateStr = tomorrow.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+          if (isBookingKeyword) {
+            if (tenant.id === 't-1') {
+              slots = [`2:30 PM (Tomorrow, ${dateStr} - Teeth Cleaning)`, `4:00 PM (Tomorrow, ${dateStr} - Dentist Whitening)`];
+            } else if (tenant.id === 't-2') {
+              slots = [`10:00 AM (Tomorrow, ${dateStr} - Penthouse Tour)`, `3:00 PM (Tomorrow, ${dateStr} - Real Estate Consult)`];
+            } else {
+              slots = [`11:00 AM (Tomorrow, ${dateStr} - Dev Support Sync)`, `4:30 PM (Tomorrow, ${dateStr} - Operational Sync)`];
+            }
+          }
+
+          onAddMessage(activeConvId, data.text, 'ai', slots);
+          setIsTyping(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to reach live AI Brain, falling back to local simulation.", err);
+    }
+
+    // Local Fallback simulation logic (if backend is down, key-less, or offline)
     setTimeout(() => {
       let reply = '';
       let slots: string[] | undefined = undefined;
       const lower = userText.toLowerCase();
       const isBookingKeyword = lower.includes('book') || lower.includes('appointment') || lower.includes('schedule') || lower.includes('reserve');
+      const isGreeting = lower.includes('hi') || lower.includes('hello') || lower.includes('hey') || lower.includes('greetings');
+      const isHours = lower.includes('hour') || lower.includes('open') || lower.includes('time') || lower.includes('times') || lower.includes('when');
+      const isServices = lower.includes('service') || lower.includes('services') || lower.includes('treatment') || lower.includes('treatments') || lower.includes('procedure') || lower.includes('procedures') || lower.includes('do you do') || lower.includes('offer') || lower.includes('cleaning') || lower.includes('cost') || lower.includes('price') || lower.includes('pricing');
 
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -680,32 +730,45 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
         if (isBookingKeyword) {
           reply = 'I can help with that. Please choose an available Dentist checkup slot below:';
           slots = [`2:30 PM (Tomorrow, ${dateStr} - Teeth Cleaning)`, `4:00 PM (Tomorrow, ${dateStr} - Dentist Whitening)`];
-        } else if (lower.includes('hour') || lower.includes('open')) {
+        } else if (isHours) {
           reply = 'Smile Dental is open Mon-Fri from 9AM to 6PM. We are closed on weekends!';
-        } else if (lower.includes('cleaning') || lower.includes('cost')) {
-          reply = 'Teeth cleaning is $120. Whitenings are $450. Can I book this for you?';
+        } else if (isServices) {
+          reply = 'Smile Dental Clinic provides Professional Teeth Cleaning ($120), Laser Whitening ($450), Dental Fillings, and Root Canals. Would you like to schedule an appointment?';
           slots = [`2:30 PM (Tomorrow, ${dateStr} - Teeth Cleaning)`];
+        } else if (isGreeting) {
+          reply = `Hello! I am ${activeAgent?.name || 'Sarah'}, the AI receptionist. I can help book dentist visits, list our oral care services, and answer FAQs. What can I help you with today?`;
         } else {
-          reply = `Hi! I am ${activeAgent?.name || 'Sarah'}, the AI receptionist. I can help book dentist visits and answer FAQ. What would you like to schedule?`;
+          reply = `I understand you are asking about that. Smile Dental offers cleaning, whitening, and fillings. Would you like to schedule an appointment or check our opening hours?`;
         }
       } else if (tenant.id === 't-2') {
         // Real Estate
         if (isBookingKeyword) {
           reply = 'Our penthouse showings are available tomorrow. Select a tour window:';
           slots = [`10:00 AM (Tomorrow, ${dateStr} - Penthouse Tour)`, `3:00 PM (Tomorrow, ${dateStr} - Real Estate Consult)`];
-        } else if (lower.includes('price')) {
-          reply = 'Our pricing starts at $850,000. Send me your email and I will email the pricing sheet!';
+        } else if (isServices || lower.includes('price') || lower.includes('pricing') || lower.includes('cost')) {
+          reply = 'Apex Heights offers luxury penthouse tours, real estate sales consulting, and property valuation. Our model suite pricing starts at $850,000. Would you like to book a tour?';
           slots = [`3:00 PM (Tomorrow, ${dateStr} - Real Estate Consult)`];
+        } else if (isHours) {
+          reply = 'Our sales office is open daily from 10 AM to 7 PM. Tour bookings can be scheduled online!';
+        } else if (isGreeting) {
+          reply = `Hi! ${activeAgent?.name || 'Marcus'}, the AI coordinator here. I can book penthouse model tours or answer pricing questions. What budget are you looking for?`;
         } else {
-          reply = `Hi! ${activeAgent?.name || 'Marcus'} the AI coordinator here. I book penthouse model tours. What price budget are you shopping for?`;
+          reply = `I am here to guide you through Apex Heights luxury listings. Our units start at $850,000. Would you like to schedule a virtual tour or ask about layouts?`;
         }
       } else {
+        // ByteTech Support
         if (isBookingKeyword) {
           reply = 'Please select a technical developer support slot:';
           slots = [`11:00 AM (Tomorrow, ${dateStr} - Dev Support Sync)`, `4:30 PM (Tomorrow, ${dateStr} - Operational Sync)`];
-        } else {
-          reply = `I am looking up the technical user guides to solve your error. What is your transaction ID?`;
+        } else if (isServices || lower.includes('price') || lower.includes('pricing') || lower.includes('cost')) {
+          reply = 'ByteTech Software Solutions offers custom API integration syncs ($150/hr), developer support consultations, system architecture audits, and cloud node maintenance. Would you like to book a sync slot?';
           slots = [`11:00 AM (Tomorrow, ${dateStr} - Dev Support Sync)`];
+        } else if (isHours) {
+          reply = 'Our technical support team is online Mon-Fri, 8:00 AM to 8:00 PM EST.';
+        } else if (isGreeting) {
+          reply = `Hello! I am your technical helper. I can help resolve transactional support issues or schedule a developer sync. Do you have a transaction ID?`;
+        } else {
+          reply = `I am looking up the technical guides to assist you. Please provide your transaction ID or let me know if you want to book a support developer sync.`;
         }
       }
 

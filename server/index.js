@@ -2075,12 +2075,36 @@ app.post('/api/chat', async (req, res) => {
       } catch (err) {
         console.error('Error adding mock appointment:', err);
       }
+    } else if (/\b(hi|hello|hey|greetings|support)\b/i.test(message)) {
+      if (tenantId === 't-1') {
+        reply = `Hello! I am ${agent.name}, the AI receptionist. I can help book dentist visits, list our oral care services, and answer FAQs. What can I help you with today?`;
+      } else if (tenantId === 't-2') {
+        reply = `Hi! I am ${agent.name}, your real estate AI assistant. I can help you schedule penthouse tours, answer pricing questions, or capture your requirements. How can I help you?`;
+      } else {
+        reply = `Hello! I am ${agent.name}, your software support assistant. I can help you resolve support tickets or book a developer support sync. How can I help you?`;
+      }
     } else if (/\b(hour|hours|open|time|times)\b/i.test(message)) {
       reply = `We are open Monday to Friday, 9:00 AM to 6:00 PM. Would you like to schedule a slot during these hours?`;
     } else if (/\b(book|booking|appointment|appointments|schedule|scheduling)\b/i.test(message)) {
       reply = `I can help you schedule that! We have open slots tomorrow morning at 10:00 AM or tomorrow afternoon at 2:30 PM. Which one works for you?`;
+    } else if (/\b(service|services|treatment|treatments|procedure|procedures|do you do|offer|offerings|price|pricing|cost|costs|fee|fees|cleaning|whitening|fillings)\b/i.test(message)) {
+      if (tenantId === 't-1') {
+        reply = `Smile Dental Clinic provides premium oral care services: Professional Teeth Cleaning ($120), Laser Whitening ($450), Dental Fillings, and Root Canals. Would you like to schedule an appointment?`;
+      } else if (tenantId === 't-2') {
+        reply = `Apex Heights offers luxury penthouse tours, real estate sales consulting, and property valuation. Our model suite pricing starts at $850,000. Would you like to book a tour?`;
+      } else {
+        reply = `ByteTech Software Solutions offers custom API integration syncs ($150/hr), developer support consultations, system architecture audits, and cloud node maintenance. Would you like to book a sync slot?`;
+      }
     } else if (groundingContext.length > 0) {
       reply = `Based on our guides: "${groundingContext[0].substring(0, 150)}..." How can I help you further with this?`;
+    } else {
+      if (tenantId === 't-1') {
+        reply = `I understand you are asking about that. Smile Dental Clinic offers teeth cleaning, whitening, and general checkups. Would you like to book an appointment or check our hours?`;
+      } else if (tenantId === 't-2') {
+        reply = `I am here to guide you through Apex Heights luxury listings. Our units start at $850,000. Would you like to schedule a virtual tour or ask about layouts?`;
+      } else {
+        reply = `I am looking up the technical guides to assist you. Please provide your transaction ID or let me know if you want to book a support developer sync.`;
+      }
     }
 
     // Save reply locally

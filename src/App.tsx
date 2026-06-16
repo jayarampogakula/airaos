@@ -1403,6 +1403,7 @@ function App() {
                 <MultiAgentEcosystemView
                   agents={agents}
                   tenantId={selectedTenantId}
+                  onAddAgent={() => setActiveTab('employees')}
                 />
               )}
               {activeTab === 'conv_replay' && (

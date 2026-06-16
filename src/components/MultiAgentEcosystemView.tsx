@@ -191,9 +191,28 @@ export const MultiAgentEcosystemView: React.FC<MultiAgentEcosystemViewProps> = (
                         <span style={{ fontSize: 11, color: '#64748b', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: 4, display: 'inline-block', marginTop: 2 }}>{a.department}</span>
                       </div>
                     </div>
-                    <button onClick={() => toggleAgent(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: a.active ? 'var(--primary-color, #6366f1)' : '#475569' }}>
-                      {a.active ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button 
+                        onClick={() => onAddAgent ? onAddAgent() : alert("Switch to the 'Agent Builder' tab to edit details!")} 
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          cursor: 'pointer', 
+                          padding: '4px', 
+                          color: '#64748b', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          transition: 'color 0.2s'
+                        }} 
+                        title="Configure Agent"
+                      >
+                        <Settings size={18} />
+                      </button>
+                      <button onClick={() => toggleAgent(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: a.active ? 'var(--primary-color, #6366f1)' : '#475569' }}>
+                        {a.active ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Description */}
