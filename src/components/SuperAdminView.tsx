@@ -262,7 +262,11 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     { name: 'Automotive Service Advisor (Leo)', desc: 'Pre-trained garage advisor. Qualifies mileage, checks brake checkup openings, lists repair service packages, and books service bays.', sector: 'Automotive' },
     { name: 'SaaS Onboarding Specialist (Clara)', desc: 'Assists developers with API keys, troubleshoot credentials rate limits, and matches client subscription plan benefits.', sector: 'Technology' },
     { name: 'Fitness Club Coordinator (Derrick)', desc: 'Coordinates gym trial passes, schedules fitness consultations, and details personal trainer rates/packages.', sector: 'Wellness' },
-    { name: 'E-Commerce Lead Qualifier (Aria)', desc: 'Apparel sizing advisor. Recommends clothing sizes, qualifies shopper budgets, and captures purchase interests.', sector: 'Retail' }
+    { name: 'E-Commerce Lead Qualifier (Aria)', desc: 'Apparel sizing advisor. Recommends clothing sizes, qualifies shopper budgets, and captures purchase interests.', sector: 'Retail' },
+    { name: 'Enterprise Sales Representative (Sophie)', desc: 'General B2B/B2C sales executive. Qualifies inbound leads, handles pricing objections, details product features, and logs deals directly in the CRM Pipeline.', sector: 'Sales' },
+    { name: 'Billing & Account Administrator (Liam)', desc: 'Accounts expert. Resolves invoice disputes, coordinates checkout payment gateway links, answers billing policy FAQs, and processes refund queries.', sector: 'Finance' },
+    { name: 'Customer Support Specialist (Emma)', desc: 'Front-line user success bot. Resolves common FAQs, troubleshoots product errors using knowledge bases, and smoothly handoffs complex queries to human managers.', sector: 'Customer Success' },
+    { name: 'Admissions & Appointment Scheduler (Ethan)', desc: 'Full scheduler coordinator. Manages slot bookings, references calendars, coordinates availability, and initiates SMS/WhatsApp confirmations.', sector: 'Operations' }
   ];
 
   const handleInstall = (tplName: string) => {
