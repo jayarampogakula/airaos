@@ -251,7 +251,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Recovery Alert Banner */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, marginBottom: 24, fontSize: 13, color: '#f87171' }}>
+      <div className="animate-fade-in delay-100" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, marginBottom: 24, fontSize: 13, color: '#f87171' }}>
         <AlertCircle size={15} />
         <span>⚠️ <b>Missed Lead Recovery Alert:</b> 12 high-intent leads went cold this week. The AI Recovery sequence has been initiated for 4 of them. Click <b>Missed Lead Recovery</b> to review.</span>
       </div>
@@ -259,7 +259,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* AI Daily Briefing & Live Visitor Count Widget */}
       <div className="grid-cols-12" style={{ marginBottom: '24px', gap: '20px' }}>
         {/* AI Daily Briefing */}
-        <div className="col-span-8 glass-card" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(6, 182, 212, 0.04) 100%)', borderColor: 'rgba(99, 102, 241, 0.2)', padding: '20px 24px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+        <div className="col-span-8 glass-card animate-fade-in delay-200 hover-gati-card" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(6, 182, 212, 0.04) 100%)', borderColor: 'rgba(99, 102, 241, 0.2)', padding: '20px 24px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
           <div style={{ padding: '8px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '10px', color: 'var(--primary-color)' }}>
             <Bot size={24} />
           </div>
@@ -272,10 +272,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Live Visitor Count Widget */}
-        <div className="col-span-4 glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '20px 24px' }}>
+        <div className="col-span-4 glass-card animate-fade-in delay-300 hover-gati-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '20px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Real-time Traffic</span>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 8px #22c55e' }} />
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} className="animate-status-pulse" />
           </div>
           <div style={{ margin: '10px 0' }}>
             <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: 0, fontFamily: 'Space Grotesk, sans-serif', color: '#fff' }}>
@@ -291,7 +291,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* KPI Cards */}
       <div className="grid-cols-12" style={{ marginBottom: '24px' }}>
-        <div className="col-span-3 glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="col-span-3 glass-card animate-fade-in delay-400 hover-gati-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Revenue Generated</span>
             <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: '#22c55e' }}>
@@ -304,7 +304,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="icon-box" style={{ color: '#22c55e', background: 'rgba(34,197,94,0.1)' }}><IndianRupee size={20} /></div>
         </div>
 
-        <div className="col-span-3 glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="col-span-3 glass-card animate-fade-in delay-400 hover-gati-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>CRM Contacts</span>
             <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif' }}>
@@ -317,21 +317,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="icon-box" style={{ color: 'var(--accent-color)' }}><Users size={20} /></div>
         </div>
 
-        <div className="col-span-3 glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="col-span-3 glass-card animate-fade-in delay-500 hover-gati-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Live Visitor Count</span>
             <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--accent-color)' }}>
               12
             </h3>
-            <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '2px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }}></span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} className="animate-status-pulse"></span>
               Pulsing live visitors
             </span>
           </div>
           <div className="icon-box" style={{ color: 'var(--accent-color)', background: 'rgba(6,182,212,0.1)' }}><Eye size={20} /></div>
         </div>
 
-        <div className="col-span-3 glass-card animate-pulse-glow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'rgba(99, 102, 241, 0.03)', borderColor: 'rgba(99,102,241,0.2)' }}>
+        <div className="col-span-3 glass-card animate-fade-in delay-500 hover-gati-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'rgba(99, 102, 241, 0.03)', borderColor: 'rgba(99,102,241,0.2)' }}>
           <div>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Conversions</span>
             <h3 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '8px 0', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--primary-color)' }}>
@@ -349,7 +349,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Main Section: Chart and System Status */}
       <div className="grid-cols-12" style={{ marginBottom: '24px' }}>
         {/* CSS Chart */}
-        <div className="col-span-8 glass-card" style={{ display: 'flex', flexDirection: 'column', height: '360px' }}>
+        <div className="col-span-8 glass-card animate-fade-in delay-500 hover-gati-card" style={{ display: 'flex', flexDirection: 'column', height: '360px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <div>
               <h4 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>Weekly Traffic Distribution</h4>
@@ -417,8 +417,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <div style={{ position: 'relative', width: '28px', height: `${totalHeight}px`, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: '2px' }}>
                     {/* Tooltip on hover */}
                     <div className="chart-tooltip" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <div style={{ height: `${callHeight}px`, width: '100%', background: 'var(--accent-color)', borderRadius: '4px' }}></div>
-                      <div style={{ height: `${chatHeight}px`, width: '100%', background: 'var(--primary-color)', borderRadius: '4px' }}></div>
+                      <div style={{ height: `${callHeight}px`, width: '100%', background: 'linear-gradient(to top, var(--accent-color), #22d3ee)', borderRadius: '4px' }} className="animate-grow-bar"></div>
+                      <div style={{ height: `${chatHeight}px`, width: '100%', background: 'linear-gradient(to top, var(--primary-color), #818cf8)', borderRadius: '4px' }} className="animate-grow-bar"></div>
                     </div>
                   </div>
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{d.day}</span>
@@ -432,7 +432,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Right Column: Stacked Resource Limits */}
         <div className="col-span-4" style={{ height: '360px' }}>
           {/* Resource Limits Card */}
-          <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+          <div className="glass-card animate-fade-in delay-500 hover-gati-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
               <div>
                 <span style={{ fontSize: '0.95rem', fontWeight: 600, display: 'block', color: 'var(--text-primary)' }}>Resource Limits</span>
@@ -503,7 +503,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Row 3: Upcoming Appointments and Activity */}
       <div className="grid-cols-12" style={{ gap: '20px' }}>
-        <div className={platformSupportBot?.enabled ? "col-span-4 glass-card" : "col-span-6 glass-card"} style={{ minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
+        <div className={platformSupportBot?.enabled ? "col-span-4 glass-card animate-fade-in delay-500 hover-gati-card" : "col-span-6 glass-card animate-fade-in delay-500 hover-gati-card"} style={{ minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 600 }}>Scheduled Appointments</h4>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
@@ -538,7 +538,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {platformSupportBot?.enabled && (
-          <div className="col-span-4 glass-card" style={{ minHeight: '360px', display: 'flex', flexDirection: 'column', padding: '16px', background: 'rgba(99, 102, 241, 0.02)', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
+          <div className="col-span-4 glass-card animate-fade-in delay-500 hover-gati-card" style={{ minHeight: '360px', display: 'flex', flexDirection: 'column', padding: '16px', background: 'rgba(99, 102, 241, 0.02)', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.2rem' }}>{platformSupportBot.avatar || '🤖'}</span>
@@ -547,7 +547,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     {platformSupportBot.name || 'Platform Assistant'}
                   </h4>
                   <span style={{ fontSize: '0.65rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success-color)', display: 'inline-block' }}></span>
+                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success-color)', display: 'inline-block' }} className="animate-status-pulse"></span>
                     Online Guide
                   </span>
                 </div>
@@ -579,10 +579,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               ))}
               {isTyping && (
-                <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: '8px', borderBottomLeftRadius: '2px', border: '1px solid var(--border-glass)', display: 'flex', gap: '3px' }}>
-                  <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-secondary)', display: 'inline-block' }} className="animate-bounce"></span>
-                  <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-secondary)', display: 'inline-block', animationDelay: '0.2s' }} className="animate-bounce"></span>
-                  <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-secondary)', display: 'inline-block', animationDelay: '0.4s' }} className="animate-bounce"></span>
+                <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '8px', borderBottomLeftRadius: '2px', border: '1px solid var(--border-glass)', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--text-secondary)' }} className="animate-typing-dot"></span>
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--text-secondary)', animationDelay: '0.2s' }} className="animate-typing-dot"></span>
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--text-secondary)', animationDelay: '0.4s' }} className="animate-typing-dot"></span>
                 </div>
               )}
               <div ref={messagesEndRef} />
@@ -638,7 +638,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         )}
 
-        <div className={platformSupportBot?.enabled ? "col-span-4 glass-card" : "col-span-6 glass-card"} style={{ minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
+        <div className={platformSupportBot?.enabled ? "col-span-4 glass-card animate-fade-in delay-500 hover-gati-card" : "col-span-6 glass-card animate-fade-in delay-500 hover-gati-card"} style={{ minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 600 }}>Active Workflow Logs</h4>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>

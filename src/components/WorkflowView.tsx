@@ -4,6 +4,7 @@ import {
   MiniMap,
   Controls,
   Background,
+  BackgroundVariant,
   useNodesState,
   useEdgesState,
   addEdge,
@@ -99,8 +100,16 @@ const CustomWorkflowNode = ({ data, id }: { data: any; id: string }) => {
   let icon = <Play size={16} />;
   let colorClass = 'border-[#0ea5e9] text-[#0ea5e9] bg-[#0ea5e9]/5';
   let badgeColor = 'bg-[#0ea5e9]/10 text-[#38bdf8]';
+  let borderGlowColor = 'rgba(255, 255, 255, 0.08)';
+  let cardGlowShadow = '0 4px 6px -1px rgba(0,0,0,0.1)';
 
-  if (type === 'action') {
+  if (type === 'trigger') {
+    icon = <Play size={16} />;
+    colorClass = 'border-[#0ea5e9] text-[#0ea5e9] bg-[#0ea5e9]/5';
+    badgeColor = 'bg-[#0ea5e9]/10 text-[#38bdf8]';
+    borderGlowColor = 'rgba(14, 165, 233, 0.25)';
+    cardGlowShadow = '0 0 15px rgba(14, 165, 233, 0.08)';
+  } else if (type === 'action') {
     const isEmail = label.toLowerCase().includes('email') || data.config?.connectorType === 'email';
     const isWhatsApp = label.toLowerCase().includes('whatsapp') || data.config?.connectorType === 'whatsapp';
     const isVoice = label.toLowerCase().includes('call') || label.toLowerCase().includes('phone') || data.config?.connectorType === 'voice';
@@ -114,38 +123,48 @@ const CustomWorkflowNode = ({ data, id }: { data: any; id: string }) => {
     
     colorClass = 'border-[#6366f1] text-[#6366f1] bg-[#6366f1]/5';
     badgeColor = 'bg-[#6366f1]/10 text-[#818cf8]';
+    borderGlowColor = 'rgba(99, 102, 241, 0.25)';
+    cardGlowShadow = '0 0 15px rgba(99, 102, 241, 0.08)';
   } else if (type === 'ai') {
     icon = <Sparkles size={16} />;
     colorClass = 'border-[#a855f7] text-[#a855f7] bg-[#a855f7]/5';
     badgeColor = 'bg-[#a855f7]/10 text-[#c084fc]';
+    borderGlowColor = 'rgba(168, 85, 247, 0.25)';
+    cardGlowShadow = '0 0 15px rgba(168, 85, 247, 0.08)';
   } else if (type === 'condition') {
     icon = <GitBranch size={16} />;
     colorClass = 'border-[#f59e0b] text-[#f59e0b] bg-[#f59e0b]/5';
     badgeColor = 'bg-[#f59e0b]/10 text-[#fbbf24]';
+    borderGlowColor = 'rgba(245, 158, 11, 0.25)';
+    cardGlowShadow = '0 0 15px rgba(245, 158, 11, 0.08)';
   } else if (type === 'loop') {
     icon = <RefreshCw size={16} />;
     colorClass = 'border-[#10b981] text-[#10b981] bg-[#10b981]/5';
     badgeColor = 'bg-[#10b981]/10 text-[#34d399]';
+    borderGlowColor = 'rgba(16, 185, 129, 0.25)';
+    cardGlowShadow = '0 0 15px rgba(16, 185, 129, 0.08)';
   }
 
   // Visual glows representing debug execution highlights
-  let executionGlowClass = 'border-white/10';
   let statusIndicator = null;
 
   if (executionState === 'active') {
-    executionGlowClass = 'border-[#6366f1] shadow-[0_0_15px_rgba(99,102,241,0.55)] scale-105';
+    borderGlowColor = '#6366f1';
+    cardGlowShadow = '0 0 25px rgba(99, 102, 241, 0.55)';
     statusIndicator = (
-      <div className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#6366f1] animate-ping" />
+      <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#6366f1] animate-pulse shadow-[0_0_10px_#6366f1]" />
     );
   } else if (executionState === 'success') {
-    executionGlowClass = 'border-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.35)]';
+    borderGlowColor = '#10b981';
+    cardGlowShadow = '0 0 25px rgba(16, 185, 129, 0.35)';
     statusIndicator = (
       <div className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#10b981] border border-slate-900">
         <CheckCircle2 size={10} className="text-slate-900" />
       </div>
     );
   } else if (executionState === 'failed') {
-    executionGlowClass = 'border-[#ef4444] shadow-[0_0_15px_rgba(239,68,68,0.35)]';
+    borderGlowColor = '#ef4444';
+    cardGlowShadow = '0 0 25px rgba(239, 68, 68, 0.35)';
     statusIndicator = (
       <div className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#ef4444] border border-slate-900">
         <AlertCircle size={10} className="text-white" />
@@ -155,7 +174,12 @@ const CustomWorkflowNode = ({ data, id }: { data: any; id: string }) => {
 
   return (
     <div
-      className={`glass-panel p-4 rounded-xl border relative transition-all duration-300 min-w-[220px] max-w-[260px] bg-slate-900/90 text-left ${executionGlowClass}`}
+      className="glass-panel p-4 rounded-xl border relative transition-all duration-300 min-w-[220px] max-w-[260px] text-left hover:scale-[1.02]"
+      style={{
+        border: `1px solid ${borderGlowColor}`,
+        boxShadow: cardGlowShadow,
+        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(9, 13, 24, 0.98) 100%)',
+      }}
     >
       {statusIndicator}
 
@@ -165,7 +189,14 @@ const CustomWorkflowNode = ({ data, id }: { data: any; id: string }) => {
           type="target"
           position={Position.Left}
           id="target"
-          className="w-3.5 h-3.5 bg-slate-800 border-2 border-slate-700 hover:border-[#6366f1] transition-colors"
+          style={{
+            width: '10px',
+            height: '10px',
+            background: '#0f172a',
+            border: '2px solid #64748b',
+            boxShadow: '0 0 6px rgba(100, 116, 139, 0.6)'
+          }}
+          className="hover:scale-125 hover:border-indigo-400 transition-all cursor-crosshair"
         />
       )}
 
@@ -200,8 +231,15 @@ const CustomWorkflowNode = ({ data, id }: { data: any; id: string }) => {
             type="source"
             position={Position.Right}
             id="true"
-            style={{ top: '35%', background: '#10b981' }}
-            className="w-3.5 h-3.5 border-2 border-slate-900 hover:scale-110 transition-transform"
+            style={{ 
+              top: '35%', 
+              background: '#0f172a', 
+              border: '2px solid #10b981',
+              boxShadow: '0 0 6px rgba(16, 185, 129, 0.6)',
+              width: '10px',
+              height: '10px'
+            }}
+            className="hover:scale-125 transition-all cursor-crosshair"
           />
           <div className="absolute right-4 top-[24%] text-[0.55rem] text-[#10b981] font-bold">YES</div>
           
@@ -209,8 +247,15 @@ const CustomWorkflowNode = ({ data, id }: { data: any; id: string }) => {
             type="source"
             position={Position.Right}
             id="false"
-            style={{ top: '65%', background: '#ef4444' }}
-            className="w-3.5 h-3.5 border-2 border-slate-900 hover:scale-110 transition-transform"
+            style={{ 
+              top: '65%', 
+              background: '#0f172a', 
+              border: '2px solid #ef4444',
+              boxShadow: '0 0 6px rgba(239,68,68,0.6)',
+              width: '10px',
+              height: '10px'
+            }}
+            className="hover:scale-125 transition-all cursor-crosshair"
           />
           <div className="absolute right-4 top-[56%] text-[0.55rem] text-[#ef4444] font-bold">NO</div>
         </>
@@ -220,8 +265,15 @@ const CustomWorkflowNode = ({ data, id }: { data: any; id: string }) => {
             type="source"
             position={Position.Right}
             id="loop"
-            style={{ top: '35%', background: '#3b82f6' }}
-            className="w-3.5 h-3.5 border-2 border-slate-900 hover:scale-110 transition-transform"
+            style={{ 
+              top: '35%', 
+              background: '#0f172a', 
+              border: '2px solid #3b82f6',
+              boxShadow: '0 0 6px rgba(59,130,246,0.6)',
+              width: '10px',
+              height: '10px'
+            }}
+            className="hover:scale-125 transition-all cursor-crosshair"
           />
           <div className="absolute right-4 top-[24%] text-[0.55rem] text-[#3b82f6] font-bold">LOOP</div>
           
@@ -229,8 +281,15 @@ const CustomWorkflowNode = ({ data, id }: { data: any; id: string }) => {
             type="source"
             position={Position.Right}
             id="done"
-            style={{ top: '65%', background: '#10b981' }}
-            className="w-3.5 h-3.5 border-2 border-slate-900 hover:scale-110 transition-transform"
+            style={{ 
+              top: '65%', 
+              background: '#0f172a', 
+              border: '2px solid #10b981',
+              boxShadow: '0 0 6px rgba(16, 185, 129, 0.6)',
+              width: '10px',
+              height: '10px'
+            }}
+            className="hover:scale-125 transition-all cursor-crosshair"
           />
           <div className="absolute right-4 top-[56%] text-[0.55rem] text-[#10b981] font-bold">DONE</div>
         </>
@@ -239,7 +298,14 @@ const CustomWorkflowNode = ({ data, id }: { data: any; id: string }) => {
           type="source"
           position={Position.Right}
           id="source"
-          className="w-3.5 h-3.5 bg-slate-800 border-2 border-slate-700 hover:border-[#6366f1] transition-colors"
+          style={{
+            width: '10px',
+            height: '10px',
+            background: '#0f172a',
+            border: `2px solid ${type === 'trigger' ? '#0ea5e9' : type === 'action' ? '#6366f1' : type === 'ai' ? '#a855f7' : '#64748b'}`,
+            boxShadow: `0 0 6px ${type === 'trigger' ? 'rgba(14,165,233,0.6)' : type === 'action' ? 'rgba(99,102,241,0.6)' : type === 'ai' ? 'rgba(168,85,247,0.6)' : 'rgba(100,116,139,0.6)'}`
+          }}
+          className="hover:scale-125 transition-all cursor-crosshair"
         />
       )}
     </div>
@@ -321,8 +387,8 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
         target: e.target,
         sourceHandle: e.sourceHandle || 'source',
         targetHandle: e.targetHandle || 'target',
-        animated: e.animated || false,
-        style: e.style || { strokeWidth: 2.5, stroke: 'var(--border-glass)' },
+        animated: true,
+        style: e.style || { strokeWidth: 2, stroke: 'rgba(99, 102, 241, 0.4)' },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 18,
@@ -384,7 +450,7 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
               return {
                 ...e,
                 animated: true,
-                style: { strokeWidth: 3.5, stroke: '#c084fc' } // Purple active pulse edge
+                style: { strokeWidth: 3, stroke: '#c084fc', filter: 'drop-shadow(0 0 6px rgba(192, 132, 252, 0.8))' } // Purple active pulse edge
               };
             }
             return e;
@@ -398,10 +464,10 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
               ...n,
               data: { ...n.data, executionState: undefined }
             })));
-            setRfEdges(edges => edges.map(e => ({
+             setRfEdges(edges => edges.map(e => ({
               ...e,
-              animated: false,
-              style: { strokeWidth: 2.5, stroke: 'var(--border-glass)' }
+              animated: true,
+              style: { strokeWidth: 2, stroke: 'rgba(99, 102, 241, 0.4)' }
             })));
           }, 4000);
         }
@@ -477,8 +543,8 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
     const newEdge = {
       ...params,
       id: edgeId,
-      animated: false,
-      style: { strokeWidth: 2.5, stroke: 'var(--border-glass)' },
+      animated: true,
+      style: { strokeWidth: 2, stroke: 'rgba(99, 102, 241, 0.4)' },
       markerEnd: {
         type: MarkerType.ArrowClosed,
         width: 18,
@@ -732,8 +798,8 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
       target: e.target,
       sourceHandle: e.sourceHandle || 'source',
       targetHandle: e.targetHandle || 'target',
-      animated: false,
-      style: { strokeWidth: 2.5, stroke: 'var(--border-glass)' },
+      animated: true,
+      style: { strokeWidth: 2, stroke: 'rgba(99, 102, 241, 0.4)' },
       markerEnd: {
         type: MarkerType.ArrowClosed,
         width: 18,
@@ -1219,17 +1285,17 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
               {/* Palette List */}
               <div className="flex flex-col gap-2">
                 {filteredSidebarNodes.map((tpl, i) => {
-                  let color = 'border-[#0ea5e9]/20 text-[#0ea5e9] bg-[#0ea5e9]/5 hover:bg-[#0ea5e9]/10';
-                  if (tpl.type === 'action') color = 'border-[#6366f1]/20 text-[#6366f1] bg-[#6366f1]/5 hover:bg-[#6366f1]/10';
-                  else if (tpl.type === 'ai') color = 'border-[#a855f7]/20 text-[#a855f7] bg-[#a855f7]/5 hover:bg-[#a855f7]/10';
-                  else if (tpl.type === 'condition') color = 'border-[#f59e0b]/20 text-[#f59e0b] bg-[#f59e0b]/5 hover:bg-[#f59e0b]/10';
-                  else if (tpl.type === 'loop') color = 'border-[#10b981]/20 text-[#10b981] bg-[#10b981]/5 hover:bg-[#10b981]/10';
+                  let color = 'border-[#0ea5e9]/20 text-[#0ea5e9] bg-[#0ea5e9]/5 hover:bg-[#0ea5e9]/10 hover-gati-palette-item-trigger';
+                  if (tpl.type === 'action') color = 'border-[#6366f1]/20 text-[#6366f1] bg-[#6366f1]/5 hover:bg-[#6366f1]/10 hover-gati-palette-item-action';
+                  else if (tpl.type === 'ai') color = 'border-[#a855f7]/20 text-[#a855f7] bg-[#a855f7]/5 hover:bg-[#a855f7]/10 hover-gati-palette-item-ai';
+                  else if (tpl.type === 'condition') color = 'border-[#f59e0b]/20 text-[#f59e0b] bg-[#f59e0b]/5 hover:bg-[#f59e0b]/10 hover-gati-palette-item-condition';
+                  else if (tpl.type === 'loop') color = 'border-[#10b981]/20 text-[#10b981] bg-[#10b981]/5 hover:bg-[#10b981]/10 hover-gati-palette-item-loop';
 
                   return (
                     <div
                       key={i}
                       onClick={() => handleAddNodeToCanvas(tpl)}
-                      className={`p-2.5 rounded-lg border text-left cursor-pointer transition-colors flex items-center justify-between group ${color}`}
+                      className={`p-2.5 rounded-lg border text-left cursor-pointer transition-colors flex items-center justify-between group hover-gati-palette-item ${color}`}
                     >
                       <div>
                         <h5 className="text-[0.72rem] font-bold text-slate-200 truncate">{tpl.label}</h5>
@@ -1289,7 +1355,7 @@ const WorkflowBuilderInner: React.FC<WorkflowViewProps> = ({
                   snapToGrid
                   snapGrid={[15, 15]}
                 >
-                  <Background color="#1e293b" gap={15} size={1} />
+                  <Background variant={BackgroundVariant.Dots} color="#38bdf8" gap={20} size={1.2} style={{ opacity: 0.12 }} />
                   <Controls className="bg-slate-900 border border-white/5 rounded-lg overflow-hidden text-slate-200 fill-slate-200 [&_button]:bg-slate-900 [&_button]:border-white/5 [&_button:hover]:bg-slate-800" />
                   <MiniMap
                     nodeStrokeColor={(n) => {

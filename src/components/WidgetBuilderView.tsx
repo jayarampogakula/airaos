@@ -329,7 +329,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
   const [position, setPosition] = useState<'right' | 'left'>('right');
   const [widgetMode, setWidgetMode] = useState<'chat' | 'voice' | 'hybrid'>('hybrid');
   
-  const [widgetOpen, setWidgetOpen] = useState(false);
+  const [widgetOpen, setWidgetOpen] = useState(true);
   const [chatInput, setChatInput] = useState('');
 
   // Selected agent for widget and voice simulator
@@ -1604,187 +1604,72 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
 
         </div>
 
-        {/* Right column: Live Web Mockup Preview */}
+        {/* Right column: Interactive Chatbot Widget Preview */}
         <div className="col-span-7 glass-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: '#090d16' }}>
           
-          {/* Mock Browser Header Bar */}
-          <div style={{ padding: '10px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-glass)', display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }}></span>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
-              <a 
-                href={domainType === 'custom' && customDomain 
-                  ? `https://${customDomain}` 
-                  : `${getBackendOrigin()}/${tenant.slug}`}
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{ 
-                  fontSize: '0.7rem', 
-                  color: 'var(--primary-color)', 
-                  marginLeft: '12px', 
-                  fontFamily: 'monospace',
-                  textDecoration: 'underline',
-                  cursor: 'pointer' 
-                }}
-                title="Open live website in new tab"
-              >
-                {domainType === 'custom' && customDomain 
-                  ? `https://${customDomain}` 
-                  : `${getBackendOrigin()}/${tenant.slug}`}
-              </a>
+          {/* Mock Header Bar */}
+          <div style={{ padding: '12px 18px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.1rem' }}>💬</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>Chatbot Widget Simulator</span>
             </div>
-            
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Laptop size={12} /> Live Responsive Sandbox
+              <Laptop size={12} /> Interactive Device Sandbox
             </div>
           </div>
 
           {/* Web Preview Content Wrapper (non-scrollable relative container) */}
-          <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ 
+            flex: 1, 
+            position: 'relative', 
+            overflow: 'hidden', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            background: 'radial-gradient(circle at center, #0c1222 0%, #050811 100%)',
+            backgroundImage: 'radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px)',
+            backgroundSize: '24px 24px'
+          }}>
             
-            {/* Scrollable Preview Area */}
-            <div style={{ flex: 1, position: 'relative', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-              {isWebsiteGenerated ? (
-                /* Render The Custom Generated Business Site */
-                <iframe
-                  srcDoc={websiteHTML}
-                  title="Website Preview"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    border: 'none',
-                    background: '#090d16',
-                    flex: 1
-                  }}
-                />
-              ) : (
-                /* High fidelity placeholder state prompting site builder usage */
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100%', padding: '40px', textAlign: 'center' }}>
-                  <div style={{ 
-                    width: '64px', 
-                    height: '64px', 
-                    borderRadius: '16px', 
-                    background: 'rgba(99, 102, 241, 0.08)', 
-                    border: '1px solid rgba(99, 102, 241, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '2rem',
-                    marginBottom: '16px',
-                    boxShadow: '0 8px 24px rgba(99, 102, 241, 0.1)'
-                  }}>
-                    🌐
-                  </div>
-                  
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--text-primary)', marginBottom: '8px' }}>
-                    {configTab === 'website' ? 'Generate Your Business Website' : 'No Website Found on Subdomain'}
-                  </h3>
-                  
-                  <p style={{ maxWidth: '400px', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '24px' }}>
-                    {configTab === 'website' 
-                      ? 'Fill out the business profile details, slogan, and description on the left, then click the button below to generate and publish your premium business website with your AI receptionist.' 
-                      : 'This client tenant does not have a live business site yet. Switch to the AI Website Builder tab to generate a custom, premium home page embedded with your conversational AI receptionist in seconds.'}
-                  </p>
-
-                  {configTab === 'website' ? (
-                    <button 
-                      onClick={handleGenerateWebsite}
-                      disabled={isGenerating || websiteEditsUsed >= websiteEditsLimit}
-                      className="btn btn-primary"
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', padding: '8px 16px', cursor: 'pointer' }}
-                    >
-                      <Sparkles size={14} /> {isGenerating ? 'AI Architect Generating...' : 'Generate Website Now'}
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => {
-                        if (onSwitchTab) {
-                          onSwitchTab('website');
-                        } else {
-                          setConfigTab('website');
-                        }
-                      }}
-                      className="btn btn-primary"
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', padding: '8px 16px', cursor: 'pointer' }}
-                    >
-                      Switch to Website Builder <ArrowRight size={14} />
-                    </button>
-                  )}
+            {/* Device Mockup Wrapper */}
+            <div style={{
+              width: '345px',
+              height: '525px',
+              borderRadius: '38px',
+              border: '12px solid #1e293b',
+              background: '#0c0f1d',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.75), inset 0 0 15px rgba(255,255,255,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
+              {/* Mock Status Bar */}
+              <div style={{
+                height: '26px',
+                background: 'rgba(0,0,0,0.4)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '0 20px',
+                fontSize: '0.65rem',
+                color: '#94a3b8',
+                borderBottom: '1px solid rgba(255,255,255,0.02)'
+              }}>
+                <span style={{ fontWeight: 600 }}>9:41 📱</span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <span>📶</span>
+                  <span>🔋</span>
                 </div>
-              )}
+              </div>
 
-              {/* Web canvas backdrop grid */}
-              {!isWebsiteGenerated && (
-                <div 
-                  style={{ 
-                    position: 'absolute', 
-                    top: 0, left: 0, right: 0, bottom: 0, 
-                    backgroundImage: 'radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)', 
-                    backgroundSize: '20px 20px',
-                    zIndex: 0
-                  }} 
-                />
-              )}
-            </div>
-
-            {/* Simulated Live Widget Button */}
-            {!widgetOpen && (
-              <button
-                onClick={() => setWidgetOpen(true)}
-                style={{
-                  position: 'absolute',
-                  bottom: '24px',
-                  right: position === 'right' ? '24px' : 'auto',
-                  left: position === 'left' ? '24px' : 'auto',
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: widgetColor,
-                  border: 'none',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.4rem',
-                  color: 'white',
-                  transition: 'all 0.2s ease',
-                  zIndex: 200,
-                  borderWidth: '1px',
-                  borderColor: 'rgba(255,255,255,0.1)'
-                }}
-              >
-                💬
-              </button>
-            )}
-
-            {/* Simulated Live Widget Window */}
-            {widgetOpen && (
-              <div
-                className="glass-panel"
-                style={{
-                  position: 'absolute',
-                  bottom: '24px',
-                  right: position === 'right' ? '24px' : 'auto',
-                  left: position === 'left' ? '24px' : 'auto',
-                  width: '320px',
-                  height: '420px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  borderRadius: 'var(--radius-md)',
-                  zIndex: 200,
-                  boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-glass)',
-                  overflow: 'hidden'
-                }}
-              >
+              {/* Chatbot Dialog View renders inside the mockup frame directly */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
                 {/* Header */}
                 <div style={{ padding: '14px 16px', background: widgetColor, color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '1.1rem' }}>🤖</span>
-                    <div>
+                    <div style={{ textAlign: 'left' }}>
                       <h4 style={{ fontSize: '0.85rem', fontWeight: 'bold', margin: 0 }}>{widgetTitle}</h4>
                       <span style={{ fontSize: '0.6rem', opacity: 0.8 }}>AI assistant online</span>
                     </div>
@@ -1814,9 +1699,6 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                         <PhoneCall size={10} /> Call {activeAgent?.name || 'Sarah'}
                       </button>
                     )}
-                    <button onClick={() => { setWidgetOpen(false); setIsCalling(false); }} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                      ✕
-                    </button>
                   </div>
                 </div>
 
@@ -1824,7 +1706,6 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                   /* Voice Call Interface screen */
                   <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'radial-gradient(circle at center, #111827 0%, #030712 100%)' }}>
                     <div style={{ textAlign: 'center' }}>
-                      {/* Pulsing visualizer avatar */}
                       <div className="pulse-glow" style={{ width: '60px', height: '60px', borderRadius: '50%', background: widgetColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '10px 0', border: '2px solid rgba(255,255,255,0.1)' }}>
                         <Volume2 size={24} style={{ color: 'white' }} />
                       </div>
@@ -1834,7 +1715,6 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                         {callStatus === 'connecting' ? 'Connecting SIP Gateway...' : 'Connected (Vector KB Locked)'}
                       </div>
 
-                      {/* Sound Wave Animation Visualizer */}
                       {callStatus === 'connected' && (
                         <div style={{ display: 'flex', justifyItems: 'center', justifyContent: 'center', gap: '4px', height: '24px', marginTop: '14px', alignItems: 'center' }}>
                           {[1, 2, 3, 4, 5].map(barId => (
@@ -1854,7 +1734,6 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                       )}
                     </div>
 
-                    {/* Speech Transcription Viewer */}
                     <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-glass)', borderRadius: '6px', padding: '10px', overflowY: 'auto', margin: '14px 0', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {callTranscript.map((log, idx) => (
                         <div key={idx} style={{ 
@@ -1868,7 +1747,6 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                       <div ref={transcriptEndRef} />
                     </div>
 
-                    {/* Quick speech triggers simulation controls */}
                     {callStatus === 'connected' && (
                       <div style={{ marginBottom: '10px' }}>
                         <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold', textAlign: 'left' }}>SIMULATE SPEAKING OUT LOUD:</div>

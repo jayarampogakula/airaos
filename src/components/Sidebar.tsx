@@ -59,8 +59,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: '🏠 Dashboard & Analytics',
       tabs: [
         { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-        { id: 'revenue_dashboard', label: 'Revenue Dashboard', icon: TrendingUp, badge: 'NEW' },
-        { id: 'analytics_center', label: 'Analytics Center', icon: BarChart3, badge: 'NEW' }
+        { id: 'revenue_dashboard', label: 'Revenue Dashboard', icon: TrendingUp },
+        { id: 'analytics_center', label: 'Analytics Center', icon: BarChart3 }
       ]
     },
     {
@@ -74,10 +74,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: '🎯 Lead Engine',
       tabs: [
-        { id: 'lead_sources', label: 'Lead Sources', icon: Target, badge: 'NEW' },
-        { id: 'visitor_intel', label: 'Visitor Intelligence', icon: Eye, badge: 'NEW' },
-        { id: 'lead_scoring', label: 'AI Lead Scoring', icon: Zap, badge: 'NEW' },
-        { id: 'missed_recovery', label: 'Missed Lead Recovery', icon: RefreshCw, badge: 'NEW' }
+        { id: 'lead_sources', label: 'Lead Sources', icon: Target },
+        { id: 'visitor_intel', label: 'Visitor Intelligence', icon: Eye },
+        { id: 'lead_scoring', label: 'AI Lead Scoring', icon: Zap },
+        { id: 'missed_recovery', label: 'Missed Lead Recovery', icon: RefreshCw }
       ]
     },
     {
@@ -90,16 +90,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: '📣 Marketing',
       tabs: [
-        { id: 'marketing_campaigns', label: 'Campaign Builder', icon: Megaphone, badge: 'NEW' }
+        { id: 'marketing_campaigns', label: 'Campaign Builder', icon: Megaphone }
       ]
     },
     {
       title: '🤖 AI Agents',
       tabs: [
         { id: 'employees', label: 'AI Agent Builder', icon: Bot },
-        { id: 'multi_agents', label: 'Multi-Agent Ecosystem', icon: GitBranch, badge: 'NEW' },
+        { id: 'multi_agents', label: 'Multi-Agent Ecosystem', icon: GitBranch },
         { id: 'knowledge', label: 'Knowledge Hub', icon: Database },
-        { id: 'conv_replay', label: 'Conversation Replay', icon: Play, badge: 'NEW' },
+        { id: 'conv_replay', label: 'Conversation Replay', icon: Play },
         { id: 'crew', label: 'Agent Orchestrator', icon: Network },
         { id: 'brain', label: 'AI Settings', icon: BrainCircuit }
       ]
