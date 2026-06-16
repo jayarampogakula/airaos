@@ -1924,6 +1924,7 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
         </div>
 
       </div>
+    </div>
 
       <style>{`
         @keyframes soundWave {
