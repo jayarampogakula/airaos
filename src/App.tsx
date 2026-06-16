@@ -1404,6 +1404,7 @@ function App() {
                   agents={agents}
                   tenantId={selectedTenantId}
                   onAddAgent={() => setActiveTab('employees')}
+                  onUpdateAgent={handleUpdateAgent}
                 />
               )}
               {activeTab === 'conv_replay' && (

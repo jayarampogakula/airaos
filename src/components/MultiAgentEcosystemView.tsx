@@ -4,18 +4,12 @@ import {
   MessageSquare, Clock, ShieldCheck, ChevronRight, ToggleLeft, ToggleRight,
   TrendingUp, BarChart2, CornerDownRight, ArrowRight, UserCheck
 } from 'lucide-react';
+import { Agent } from '../types';
 
 interface MultiAgentEcosystemViewProps {
-  agents?: Array<{
-    id: string;
-    name: string;
-    department: string;
-    status: string;
-    agentRole?: string;
-    conversationsHandled?: number;
-    avgResponseTime?: number;
-  }>;
+  agents?: Agent[];
   onAddAgent?: () => void;
+  onUpdateAgent?: (updatedAgent: Agent) => void;
   tenantId?: string;
 }
 
@@ -64,12 +58,45 @@ const MOCK_HANDOFFS = [
   { id: 'h4', visitor: 'Amit Singh', from: 'Voice Agent', to: 'Sales Agent', time: '25 mins ago' }
 ];
 
-export const MultiAgentEcosystemView: React.FC<MultiAgentEcosystemViewProps> = ({ tenantId, onAddAgent }) => {
-  const [agents, setAgents] = useState<AgentCardData[]>(MOCK_AGENTS);
+export const MultiAgentEcosystemView: React.FC<MultiAgentEcosystemViewProps> = ({ agents: dbAgentsProp = [], tenantId, onAddAgent, onUpdateAgent }) => {
+  const [mockAgentsState, setMockAgentsState] = useState<AgentCardData[]>(MOCK_AGENTS);
   const [rules, setRules] = useState<RoutingRule[]>(MOCK_RULES);
   const [showAddRuleModal, setShowAddRuleModal] = useState(false);
   const [newRuleKeywords, setNewRuleKeywords] = useState('');
   const [newRuleAgent, setNewRuleAgent] = useState('Sales Agent');
+
+  const mappedAgents: AgentCardData[] = dbAgentsProp.map((a, idx) => {
+    let emoji = '🤖';
+    if (a.department === 'Sales') emoji = '💼';
+    else if (a.department === 'Support') emoji = '🎧';
+    else if (a.department === 'Reception') emoji = '📅';
+    else if (a.department === 'Billing') emoji = '💳';
+    else if (a.department === 'Admissions') emoji = '🎓';
+
+    const keywords = a.tools.map(t => t.toLowerCase()) || [];
+    if (keywords.length === 0) {
+      if (a.department === 'Sales') keywords.push('pricing', 'demo');
+      else if (a.department === 'Support') keywords.push('help', 'error');
+      else if (a.department === 'Reception') keywords.push('book', 'slot');
+      else keywords.push('query');
+    }
+
+    return {
+      id: a.id,
+      name: a.name,
+      role: a.personality || `Trained AI ${a.department} Representative.`,
+      emoji,
+      status: a.status === 'online' ? 'online' : 'offline',
+      department: a.department,
+      keywords,
+      convsToday: 12 + (idx * 8), // mock some load
+      avgResponse: '0.8s',
+      successRate: 90 + (idx % 10),
+      active: a.status === 'online'
+    };
+  });
+
+  const agents = dbAgentsProp.length > 0 ? mappedAgents : mockAgentsState;
 
   const handleAddRule = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,16 +113,24 @@ export const MultiAgentEcosystemView: React.FC<MultiAgentEcosystemViewProps> = (
   };
 
   const toggleAgent = (id: string) => {
-    setAgents(prev => prev.map(a => {
-      if (a.id === id) {
-        return {
-          ...a,
-          active: !a.active,
-          status: !a.active ? 'online' : 'offline' as 'online' | 'offline'
-        };
-      }
-      return a;
-    }));
+    const realAgent = dbAgentsProp.find(a => a.id === id);
+    if (realAgent && onUpdateAgent) {
+      onUpdateAgent({
+        ...realAgent,
+        status: realAgent.status === 'online' ? 'offline' : 'online'
+      });
+    } else {
+      setMockAgentsState(prev => prev.map(a => {
+        if (a.id === id) {
+          return {
+            ...a,
+            active: !a.active,
+            status: !a.active ? 'online' : 'offline' as 'online' | 'offline'
+          };
+        }
+        return a;
+      }));
+    }
   };
 
   const deleteRule = (id: string) => {
