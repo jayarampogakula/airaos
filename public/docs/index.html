@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GatiDesk User Documentation & Control Catalog</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-primary: #070a13;
+      --bg-secondary: #0d1222;
+      --bg-tertiary: #171f38;
+      --bg-glass: rgba(13, 18, 34, 0.7);
+      --border-glass: rgba(255, 255, 255, 0.08);
+      
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      
+      --primary-color: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.15);
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --accent-color: #06b6d4;
+      
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      display: flex;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Left Sidebar */
+    aside {
+      width: 300px;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      border-right: 1px solid var(--border-glass);
+      background-color: var(--bg-secondary);
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: white;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .brand-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .search-box {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-glass);
+      padding: 10px 14px 10px 36px;
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.82rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-box input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .nav-links {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 4px;
+    }
+
+    .nav-header {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-top: 14px;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--primary-glow);
+      color: var(--text-primary);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+
+    /* Main Content */
+    main {
+      margin-left: 300px;
+      flex: 1;
+      padding: 40px;
+      max-width: 1100px;
+    }
+
+    header {
+      margin-bottom: 40px;
+      border-bottom: 1px solid var(--border-glass);
+      padding-bottom: 30px;
+    }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff 0%, var(--text-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    /* Section Styles */
+    section {
+      margin-bottom: 60px;
+      scroll-margin-top: 40px;
+    }
+
+    section.hidden {
+      display: none;
+    }
+
+    h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding-bottom: 8px;
+    }
+
+    .sec-desc {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* Glass Cards */
+    .glass-card {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .glass-card h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    /* Accordions & Lists */
+    .option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-item {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      transition: all 0.25s;
+    }
+
+    .option-item:hover {
+      background: rgba(255, 255, 255, 0.02);
+      border-color: rgba(99, 102, 241, 0.2);
+    }
+
+    .option-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .option-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .option-tag {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .tag-btn { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+    .tag-menu { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+    .tag-input { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .tag-toggle { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .tag-node { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+
+    .option-desc {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 0.82rem;
+      background: rgba(0,0,0,0.2);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    th {
+      background-color: rgba(255, 255, 255, 0.02);
+      color: #fff;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: rgba(255, 255, 255, 0.01);
+    }
+
+    .accent-text {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    /* Badge styles */
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .badge-success { background: rgba(16, 185, 129, 0.1); color: #34d399; }
+    .badge-warning { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
+    .badge-info { background: rgba(6, 182, 212, 0.1); color: #22d3ee; }
+    .badge-danger { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+
+    /* Code block */
+    pre {
+      background: #020617;
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      overflow-x: auto;
+      font-family: 'Space Mono', Courier, monospace;
+      font-size: 0.75rem;
+      color: #38bdf8;
+      margin-top: 10px;
+    }
+
+    code {
+      font-family: inherit;
+    }
+
+    /* Highlights */
+    .highlight-box {
+      border-left: 4px solid var(--primary-color);
+      background: rgba(99, 102, 241, 0.03);
+      padding: 12px 18px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin: 14px 0;
+    }
+
+    /* Highlight badge on search matches */
+    .match-highlight {
+      background-color: rgba(245, 158, 11, 0.3);
+      color: white;
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left Navigation Sidebar -->
+  <aside>
+    <div class="brand">
+      <div class="brand-icon">G</div>
+      <div class="brand-name">GatiDesk Docs</div>
+    </div>
+    
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="docSearch" placeholder="Search buttons & menus..." oninput="handleSearch()">
+    </div>
+    
+    <nav class="nav-links">
+      <span class="nav-header">Dashboard & Analytics</span>
+      <a href="#dashboard" class="nav-item active">🏠 Overview</a>
+      <a href="#revenue" class="nav-item">💰 Revenue Hub</a>
+      <a href="#visitor-intel" class="nav-item">👁️ Visitor Intelligence</a>
+      <a href="#lead-sources" class="nav-item">🎯 Lead Attribution</a>
+      <a href="#analytics-center" class="nav-item">📊 Analytics Hub</a>
+      
+      <span class="nav-header">Inbox & Channels</span>
+      <a href="#unified-inbox" class="nav-item">📥 Unified Inbox</a>
+      <a href="#voice-gateway" class="nav-item">📞 Voice Gateway</a>
+      <a href="#automation" class="nav-item">⚡ Flow Canvas</a>
+      
+      <span class="nav-header">Lead Engine & CRM</span>
+      <a href="#lead-scoring" class="nav-item">🧠 AI Lead Scoring</a>
+      <a href="#missed-lead" class="nav-item">🔁 Missed Lead Recovery</a>
+      <a href="#crm-pipeline" class="nav-item">👥 Pipeline Board</a>
+      <a href="#calendar" class="nav-item">📅 Scheduler Calendar</a>
+      
+      <span class="nav-header">Marketing & AI</span>
+      <a href="#marketing" class="nav-item">📣 Campaign Composer</a>
+      <a href="#agent-builder" class="nav-item">🤖 Agent Builder</a>
+      <a href="#ecosystem" class="nav-item">🤝 Multi-Agent Hub</a>
+      <a href="#replay-center" class="nav-item">⏪ Replay Debugger</a>
+      <a href="#knowledge-hub" class="nav-item">📚 Knowledge Hub</a>
+      <a href="#ai-settings" class="nav-item">⚙️ AI Settings</a>
+      
+      <span class="nav-header">Widgets & Admin</span>
+      <a href="#widget-builder" class="nav-item">💬 Chat Widget Builder</a>
+      <a href="#tenant-settings" class="nav-item">🔌 Platform Settings</a>
+      <a href="#support" class="nav-item">🎧 Help & Support</a>
+    </nav>
+  </aside>
+
+  <!-- Main Content Container -->
+  <main>
+    <header>
+      <h1>GatiDesk Platform Guide & Interactive Control Catalog</h1>
+      <p class="subtitle">Complete how-to resource and button-level mapping for GatiDesk CRM & AI Operating System features. Search for any option or configuration node to verify its behavior.</p>
+    </header>
+
+    <!-- SECTION: Dashboard Overview -->
+    <section id="dashboard">
+      <h2>🏠 Dashboard Overview</h2>
+      <p class="sec-desc">The core control panel providing real-time telemetry metrics, automated briefings, resource limits, and an inline platform help assistant.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Sync Data</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>RefreshCw</code></td>
+              <td>Triggers manual fetching of database lead counts, chats, and calls.</td>
+              <td>Banner alert: "Data synced successfully with latest server metrics."</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Domain URL Link</td>
+              <td><span class="badge tag-btn">Link</span></td>
+              <td><code>ExternalLink</code></td>
+              <td>Navigates to the active business frontend custom domain in a new tab.</td>
+              <td>Opens configured sub-domain URL.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">View Visitor Intelligence</td>
+              <td><span class="badge tag-btn">Link</span></td>
+              <td><code>&rarr;</code></td>
+              <td>Shortcut jumping directly to the live traffic intelligence view.</td>
+              <td>Switches sidebar selector to Visitor Intelligence tab.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Ask Platform Guide</td>
+              <td><span class="badge tag-input">Form</span></td>
+              <td><code>Send</code></td>
+              <td>Submits questions relating to Twilio setup, SIP nodes, and limits.</td>
+              <td>Platform support assistant answers dynamically with typing indicator.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Twilio Suggestion Chip</td>
+              <td><span class="badge tag-btn">Chip</span></td>
+              <td><code>🔑 Twilio</code></td>
+              <td>Auto-completes and sends pre-configured query: "How to integrate Twilio?"</td>
+              <td>Assistant answers with detailed Twilio credential binding steps.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">SIP Carrier Chip</td>
+              <td><span class="badge tag-btn">Chip</span></td>
+              <td><code>🌐 SIP Carrier</code></td>
+              <td>Auto-completes and sends query: "How to configure BYO SIP Server?"</td>
+              <td>Assistant details inbound gateway settings.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Revenue Hub -->
+    <section id="revenue">
+      <h2>💰 Revenue Hub</h2>
+      <p class="sec-desc">A dashboard rendering generated revenue indicators, costs, ROI multipliers, pipeline waterfalls, and AI campaign findings.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Export CSV</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Downloads a ledger sheet with deal records, conversions, and campaign ROI.</td>
+              <td>Browser download popup confirmation: "gati_revenue_export.csv"</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Export PDF</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Generates a visual report sheet suitable for business slide decks.</td>
+              <td>Generates PDF download: "gati_monthly_revenue_report.pdf"</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Share Report</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Creates a shareable dashboard link for company stakeholders.</td>
+              <td>Copies secure read-only URL to system clipboard.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">View All (Deals)</td>
+              <td><span class="badge tag-btn">Link</span></td>
+              <td><code>&rarr;</code></td>
+              <td>Redirects user to the deal pipeline page for immediate action.</td>
+              <td>Jumps sidebar navigation to CRM Pipeline.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Visitor Intelligence -->
+    <section id="visitor-intel">
+      <h2>👁️ Visitor Intelligence</h2>
+      <p class="sec-desc">Real-time monitoring panel displaying online visitor actions, navigation history, geolocation tracking, and AI intent probability.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">All / Identified / High Intent</td>
+              <td><span class="badge tag-btn">Toggle</span></td>
+              <td>Button Group</td>
+              <td>Filters visitor lists based on identified details or intent thresholds.</td>
+              <td>Filters traffic view immediately to match category criteria.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Engage Now</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Zap</code></td>
+              <td>Opens a direct chat channel override to message the visitor manually.</td>
+              <td>Launches Unified Inbox focused on the matching visitor session.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Journey Timeline Row</td>
+              <td><span class="badge tag-menu">Row</span></td>
+              <td>Clickable list</td>
+              <td>Expands selected visitor to inspect exact timestamps and path page visits.</td>
+              <td>Populates right sidebar details area with session journey analytics.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Lead Attribution -->
+    <section id="lead-sources">
+      <h2>🎯 Lead Attribution</h2>
+      <p class="sec-desc">Dashboard for connecting external advertising platforms (Facebook, Google Ads) and logging incoming UTM query parameters.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Add Lead Source</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Plus</code></td>
+              <td>Opens configuration modal to generate new custom UTM links.</td>
+              <td>Displays Attribution Modal with parameter input fields.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">CSV Import</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Upload</code></td>
+              <td>Imports offline leads compiled from events, databases, or third-party CRM.</td>
+              <td>File selection dialog matching `.csv` configuration.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">API Leads</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Code</code></td>
+              <td>Presents API token settings and incoming payload webhooks.</td>
+              <td>Modal showing webhook endpoint copy links and JSON formats.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Analytics Hub -->
+    <section id="analytics-center">
+      <h2>📊 Analytics Hub</h2>
+      <p class="sec-desc">Unified analytical panel featuring sub-tabs for deep diving into Sales, AI Agents, Marketing campaigns, Conversations, Revenue trends, and Attribution.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Sales / Agent / Marketing / Conversation / Revenue / Lead Source</td>
+              <td><span class="badge tag-menu">Tab</span></td>
+              <td>Tab switcher</td>
+              <td>Switches metrics views to focus on the selected system domain.</td>
+              <td>Re-renders charts, KPI rows, and detailed insights below.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Date Preset (7D / 30D / 90D)</td>
+              <td><span class="badge tag-btn">Toggle</span></td>
+              <td>Button Group</td>
+              <td>Filters all chart data points to fit selected duration parameters.</td>
+              <td>Updates graphs and success percentages dynamically.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Export Tab Data</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Download</code></td>
+              <td>Generates file export for whatever data is currently visible in the active tab.</td>
+              <td>Initiates download of file (e.g. `gati_agent_analytics.csv`).</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Unified Inbox -->
+    <section id="unified-inbox">
+      <h2>📥 Unified Inbox</h2>
+      <p class="sec-desc">Omnichannel communication hub aggregating Web Chat, WhatsApp, SMS, and SIP calling into a single conversational viewport.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Channel Filter Tabs</td>
+              <td><span class="badge tag-menu">Tab</span></td>
+              <td>All/Chat/Voice/WhatsApp</td>
+              <td>Filters inbox thread entries to isolate specific communication lines.</td>
+              <td>Refreshes list to show selected channel conversations only.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Template Selector</td>
+              <td><span class="badge tag-menu">Dropdown</span></td>
+              <td>Dropdown Menu</td>
+              <td>Selects pre-approved WhatsApp templates or Email macros.</td>
+              <td>Populates composer input area with templated variables.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Assign Agent</td>
+              <td><span class="badge tag-menu">Dropdown</span></td>
+              <td>User Select list</td>
+              <td>Assigns the active conversation to a specific human teammate.</td>
+              <td>Dispatches notification, marks thread owner accordingly.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Resolve Chat</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>CheckCircle2</code></td>
+              <td>Marks the conversation as completed and archives it from active view.</td>
+              <td>Closes chat and shifts focus to next inbox item.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Escalate Ticket</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>AlertCircle</code></td>
+              <td>Flags the ticket for super admin overview or prioritizes SLA queue.</td>
+              <td>Highlights thread red with escalation badge indicator.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Voice Gateway -->
+    <section id="voice-gateway">
+      <h2>📞 Voice Gateway</h2>
+      <p class="sec-desc">Carrier configuration board for managing business DID numbers, Twilio authentication credentials, and SIP phone connection protocols.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Add SIP Number</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Plus</code></td>
+              <td>Registers a custom VoIP server carrier block to BYO numbers.</td>
+              <td>Displays SIP registration schema setup dialog.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Buy DID Number</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>ShoppingBag</code></td>
+              <td>Provisions a new telephony number directly from Twilio.</td>
+              <td>Lists available numbers with price metrics for one-click ordering.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Verify Webhook Status</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>CheckCircle2</code></td>
+              <td>Checks whether connection hooks for calls are responding to server pings.</td>
+              <td>Alert validation: "Gateway webhook active, latency: 45ms."</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Flow Canvas -->
+    <section id="automation">
+      <h2>⚡ Flow Canvas</h2>
+      <p class="sec-desc">Visual drag-and-drop workspace using React Flow nodes to design automation schedules, notification branches, and AI logic paths.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Create Flow</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Plus</code></td>
+              <td>Initializes a blank visual canvas with a default trigger block.</td>
+              <td>Loads fresh canvas, clears selected node inputs.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Simulate Run</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>PlayCircle</code></td>
+              <td>Triggers simulated execution telemetry showing flow step-by-step.</td>
+              <td>Dashed connection lines pulse purple and nodes glow green on success.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Duplicate</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Copy</code></td>
+              <td>Clones the active workflow layout under a copy indicator name.</td>
+              <td>Creates duplicate list entry, focus switches to copy.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Export JSON / Import</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Download</code></td>
+              <td>Saves active flowchart layout block schema configuration to local drive.</td>
+              <td>Triggers local download of `workflow_schema.json`.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Node Palette Item</td>
+              <td><span class="badge tag-node">Node</span></td>
+              <td>Sidebar List</td>
+              <td>Adds a new trigger, action, AI qualifier, or loop node onto the grid.</td>
+              <td>Node enters layout grid, connected handles enable link lines.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Active Toggle</td>
+              <td><span class="badge tag-toggle">Toggle</span></td>
+              <td>Switch</td>
+              <td>Switches the workflow graph state between active database running and disabled.</td>
+              <td>Saves status to database, updates run metrics tag.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: AI Lead Scoring -->
+    <section id="lead-scoring">
+      <h2>🧠 AI Lead Scoring</h2>
+      <p class="sec-desc">Configurator for scoring incoming leads dynamically based on website page visits, budgets, role designations, and reply timings.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Run Bulk Scoring</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Sparkles</code></td>
+              <td>Forces AI calculations over all CRM contacts immediately.</td>
+              <td>Shows scoring simulation, updates lead categories.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Book Demo (Details)</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Initiates the calendar scheduler shortcut inside the lead detail panel.</td>
+              <td>Shows slot booking selector modal.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Send WhatsApp</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Opens direct WhatsApp connection macro targeting the lead's number.</td>
+              <td>Brings user to Unified Inbox focused on lead's thread.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Assign to Sales</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Assigns high-scoring, sales-ready lead to executive team member.</td>
+              <td>Notifies assignee, triggers stage transition in CRM.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Missed Lead Recovery -->
+    <section id="missed-lead">
+      <h2>🔁 Missed Lead Recovery</h2>
+      <p class="sec-desc">Sequencer for reactivation campaigns targeting cold database leads via progressive multi-channel messaging steps.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Create New Workflow</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Plus</code></td>
+              <td>Opens blank recovery sequence builder panel.</td>
+              <td>Initializes empty step stack, enables title inputs.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Add Step</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Plus</code></td>
+              <td>Appends new delay timer and notification block (Email/WhatsApp/Call).</td>
+              <td>Inserts step timeline card, updates preview block.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Save Workflow</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Save</code></td>
+              <td>Persists recovery sequence schema in database configurations.</td>
+              <td>Saves details, shows banner: "Missed lead sequence active."</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Pipeline Board -->
+    <section id="crm-pipeline">
+      <h2>👥 Pipeline Board</h2>
+      <p class="sec-desc">Deal tracking kanban board for moving contacts through stages from Lead generation to Closed-Won status.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Add Deal</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Plus</code></td>
+              <td>Creates a new deal card inside selected stage.</td>
+              <td>Opens modal form asking for contact name, deal value, and owner.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Pipeline Settings</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Settings</code></td>
+              <td>Permits editing and adding custom stages to the Kanban layout.</td>
+              <td>Presents configuration modal showing stage titles and colors.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Deal Card Drag</td>
+              <td><span class="badge tag-menu">Action</span></td>
+              <td>Visual Card</td>
+              <td>Drags and drops deal cards across pipeline stages.</td>
+              <td>Updates database deal stage, updates total stage value indicators dynamically.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Scheduler Calendar -->
+    <section id="calendar">
+      <h2>📅 Scheduler Calendar</h2>
+      <p class="sec-desc">Interface for setting meeting slot availabilities and linking external calendar platforms.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Outlook Connect</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Simulates OAuth token authentication links for Microsoft Calendar sync.</td>
+              <td>Brings up login frame simulation confirming integration success.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Slot Interval dropdown</td>
+              <td><span class="badge tag-menu">Dropdown</span></td>
+              <td>Dropdown Menu</td>
+              <td>Alters booking duration blocks (15 mins, 30 mins, 45 mins, 1 hour).</td>
+              <td>Refreshes generated availability grids.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Campaign Composer -->
+    <section id="marketing">
+      <h2>📣 Campaign Composer</h2>
+      <p class="sec-desc">Omnichannel composer for designing bulk marketing messages via WhatsApp, Email, or SMS broadcast sweeps.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">New Campaign</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Plus</code></td>
+              <td>Launches campaign wizard setup.</td>
+              <td>Opens composer workspace, unlocks editor panels.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Generate with AI</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>✨ Generate with AI</code></td>
+              <td>Asks LLM model to write message drafts matching input themes.</td>
+              <td>Populates draft textarea block with context-tailored copies.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Launch Campaign</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Deploys bulk message broadcast immediately to selected user segment.</td>
+              <td>Starts campaign transmission queue, redirects to live analytics.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Agent Builder -->
+    <section id="agent-builder">
+      <h2>🤖 Agent Builder</h2>
+      <p class="sec-desc">Configuration platform for training specific virtual agents with distinct support personalities, response prompt schemas, and knowledge bases.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Create Agent</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Plus</code></td>
+              <td>Creates a blank agent container ready for prompt training.</td>
+              <td>Opens profile config forms (avatar, name, description).</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Select Template</td>
+              <td><span class="badge tag-menu">Dropdown</span></td>
+              <td>Dropdown Menu</td>
+              <td>Applies predefined prompt systems (Sales Agent, Receptionist, Support).</td>
+              <td>Fills System Prompt text area with prebuilt instruction block.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Integration Toggle</td>
+              <td><span class="badge tag-toggle">Toggle</span></td>
+              <td>Switch</td>
+              <td>Links virtual agent capability to channels (e.g. Inbound Voice, WhatsApp).</td>
+              <td>Agent handles conversations incoming from linked paths.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Multi-Agent Hub -->
+    <section id="ecosystem">
+      <h2>🤝 Multi-Agent Hub</h2>
+      <p class="sec-desc">Orchestration control board for routing client chats between specialized AI agents and managing human handoff SLA rules.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Add Routing Rule</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Plus</code></td>
+              <td>Adds conditional target routing rules (e.g. IF "billing" THEN forward to Billing Agent).</td>
+              <td>Inserts new routing entry configuration row in rule list.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Toggle Switch (Agent Card)</td>
+              <td><span class="badge tag-toggle">Toggle</span></td>
+              <td>Switch</td>
+              <td>Toggles an agent's online availability state.</td>
+              <td>Updates status dots green/gray, shifts routing distribution metrics.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Replay Debugger -->
+    <section id="replay-center">
+      <h2>⏪ Replay Debugger</h2>
+      <p class="sec-desc">Step-by-step chat trace visualizer illustrating vector retrieval, AI logic traces, confidence scores, and action outputs.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Autoplay (Timeline)</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Play</code></td>
+              <td>Plays trace chronology steps consecutively every 1.5 seconds.</td>
+              <td>Advances timeline automatically, highlights retrieval sources.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Step Navigator (Prev / Next)</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Steps forwards or backwards through vector query operations manually.</td>
+              <td>Highlights matching timeline step block details.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Knowledge Hub -->
+    <section id="knowledge-hub">
+      <h2>📚 Knowledge Hub</h2>
+      <p class="sec-desc">Data repository where companies upload documentation PDFs, crawl websites, and write FAQs to train virtual assistant vectors.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Upload Document</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Upload</code></td>
+              <td>Accepts PDF, text, or markdown document sheets for RAG database sync.</td>
+              <td>Loads file, triggers embedding indexing progress.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Crawl URL</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Search</code></td>
+              <td>Parses text links on target websites and indexes text content.</td>
+              <td>Crawl simulation starts, status changes to "Indexed".</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: AI Settings -->
+    <section id="ai-settings">
+      <h2>⚙️ AI Settings</h2>
+      <p class="sec-desc">Settings panel for managing global LLM model selection, API key authorization, and rate limit settings.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Save Brain Configuration</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Saves all active LLM thresholds and API key credentials.</td>
+              <td>Banner alert: "AI settings persisted and deployed."</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Model Selector</td>
+              <td><span class="badge tag-menu">Dropdown</span></td>
+              <td>Dropdown Menu</td>
+              <td>Sets active AI backend models (Gemini-1.5, GPT-4o, Claude-3).</td>
+              <td>Switches system inference engine routing configuration.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Chat Widget Builder -->
+    <section id="widget-builder">
+      <h2>💬 Chat Widget Builder</h2>
+      <p class="sec-desc">Design customizer for altering website chat widget colors, launcher layout shapes, and copying integration script blocks.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Copy Embed Code</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td><code>Copy</code></td>
+              <td>Copies widget launcher JavaScript bundle script tags.</td>
+              <td>Script block copied to clipboard (ready to paste inside website HTML body tags).</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Launcher Position</td>
+              <td><span class="badge tag-menu">Toggle</span></td>
+              <td>Right / Left buttons</td>
+              <td>Alters chatbot float positioning inside target site.</td>
+              <td>Updates smartphone beaker mockup view to reflect placement.</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Widget Color Picker</td>
+              <td><span class="badge tag-input">Input</span></td>
+              <td>Color box</td>
+              <td>Alters top header and action color themes on the widget preview.</td>
+              <td>Smartphone beaker header background color updates immediately.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Platform Settings -->
+    <section id="tenant-settings">
+      <h2>🔌 Platform Settings</h2>
+      <p class="sec-desc">Platform administration configuration board for custom white-label setups, billing plan tiers, and super admin control modes.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Save Changes</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Saves active platform white-label configuration settings.</td>
+              <td>Banner alert: "Tenant settings updated successfully."</td>
+            </tr>
+            <tr>
+              <td class="accent-text">Setup Custom Domain</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Saves and verifies custom subdomains using CNAME parameters.</td>
+              <td>Verifies record ping, returns verification status badge.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION: Help & Support -->
+    <section id="support">
+      <h2>🎧 Help & Support</h2>
+      <p class="sec-desc">Support console for filing platform assistance tickets and reviewing developer service SLA status.</p>
+      
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions</h3>
+        <table class="control-table">
+          <thead>
+            <tr>
+              <th>Button / Control Name</th>
+              <th>Type</th>
+              <th>Icon / State</th>
+              <th>Function & Core Action</th>
+              <th>Expected Output</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="accent-text">Submit Support Ticket</td>
+              <td><span class="badge tag-btn">Button</span></td>
+              <td>—</td>
+              <td>Submits help queries and details straight to developer support.</td>
+              <td>Banner notification: "Ticket logged successfully. Check inbox for updates."</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Search function to search and filter options/buttons in real-time
+    function handleSearch() {
+      const query = document.getElementById('docSearch').value.toLowerCase().trim();
+      const sections = document.querySelectorAll('section');
+      const navItems = document.querySelectorAll('.nav-item');
+      
+      sections.forEach(section => {
+        let hasMatch = false;
+        
+        // Search headers and descriptions
+        const h2 = section.querySelector('h2');
+        const desc = section.querySelector('.sec-desc');
+        const tableRows = section.querySelectorAll('tbody tr');
+        
+        let sectionMatches = false;
+        if (h2.textContent.toLowerCase().includes(query) || (desc && desc.textContent.toLowerCase().includes(query))) {
+          sectionMatches = true;
+          hasMatch = true;
+        }
+
+        // Highlight matched text in h2 (reset first)
+        resetHighlights(h2);
+        resetHighlights(desc);
+        if (query !== '' && sectionMatches) {
+          applyHighlight(h2, query);
+          applyHighlight(desc, query);
+        }
+
+        // Search within table rows
+        tableRows.forEach(row => {
+          let rowMatch = false;
+          const cells = row.querySelectorAll('td');
+          cells.forEach(cell => {
+            resetHighlights(cell);
+            if (cell.textContent.toLowerCase().includes(query)) {
+              rowMatch = true;
+              hasMatch = true;
+              if (query !== '') {
+                applyHighlight(cell, query);
+              }
+            }
+          });
+
+          if (rowMatch || sectionMatches) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+
+        // Hide or show the whole section based on search matches
+        if (hasMatch || query === '') {
+          section.style.display = '';
+        } else {
+          section.style.display = 'none';
+        }
+      });
+      
+      // Update nav link highlights based on visibility
+      navItems.forEach(item => {
+        const targetId = item.getAttribute('href').substring(1);
+        const targetSec = document.getElementById(targetId);
+        if (targetSec && targetSec.style.display === 'none') {
+          item.style.opacity = '0.35';
+        } else {
+          item.style.opacity = '1';
+        }
+      });
+    }
+
+    // Helper functions for search highlighting
+    function resetHighlights(el) {
+      if (!el) return;
+      el.innerHTML = el.innerHTML.replace(/<span class="match-highlight">(.*?)<\/span>/gi, '$1');
+    }
+
+    // Escape character entities before match
+    function applyHighlight(el, query) {
+      if (!el) return;
+      const innerHTML = el.innerHTML;
+      const index = innerHTML.toLowerCase().indexOf(query);
+      if (index >= 0) {
+        // Regex replace keeping casing intact
+        const regex = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
+        el.innerHTML = innerHTML.replace(regex, '<span class="match-highlight">$1</span>');
+      }
+    }
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Smooth scrollSpy/Navigation link active styling
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        navItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+
+    // Simple scroll spy logic
+    window.addEventListener('scroll', () => {
+      let fromTop = window.scrollY + 100;
+      let activeItem = null;
+      
+      document.querySelectorAll('section').forEach(sec => {
+        if (sec.style.display !== 'none' && sec.offsetTop <= fromTop) {
+          activeItem = sec.id;
+        }
+      });
+
+      if (activeItem) {
+        navItems.forEach(item => {
+          if (item.getAttribute('href') === '#' + activeItem) {
+            item.classList.add('active');
+          } else {
+            item.classList.remove('active');
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
