@@ -1918,7 +1918,6 @@ export const WidgetBuilderView: React.FC<WidgetBuilderViewProps> = ({
                   </>
                 )}
               </div>
-            )}
 
           </div>
 

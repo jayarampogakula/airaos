@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GatiDesk User Documentation & Control Catalog</title>
+  <title>GatiDesk Playbook: Complete Operational & Control Guide</title>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,7 @@
       --bg-primary: #070a13;
       --bg-secondary: #0d1222;
       --bg-tertiary: #171f38;
-      --bg-glass: rgba(13, 18, 34, 0.7);
+      --bg-glass: rgba(13, 18, 34, 0.75);
       --border-glass: rgba(255, 255, 255, 0.08);
       
       --text-primary: #f8fafc;
@@ -105,7 +105,7 @@
 
     .brand-name {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 700;
       letter-spacing: -0.5px;
     }
@@ -220,10 +220,6 @@
       scroll-margin-top: 40px;
     }
 
-    section.hidden {
-      display: none;
-    }
-
     h2 {
       font-family: 'Space Grotesk', sans-serif;
       font-size: 1.6rem;
@@ -240,7 +236,7 @@
       color: var(--text-secondary);
       font-size: 0.92rem;
       line-height: 1.6;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     /* Glass Cards */
@@ -261,26 +257,52 @@
       color: #fff;
     }
 
-    /* Accordions & Lists */
-    .option-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    /* Operational Block Details (Why, When, How) */
+    .meta-details {
+      display: grid;
+      grid-template-cols: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
     }
-
-    .option-item {
-      background: rgba(255, 255, 255, 0.01);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      border-radius: var(--radius-sm);
-      padding: 16px;
-      transition: all 0.25s;
-    }
-
-    .option-item:hover {
+    
+    .meta-block {
       background: rgba(255, 255, 255, 0.02);
-      border-color: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 16px;
+      border-radius: var(--radius-sm);
+    }
+    
+    .meta-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    
+    .meta-title.why { color: var(--accent-color); }
+    .meta-title.when { color: var(--warning-color); }
+    .meta-title.how { color: var(--success-color); }
+    
+    .meta-content {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    
+    .step-guide {
+      margin-top: 10px;
+      padding-left: 18px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    
+    .step-guide li {
+      margin-bottom: 8px;
     }
 
+    /* Option Item reference list */
     .option-header {
       display: flex;
       align-items: center;
@@ -311,12 +333,6 @@
     .tag-input { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
     .tag-toggle { background: rgba(16, 185, 129, 0.15); color: #34d399; }
     .tag-node { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
-
-    .option-desc {
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-    }
 
     /* Tables */
     table {
@@ -357,50 +373,6 @@
       font-weight: 600;
     }
 
-    /* Badge styles */
-    .badge {
-      display: inline-block;
-      padding: 2px 6px;
-      font-size: 0.65rem;
-      font-weight: 700;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
-
-    .badge-success { background: rgba(16, 185, 129, 0.1); color: #34d399; }
-    .badge-warning { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
-    .badge-info { background: rgba(6, 182, 212, 0.1); color: #22d3ee; }
-    .badge-danger { background: rgba(239, 68, 68, 0.1); color: #f87171; }
-
-    /* Code block */
-    pre {
-      background: #020617;
-      border: 1px solid var(--border-glass);
-      border-radius: var(--radius-sm);
-      padding: 14px;
-      overflow-x: auto;
-      font-family: 'Space Mono', Courier, monospace;
-      font-size: 0.75rem;
-      color: #38bdf8;
-      margin-top: 10px;
-    }
-
-    code {
-      font-family: inherit;
-    }
-
-    /* Highlights */
-    .highlight-box {
-      border-left: 4px solid var(--primary-color);
-      background: rgba(99, 102, 241, 0.03);
-      padding: 12px 18px;
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      margin: 14px 0;
-    }
-
     /* Highlight badge on search matches */
     .match-highlight {
       background-color: rgba(245, 158, 11, 0.3);
@@ -416,12 +388,12 @@
   <aside>
     <div class="brand">
       <div class="brand-icon">G</div>
-      <div class="brand-name">GatiDesk Docs</div>
+      <div class="brand-name">GatiDesk Playbook</div>
     </div>
     
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input type="text" id="docSearch" placeholder="Search buttons & menus..." oninput="handleSearch()">
+      <input type="text" id="docSearch" placeholder="Search tasks, guides, buttons..." oninput="handleSearch()">
     </div>
     
     <nav class="nav-links">
@@ -461,70 +433,45 @@
   <!-- Main Content Container -->
   <main>
     <header>
-      <h1>GatiDesk Platform Guide & Interactive Control Catalog</h1>
-      <p class="subtitle">Complete how-to resource and button-level mapping for GatiDesk CRM & AI Operating System features. Search for any option or configuration node to verify its behavior.</p>
+      <h1>GatiDesk Platform Operational Playbook</h1>
+      <p class="subtitle">An interactive step-by-step user guide detailing exactly <b>Why</b>, <b>When</b>, and <b>How</b> to operate every module inside the GatiDesk AI CRM suite.</p>
     </header>
 
     <!-- SECTION: Dashboard Overview -->
     <section id="dashboard">
       <h2>🏠 Dashboard Overview</h2>
-      <p class="sec-desc">The core control panel providing real-time telemetry metrics, automated briefings, resource limits, and an inline platform help assistant.</p>
+      <p class="sec-desc">Your operational mission control center providing system telemetry briefings and instant support access.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To capture a high-level summary of your business's daily health and verify system allocations (chats, voice minutes) without clicking through individual log lists.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">Every morning when logging in to review AI-generated summaries of the previous night's activity, check active visitor counts, or debug integration scripts with the support bot.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Check Live Briefings:</b> Read the AI Daily Briefing card immediately to identify high-intent leads (like Rahul Mehta) flagged for instant follow-up calls.</li>
+          <li><b>Step 2: Monitor Resource Quotas:</b> Scroll to the "Resource Limits" card in the right column to monitor chat and voice calling limits before launching marketing campaigns.</li>
+          <li><b>Step 3: Consult the Platform Guide:</b> Use the built-in search widget or type "How to integrate Twilio?" to receive real-time configuration steps from the chatbot.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Sync Data</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>RefreshCw</code></td>
-              <td>Triggers manual fetching of database lead counts, chats, and calls.</td>
-              <td>Banner alert: "Data synced successfully with latest server metrics."</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Domain URL Link</td>
-              <td><span class="badge tag-btn">Link</span></td>
-              <td><code>ExternalLink</code></td>
-              <td>Navigates to the active business frontend custom domain in a new tab.</td>
-              <td>Opens configured sub-domain URL.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">View Visitor Intelligence</td>
-              <td><span class="badge tag-btn">Link</span></td>
-              <td><code>&rarr;</code></td>
-              <td>Shortcut jumping directly to the live traffic intelligence view.</td>
-              <td>Switches sidebar selector to Visitor Intelligence tab.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Ask Platform Guide</td>
-              <td><span class="badge tag-input">Form</span></td>
-              <td><code>Send</code></td>
-              <td>Submits questions relating to Twilio setup, SIP nodes, and limits.</td>
-              <td>Platform support assistant answers dynamically with typing indicator.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Twilio Suggestion Chip</td>
-              <td><span class="badge tag-btn">Chip</span></td>
-              <td><code>🔑 Twilio</code></td>
-              <td>Auto-completes and sends pre-configured query: "How to integrate Twilio?"</td>
-              <td>Assistant answers with detailed Twilio credential binding steps.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">SIP Carrier Chip</td>
-              <td><span class="badge tag-btn">Chip</span></td>
-              <td><code>🌐 SIP Carrier</code></td>
-              <td>Auto-completes and sends query: "How to configure BYO SIP Server?"</td>
-              <td>Assistant details inbound gateway settings.</td>
-            </tr>
+            <tr><td class="accent-text">Sync Data</td><td>Button</td><td>Forces manual sync of active counts.</td><td>Refreshes metrics; flashes green sync indicator.</td></tr>
+            <tr><td class="accent-text">Domain URL Link</td><td>Link</td><td>Redirects to active customer domain.</td><td>Opens target domain site in new browser tab.</td></tr>
+            <tr><td class="accent-text">Ask Platform Guide</td><td>Input</td><td>Submits custom questions to AI Receptionist.</td><td>Renders text answer with interactive step blocks.</td></tr>
           </tbody>
         </table>
       </div>
@@ -533,49 +480,38 @@
     <!-- SECTION: Revenue Hub -->
     <section id="revenue">
       <h2>💰 Revenue Hub</h2>
-      <p class="sec-desc">A dashboard rendering generated revenue indicators, costs, ROI multipliers, pipeline waterfalls, and AI campaign findings.</p>
+      <p class="sec-desc">Executive revenue dashboard analyzing ROI metrics, closed deals, and campaign outcomes.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To measure marketing spends against actual pipeline conversions and make data-driven allocations for Facebook or Google Ad budgets.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">During weekly review cycles to calculate CAC (Cost per Lead) trends, evaluate MRR changes, and export pipeline reports for team presentations.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Set Date Filter:</b> Switch between 7D, 30D, or custom range selectors to isolate the metrics matching your review cycle.</li>
+          <li><b>Step 2: Inspect ROI breakdown:</b> Check the 'Lead Source ROI' table to see which ad campaign generated the highest revenue multiple (e.g. Facebook Ads at 6.2x).</li>
+          <li><b>Step 3: Export ledgers:</b> Click "Export CSV" or "Export PDF" to retrieve copies of the financials for accounting review.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Export CSV</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Downloads a ledger sheet with deal records, conversions, and campaign ROI.</td>
-              <td>Browser download popup confirmation: "gati_revenue_export.csv"</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Export PDF</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Generates a visual report sheet suitable for business slide decks.</td>
-              <td>Generates PDF download: "gati_monthly_revenue_report.pdf"</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Share Report</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Creates a shareable dashboard link for company stakeholders.</td>
-              <td>Copies secure read-only URL to system clipboard.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">View All (Deals)</td>
-              <td><span class="badge tag-btn">Link</span></td>
-              <td><code>&rarr;</code></td>
-              <td>Redirects user to the deal pipeline page for immediate action.</td>
-              <td>Jumps sidebar navigation to CRM Pipeline.</td>
-            </tr>
+            <tr><td class="accent-text">Export CSV</td><td>Button</td><td>Downloads revenue ledger file.</td><td>Triggers browser download of csv table.</td></tr>
+            <tr><td class="accent-text">Export PDF</td><td>Button</td><td>Generates structured print report.</td><td>Downloads a high-fidelity visual PDF report.</td></tr>
+            <tr><td class="accent-text">Share Report</td><td>Button</td><td>Copies a secure read-only token link.</td><td>Shows clipboard confirmation alert.</td></tr>
           </tbody>
         </table>
       </div>
@@ -584,42 +520,37 @@
     <!-- SECTION: Visitor Intelligence -->
     <section id="visitor-intel">
       <h2>👁️ Visitor Intelligence</h2>
-      <p class="sec-desc">Real-time monitoring panel displaying online visitor actions, navigation history, geolocation tracking, and AI intent probability.</p>
+      <p class="sec-desc">Real-time traffic analyzer tracing website visitor paths, referral parameters, and AI scores.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To identify hot leads who are actively browsing high-value pages (such as `/pricing` or demo request forms) and proactively trigger a manual live chat.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">During active sales periods. Monitor this list live to spot high-intent visitors and intercept them before they close their browser tab.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Filter High-Intent Traffic:</b> Select the "High Intent (>70)" toggle tag to filter out casual traffic and focus on hot leads.</li>
+          <li><b>Step 2: Expand Journey Maps:</b> Click on a row (e.g., 'Rahul Mehta') to inspect the page view timeline and see exactly how long they spent on the pricing page.</li>
+          <li><b>Step 3: Trigger Live Chat Interception:</b> Click "Engage Now" to launch the inbox view and send a personalized message directly to the visitor's screen.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">All / Identified / High Intent</td>
-              <td><span class="badge tag-btn">Toggle</span></td>
-              <td>Button Group</td>
-              <td>Filters visitor lists based on identified details or intent thresholds.</td>
-              <td>Filters traffic view immediately to match category criteria.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Engage Now</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Zap</code></td>
-              <td>Opens a direct chat channel override to message the visitor manually.</td>
-              <td>Launches Unified Inbox focused on the matching visitor session.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Journey Timeline Row</td>
-              <td><span class="badge tag-menu">Row</span></td>
-              <td>Clickable list</td>
-              <td>Expands selected visitor to inspect exact timestamps and path page visits.</td>
-              <td>Populates right sidebar details area with session journey analytics.</td>
-            </tr>
+            <tr><td class="accent-text">High Intent Toggle</td><td>Button</td><td>Filters list to visitors with score > 70.</td><td>Refreshes list; highlights warm prospects.</td></tr>
+            <tr><td class="accent-text">Engage Now</td><td>Button</td><td>Overrides automated bot chat.</td><td>Opens the Unified Inbox targeted on visitor's tab.</td></tr>
           </tbody>
         </table>
       </div>
@@ -628,42 +559,38 @@
     <!-- SECTION: Lead Attribution -->
     <section id="lead-sources">
       <h2>🎯 Lead Attribution</h2>
-      <p class="sec-desc">Dashboard for connecting external advertising platforms (Facebook, Google Ads) and logging incoming UTM query parameters.</p>
+      <p class="sec-desc">Attribution tracking console logging lead origins and marketing UTM parameters.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To ensure every single inbound lead is tagged with correct attribution (e.g. source, campaign, ad set) to avoid lead leakage.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When setting up new ad campaigns on Facebook Ads Manager or Google Ads. Generate tracking parameters here to link with ad destination URLs.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Generate UTM tracker:</b> Click "Add Lead Source" and key in the parameters (e.g. Campaign: `summer_sale_2026`).</li>
+          <li><b>Step 2: Copy API Endpoints:</b> If connecting custom landing pages, click "API Leads" to copy the JSON payload structure and POST endpoint.</li>
+          <li><b>Step 3: Bulk Import offline metrics:</b> Click "CSV Import" to upload offline spreadsheets from events.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Add Lead Source</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Plus</code></td>
-              <td>Opens configuration modal to generate new custom UTM links.</td>
-              <td>Displays Attribution Modal with parameter input fields.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">CSV Import</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Upload</code></td>
-              <td>Imports offline leads compiled from events, databases, or third-party CRM.</td>
-              <td>File selection dialog matching `.csv` configuration.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">API Leads</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Code</code></td>
-              <td>Presents API token settings and incoming payload webhooks.</td>
-              <td>Modal showing webhook endpoint copy links and JSON formats.</td>
-            </tr>
+            <tr><td class="accent-text">Add Lead Source</td><td>Button</td><td>Opens custom UTM URL builder modal.</td><td>Renders parameter input fields.</td></tr>
+            <tr><td class="accent-text">CSV Import</td><td>Button</td><td>Loads external CSV file structures.</td><td>Launches system file upload dialog.</td></tr>
+            <tr><td class="accent-text">API Leads</td><td>Button</td><td>Presents JSON POST webhook details.</td><td>Opens API key display block.</td></tr>
           </tbody>
         </table>
       </div>
@@ -672,42 +599,37 @@
     <!-- SECTION: Analytics Hub -->
     <section id="analytics-center">
       <h2>📊 Analytics Hub</h2>
-      <p class="sec-desc">Unified analytical panel featuring sub-tabs for deep diving into Sales, AI Agents, Marketing campaigns, Conversations, Revenue trends, and Attribution.</p>
+      <p class="sec-desc">Unified analytical panel for diving into Sales, AI Agents, Marketing campaigns, Conversations, Revenue trends, and Attribution.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To review operational metrics across different business channels (like bot resolution rates vs. human escalations) in one place.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">During monthly business audits to assess customer satisfaction (CSAT) scores, calculate peak support hours, and adjust AI agent routing rules.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Select Metric Domain:</b> Use the top tab navigation bar to choose the specific area you want to inspect (e.g. Agent).</li>
+          <li><b>Step 2: Analyze AI Performance:</b> Check the resolution percentage (e.g. "AI resolved 77.5% autonomously") to evaluate bot efficiency.</li>
+          <li><b>Step 3: Export analytics data:</b> Click "Export Tab Data" to retrieve raw metrics files for offline processing.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Sales / Agent / Marketing / Conversation / Revenue / Lead Source</td>
-              <td><span class="badge tag-menu">Tab</span></td>
-              <td>Tab switcher</td>
-              <td>Switches metrics views to focus on the selected system domain.</td>
-              <td>Re-renders charts, KPI rows, and detailed insights below.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Date Preset (7D / 30D / 90D)</td>
-              <td><span class="badge tag-btn">Toggle</span></td>
-              <td>Button Group</td>
-              <td>Filters all chart data points to fit selected duration parameters.</td>
-              <td>Updates graphs and success percentages dynamically.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Export Tab Data</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Download</code></td>
-              <td>Generates file export for whatever data is currently visible in the active tab.</td>
-              <td>Initiates download of file (e.g. `gati_agent_analytics.csv`).</td>
-            </tr>
+            <tr><td class="accent-text">Tab Switcher</td><td>Tabs</td><td>Changes active analytics metrics domain.</td><td>Re-renders graphs, heatmaps, and tables.</td></tr>
+            <tr><td class="accent-text">Export Tab Data</td><td>Button</td><td>Downloads raw tab records.</td><td>Generates a targeted CSV data download.</td></tr>
           </tbody>
         </table>
       </div>
@@ -718,54 +640,38 @@
       <h2>📥 Unified Inbox</h2>
       <p class="sec-desc">Omnichannel communication hub aggregating Web Chat, WhatsApp, SMS, and SIP calling into a single conversational viewport.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To centralize customer conversations across multiple channels so that support agents can respond to SMS, WhatsApp, and Web Chat messages from a single interface.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">Whenever support representatives or sales executives need to chat with leads, answer inquiries, or review bot-to-human escalation flags.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Filter Active Chats:</b> Use the top filter tabs to isolate WhatsApp or Voice calls requiring human intervention.</li>
+          <li><b>Step 2: Assign Conversations:</b> Use the "Assign Agent" dropdown at the top right to assign the ticket to yourself or a teammate.</li>
+          <li><b>Step 3: Send Templates:</b> If using WhatsApp, click the "Template Selector" dropdown to choose a pre-approved template, fill in the variables, and click Send.</li>
+          <li><b>Step 4: Close Ticket:</b> Once resolved, click "Resolve Chat" to archive the thread and keep the inbox clean.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Channel Filter Tabs</td>
-              <td><span class="badge tag-menu">Tab</span></td>
-              <td>All/Chat/Voice/WhatsApp</td>
-              <td>Filters inbox thread entries to isolate specific communication lines.</td>
-              <td>Refreshes list to show selected channel conversations only.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Template Selector</td>
-              <td><span class="badge tag-menu">Dropdown</span></td>
-              <td>Dropdown Menu</td>
-              <td>Selects pre-approved WhatsApp templates or Email macros.</td>
-              <td>Populates composer input area with templated variables.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Assign Agent</td>
-              <td><span class="badge tag-menu">Dropdown</span></td>
-              <td>User Select list</td>
-              <td>Assigns the active conversation to a specific human teammate.</td>
-              <td>Dispatches notification, marks thread owner accordingly.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Resolve Chat</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>CheckCircle2</code></td>
-              <td>Marks the conversation as completed and archives it from active view.</td>
-              <td>Closes chat and shifts focus to next inbox item.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Escalate Ticket</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>AlertCircle</code></td>
-              <td>Flags the ticket for super admin overview or prioritizes SLA queue.</td>
-              <td>Highlights thread red with escalation badge indicator.</td>
-            </tr>
+            <tr><td class="accent-text">Template Selector</td><td>Dropdown</td><td>Loads prebuilt messages.</td><td>Fills message text area with formatting variables.</td></tr>
+            <tr><td class="accent-text">Assign Agent</td><td>Dropdown</td><td>Sets conversation owner.</td><td>Updates ticket metadata and sends assignment alerts.</td></tr>
+            <tr><td class="accent-text">Resolve Chat</td><td>Button</td><td>Closes active thread.</td><td>Removes contact row from the active list.</td></tr>
+            <tr><td class="accent-text">Escalate Ticket</td><td>Button</td><td>Flags thread for admin review.</td><td>Applies red alert badge to conversation.</td></tr>
           </tbody>
         </table>
       </div>
@@ -774,42 +680,38 @@
     <!-- SECTION: Voice Gateway -->
     <section id="voice-gateway">
       <h2>📞 Voice Gateway</h2>
-      <p class="sec-desc">Carrier configuration board for managing business DID numbers, Twilio authentication credentials, and SIP phone connection protocols.</p>
+      <p class="sec-desc">Telephony carrier control board managing Twilio bindings and SIP phone routing.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To link your business phone lines with GatiDesk's AI receptionist so that incoming calls are answered automatically by the voice agent.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When connecting a new SIP carrier trunk, buying a localized business phone number, or troubleshooting call connectivity issues.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Configure Credentials:</b> Bind your Twilio Account SID and Auth Token to enable automated DID number provisioning.</li>
+          <li><b>Step 2: Buy or Connect Number:</b> Click "Buy DID Number" to purchase a local number, or click "Add SIP Number" to link your own VoIP carrier.</li>
+          <li><b>Step 3: Test Webhook Connection:</b> Click "Verify Webhook Status" to ensure incoming voice calls are successfully routed to your GatiDesk instance.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Add SIP Number</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Plus</code></td>
-              <td>Registers a custom VoIP server carrier block to BYO numbers.</td>
-              <td>Displays SIP registration schema setup dialog.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Buy DID Number</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>ShoppingBag</code></td>
-              <td>Provisions a new telephony number directly from Twilio.</td>
-              <td>Lists available numbers with price metrics for one-click ordering.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Verify Webhook Status</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>CheckCircle2</code></td>
-              <td>Checks whether connection hooks for calls are responding to server pings.</td>
-              <td>Alert validation: "Gateway webhook active, latency: 45ms."</td>
-            </tr>
+            <tr><td class="accent-text">Add SIP Number</td><td>Button</td><td>Binds localized custom VoIP trunks.</td><td>Opens SIP host and port credentials setup modal.</td></tr>
+            <tr><td class="accent-text">Buy DID Number</td><td>Button</td><td>Provisions new business phone numbers.</td><td>Shows list of numbers with one-click purchase.</td></tr>
+            <tr><td class="accent-text">Verify Webhook</td><td>Button</td><td>Tests connectivity of communication hooks.</td><td>Returns connectivity latency response banner.</td></tr>
           </tbody>
         </table>
       </div>
@@ -818,63 +720,40 @@
     <!-- SECTION: Flow Canvas -->
     <section id="automation">
       <h2>⚡ Flow Canvas</h2>
-      <p class="sec-desc">Visual drag-and-drop workspace using React Flow nodes to design automation schedules, notification branches, and AI logic paths.</p>
+      <p class="sec-desc">Visual drag-and-drop workspace using React Flow nodes to design automation schedules and AI routing paths.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To build custom marketing sequences, automated email responders, and RAG classification steps without writing custom code.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When setting up lead nurturing workflows (e.g., sending a welcome email when a form is submitted, waiting 2 days, and sending a follow-up SMS).</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Create a Flow:</b> Click "Create Flow" or choose a prebuilt option from the "Template Library" tab.</li>
+          <li><b>Step 2: Add Nodes:</b> Drag triggers, actions, AI qualifiers, or loops from the "Workflow Node Palette" on the left column onto the canvas.</li>
+          <li><b>Step 3: Connect Nodes:</b> Drag lines from a node's source handle to another node's target handle. Use conditional handles (YES/NO) for logic branches.</li>
+          <li><b>Step 4: Test and Activate:</b> Click "Simulate Run" to watch telemetry signals flow through the canvas. Toggle the "Active" switch to turn the workflow live.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Create Flow</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Plus</code></td>
-              <td>Initializes a blank visual canvas with a default trigger block.</td>
-              <td>Loads fresh canvas, clears selected node inputs.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Simulate Run</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>PlayCircle</code></td>
-              <td>Triggers simulated execution telemetry showing flow step-by-step.</td>
-              <td>Dashed connection lines pulse purple and nodes glow green on success.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Duplicate</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Copy</code></td>
-              <td>Clones the active workflow layout under a copy indicator name.</td>
-              <td>Creates duplicate list entry, focus switches to copy.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Export JSON / Import</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Download</code></td>
-              <td>Saves active flowchart layout block schema configuration to local drive.</td>
-              <td>Triggers local download of `workflow_schema.json`.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Node Palette Item</td>
-              <td><span class="badge tag-node">Node</span></td>
-              <td>Sidebar List</td>
-              <td>Adds a new trigger, action, AI qualifier, or loop node onto the grid.</td>
-              <td>Node enters layout grid, connected handles enable link lines.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Active Toggle</td>
-              <td><span class="badge tag-toggle">Toggle</span></td>
-              <td>Switch</td>
-              <td>Switches the workflow graph state between active database running and disabled.</td>
-              <td>Saves status to database, updates run metrics tag.</td>
-            </tr>
+            <tr><td class="accent-text">Create Flow</td><td>Button</td><td>Creates a blank canvas layout grid.</td><td>Loads a default trigger block on the screen.</td></tr>
+            <tr><td class="accent-text">Simulate Run</td><td>Button</td><td>Runs a mock execution telemetry sequence.</td><td>Visual connections pulse to simulate active runs.</td></tr>
+            <tr><td class="accent-text">Duplicate</td><td>Button</td><td>Clones the active workflow layout.</td><td>Creates duplicate flow entry in sidebar list.</td></tr>
+            <tr><td class="accent-text">Export JSON</td><td>Button</td><td>Saves graph configurations locally.</td><td>Downloads a `.json` backup file of the workflow.</td></tr>
           </tbody>
         </table>
       </div>
@@ -885,47 +764,36 @@
       <h2>🧠 AI Lead Scoring</h2>
       <p class="sec-desc">Configurator for scoring incoming leads dynamically based on website page visits, budgets, role designations, and reply timings.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To separate hot sales opportunities from casual website visitors, allowing your sales team to prioritize the highest value leads.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When you want to configure how lead scores are calculated (e.g., adding 25 points for visiting `/pricing`, subtracting 10 for single-channel engagement).</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Set scoring rules:</b> Adjust weight parameters on the scoring factors page.</li>
+          <li><b>Step 2: Run bulk calculations:</b> Click "Run Bulk Scoring" to recalculate scores for all leads in the database based on your new rules.</li>
+          <li><b>Step 3: Route hot leads:</b> Select a lead with a high score (e.g. 91) and click "Assign to Sales" or "Book Demo" to trigger manual follow-up actions.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Run Bulk Scoring</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Sparkles</code></td>
-              <td>Forces AI calculations over all CRM contacts immediately.</td>
-              <td>Shows scoring simulation, updates lead categories.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Book Demo (Details)</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Initiates the calendar scheduler shortcut inside the lead detail panel.</td>
-              <td>Shows slot booking selector modal.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Send WhatsApp</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Opens direct WhatsApp connection macro targeting the lead's number.</td>
-              <td>Brings user to Unified Inbox focused on lead's thread.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Assign to Sales</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Assigns high-scoring, sales-ready lead to executive team member.</td>
-              <td>Notifies assignee, triggers stage transition in CRM.</td>
-            </tr>
+            <tr><td class="accent-text">Run Bulk Scoring</td><td>Button</td><td>Recalculates scores for all database leads.</td><td>Flashes scoring progress bar; updates scores list.</td></tr>
+            <tr><td class="accent-text">Book Demo</td><td>Button</td><td>Opens booking selector interface.</td><td>Displays slot calendar window modal.</td></tr>
+            <tr><td class="accent-text">Assign to Sales</td><td>Button</td><td>Assigns lead to sales pipeline.</td><td>Changes lead owner; triggers CRM stage alert.</td></tr>
           </tbody>
         </table>
       </div>
@@ -934,42 +802,39 @@
     <!-- SECTION: Missed Lead Recovery -->
     <section id="missed-lead">
       <h2>🔁 Missed Lead Recovery</h2>
-      <p class="sec-desc">Sequencer for reactivation campaigns targeting cold database leads via progressive multi-channel messaging steps.</p>
+      <p class="sec-desc">Automation scheduler for reactivating cold database leads using multi-channel message campaigns.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To salvage deals that went cold by automatically re-engaging them with WhatsApp or SMS campaigns after a set period of inactivity.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When a lead stops responding to emails or misses their scheduled tour, and you want to trigger an automated re-engagement campaign.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Build a Recovery Flow:</b> Click "Create New Workflow" to open the sequence builder.</li>
+          <li><b>Step 2: Add delays and actions:</b> Add a delay (e.g., 3 days) and select a communication channel (e.g., WhatsApp).</li>
+          <li><b>Step 3: Write message template:</b> Write a message using personalization tags like `{contact_name}` (e.g., "Hi {contact_name}, are you still interested in scheduling a demo?").</li>
+          <li><b>Step 4: Activate:</b> Click "Save Workflow" and toggle the active switch to start processing cold leads automatically.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Create New Workflow</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Plus</code></td>
-              <td>Opens blank recovery sequence builder panel.</td>
-              <td>Initializes empty step stack, enables title inputs.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Add Step</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Plus</code></td>
-              <td>Appends new delay timer and notification block (Email/WhatsApp/Call).</td>
-              <td>Inserts step timeline card, updates preview block.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Save Workflow</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Save</code></td>
-              <td>Persists recovery sequence schema in database configurations.</td>
-              <td>Saves details, shows banner: "Missed lead sequence active."</td>
-            </tr>
+            <tr><td class="accent-text">Create New Workflow</td><td>Button</td><td>Initializes blank sequence timeline card.</td><td>Loads builder form options with channel buttons.</td></tr>
+            <tr><td class="accent-text">Add Step</td><td>Button</td><td>Inserts delay/action block.</td><td>Adds another step node in sequence preview list.</td></tr>
+            <tr><td class="accent-text">Save Workflow</td><td>Button</td><td>Saves and deploys recovery sequence configurations.</td><td>Shows database save success alert message.</td></tr>
           </tbody>
         </table>
       </div>
@@ -978,42 +843,37 @@
     <!-- SECTION: Pipeline Board -->
     <section id="crm-pipeline">
       <h2>👥 Pipeline Board</h2>
-      <p class="sec-desc">Deal tracking kanban board for moving contacts through stages from Lead generation to Closed-Won status.</p>
+      <p class="sec-desc">Kanban deal board tracking pipeline movements from Lead generation to Closed-Won status.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To visualize your active sales pipeline, track deal values at each stage, and ensure no customer is left unattended.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">Whenever your sales team needs to update the status of active deals, log new inquiries, or check the value of the active pipeline.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Add a new deal:</b> Click "Add Deal" in the top header and fill in the details (e.g., Name, Value: `₹2,50,000`, Stage: `Lead`).</li>
+          <li><b>Step 2: Progress deals:</b> Drag and drop deal cards from left to right as the sales process moves forward.</li>
+          <li><b>Step 3: Close deals:</b> Drag a deal to the "Won" column to automatically calculate generated revenue metrics.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Add Deal</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Plus</code></td>
-              <td>Creates a new deal card inside selected stage.</td>
-              <td>Opens modal form asking for contact name, deal value, and owner.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Pipeline Settings</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Settings</code></td>
-              <td>Permits editing and adding custom stages to the Kanban layout.</td>
-              <td>Presents configuration modal showing stage titles and colors.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Deal Card Drag</td>
-              <td><span class="badge tag-menu">Action</span></td>
-              <td>Visual Card</td>
-              <td>Drags and drops deal cards across pipeline stages.</td>
-              <td>Updates database deal stage, updates total stage value indicators dynamically.</td>
-            </tr>
+            <tr><td class="accent-text">Add Deal</td><td>Button</td><td>Creates a new deal card in pipeline.</td><td>Displays deal creation popup form.</td></tr>
+            <tr><td class="accent-text">Pipeline Settings</td><td>Button</td><td>Allows editing pipeline stages.</td><td>Opens stage configuration window modal.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1022,35 +882,37 @@
     <!-- SECTION: Scheduler Calendar -->
     <section id="calendar">
       <h2>📅 Scheduler Calendar</h2>
-      <p class="sec-desc">Interface for setting meeting slot availabilities and linking external calendar platforms.</p>
+      <p class="sec-desc">Meeting availability scheduler for managing client bookings.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To automate booking demos and sales calls, eliminating the back-and-forth of scheduling meetings manually.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When setting up your booking page availability, linking calendar accounts, or generating custom booking URLs for email signatures.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Connect accounts:</b> Click "Outlook Connect" to authenticate and sync your Microsoft calendar.</li>
+          <li><b>Step 2: Configure availability:</b> Set your working hours and select slot durations (e.g., 30-minute blocks).</li>
+          <li><b>Step 3: Share booking link:</b> Copy the booking page URL to include in emails, WhatsApp campaigns, or widget templates.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Outlook Connect</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Simulates OAuth token authentication links for Microsoft Calendar sync.</td>
-              <td>Brings up login frame simulation confirming integration success.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Slot Interval dropdown</td>
-              <td><span class="badge tag-menu">Dropdown</span></td>
-              <td>Dropdown Menu</td>
-              <td>Alters booking duration blocks (15 mins, 30 mins, 45 mins, 1 hour).</td>
-              <td>Refreshes generated availability grids.</td>
-            </tr>
+            <tr><td class="accent-text">Outlook Connect</td><td>Button</td><td>Triggers Microsoft Calendar sync link.</td><td>Launches Microsoft login portal dialog.</td></tr>
+            <tr><td class="accent-text">Interval Dropdown</td><td>Dropdown</td><td>Alters booking duration blocks.</td><td>Refreshes available slot grids.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1059,42 +921,39 @@
     <!-- SECTION: Campaign Composer -->
     <section id="marketing">
       <h2>📣 Campaign Composer</h2>
-      <p class="sec-desc">Omnichannel composer for designing bulk marketing messages via WhatsApp, Email, or SMS broadcast sweeps.</p>
+      <p class="sec-desc">Omnichannel campaign composer for executing WhatsApp, Email, or SMS broadcasts.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To reach your database contacts in bulk with announcements, product updates, or marketing campaigns.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When launching marketing blasts (e.g., holiday sales announcements, newsletter distributions, webinar invites) across multiple channels.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Choose channel:</b> Click "New Campaign" and select your target channel (Email, WhatsApp, or SMS).</li>
+          <li><b>Step 2: Write with AI:</b> Type in your core theme and click "Generate with AI" to quickly draft high-converting copy.</li>
+          <li><b>Step 3: Define segment:</b> Set target rules (e.g. Lead Score > 50) and review the estimated contact reach.</li>
+          <li><b>Step 4: Launch:</b> Set the delivery trigger (Immediate or Scheduled) and click "Launch Campaign".</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">New Campaign</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Plus</code></td>
-              <td>Launches campaign wizard setup.</td>
-              <td>Opens composer workspace, unlocks editor panels.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Generate with AI</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>✨ Generate with AI</code></td>
-              <td>Asks LLM model to write message drafts matching input themes.</td>
-              <td>Populates draft textarea block with context-tailored copies.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Launch Campaign</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Deploys bulk message broadcast immediately to selected user segment.</td>
-              <td>Starts campaign transmission queue, redirects to live analytics.</td>
-            </tr>
+            <tr><td class="accent-text">New Campaign</td><td>Button</td><td>Creates a blank campaign workspace.</td><td>Opens composer setup window.</td></tr>
+            <tr><td class="accent-text">Generate with AI</td><td>Button</td><td>Drafts campaign copy using AI.</td><td>Fills textarea with formatted draft options.</td></tr>
+            <tr><td class="accent-text">Launch Campaign</td><td>Button</td><td>Deploys bulk message broadcasts.</td><td>Triggers queue transmission; opens live analytics.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1103,42 +962,37 @@
     <!-- SECTION: Agent Builder -->
     <section id="agent-builder">
       <h2>🤖 Agent Builder</h2>
-      <p class="sec-desc">Configuration platform for training specific virtual agents with distinct support personalities, response prompt schemas, and knowledge bases.</p>
+      <p class="sec-desc">Configuration console for training virtual AI agents and receptors.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To train specific virtual assistants with custom instructions, RAG datasets, and operational guardrails.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When creating specialized AI assistants (e.g., support agents, booking receptionists) or updating system prompt templates.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Create an Agent:</b> Click "Create Agent" and enter details like name and avatar emoji.</li>
+          <li><b>Step 2: Set personality:</b> Select a preset template (e.g., Sales Assistant) or write your own custom system prompt instructions.</li>
+          <li><b>Step 3: Attach channels:</b> Toggle the integration switches to map the AI agent to your website chat widget or voice gateway numbers.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Create Agent</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Plus</code></td>
-              <td>Creates a blank agent container ready for prompt training.</td>
-              <td>Opens profile config forms (avatar, name, description).</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Select Template</td>
-              <td><span class="badge tag-menu">Dropdown</span></td>
-              <td>Dropdown Menu</td>
-              <td>Applies predefined prompt systems (Sales Agent, Receptionist, Support).</td>
-              <td>Fills System Prompt text area with prebuilt instruction block.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Integration Toggle</td>
-              <td><span class="badge tag-toggle">Toggle</span></td>
-              <td>Switch</td>
-              <td>Links virtual agent capability to channels (e.g. Inbound Voice, WhatsApp).</td>
-              <td>Agent handles conversations incoming from linked paths.</td>
-            </tr>
+            <tr><td class="accent-text">Create Agent</td><td>Button</td><td>Initializes a new blank agent configuration profile.</td><td>Opens profile customization form.</td></tr>
+            <tr><td class="accent-text">Select Template</td><td>Dropdown</td><td>Applies prebuilt system prompt templates.</td><td>Fills System Prompt text area with preset prompt text.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1147,35 +1001,37 @@
     <!-- SECTION: Multi-Agent Hub -->
     <section id="ecosystem">
       <h2>🤝 Multi-Agent Hub</h2>
-      <p class="sec-desc">Orchestration control board for routing client chats between specialized AI agents and managing human handoff SLA rules.</p>
+      <p class="sec-desc">Orchestration board managing routing criteria and active assistant clusters.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To enable automated coordination between specialized agents, routing conversations dynamically based on customer intent.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When adding new routing keywords (e.g., routing "pricing" queries to the sales agent, or "invoice" queries to the billing agent).</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Adjust routing rules:</b> Click "Add Routing Rule" and set the keyword triggers and target agents.</li>
+          <li><b>Step 2: Manage online availability:</b> Toggle availability switches on the agent cards to manage active agent routing.</li>
+          <li><b>Step 3: Review handoff logs:</b> Monitor the "Agent Handoff Log" to audit how conversations are routed between agents or escalated to human staff.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Add Routing Rule</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Plus</code></td>
-              <td>Adds conditional target routing rules (e.g. IF "billing" THEN forward to Billing Agent).</td>
-              <td>Inserts new routing entry configuration row in rule list.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Toggle Switch (Agent Card)</td>
-              <td><span class="badge tag-toggle">Toggle</span></td>
-              <td>Switch</td>
-              <td>Toggles an agent's online availability state.</td>
-              <td>Updates status dots green/gray, shifts routing distribution metrics.</td>
-            </tr>
+            <tr><td class="accent-text">Add Routing Rule</td><td>Button</td><td>Adds conditional keyword routing rule.</td><td>Adds rule card config row to rule table.</td></tr>
+            <tr><td class="accent-text">Toggle Switch</td><td>Toggle</td><td>Toggles online availability state of target agent.</td><td>Changes indicator status dots green/gray.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1184,35 +1040,37 @@
     <!-- SECTION: Replay Debugger -->
     <section id="replay-center">
       <h2>⏪ Replay Debugger</h2>
-      <p class="sec-desc">Step-by-step chat trace visualizer illustrating vector retrieval, AI logic traces, confidence scores, and action outputs.</p>
+      <p class="sec-desc">Timeline tracer displaying vector searches and execution steps.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To inspect RAG queries, prompt templates, and execution outputs, allowing you to troubleshoot and refine AI response accuracy.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When an AI agent gives an incorrect answer, or when you want to audit knowledge base searches and RAG confidence scores.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Load active conversation:</b> Select a recent conversation session from the left column.</li>
+          <li><b>Step 2: Run trace replay:</b> Click "Autoplay" to play through the conversation steps automatically every 1.5 seconds.</li>
+          <li><b>Step 3: Analyze RAG query traces:</b> Verify RAG search outputs, reasoning blocks, and action logs to debug accuracy.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Autoplay (Timeline)</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Play</code></td>
-              <td>Plays trace chronology steps consecutively every 1.5 seconds.</td>
-              <td>Advances timeline automatically, highlights retrieval sources.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Step Navigator (Prev / Next)</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Steps forwards or backwards through vector query operations manually.</td>
-              <td>Highlights matching timeline step block details.</td>
-            </tr>
+            <tr><td class="accent-text">Autoplay</td><td>Button</td><td>Plays through conversation steps consecutively.</td><td>Automatically advances the step timeline view.</td></tr>
+            <tr><td class="accent-text">Step Navigator</td><td>Button</td><td>Manually navigates trace timeline.</td><td>Navigates to the selected step and displays its logs.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1221,35 +1079,37 @@
     <!-- SECTION: Knowledge Hub -->
     <section id="knowledge-hub">
       <h2>📚 Knowledge Hub</h2>
-      <p class="sec-desc">Data repository where companies upload documentation PDFs, crawl websites, and write FAQs to train virtual assistant vectors.</p>
+      <p class="sec-desc">Upload interface for RAG documents and crawling links.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To build a secure, unified business knowledge base that virtual agents use to answer customer questions accurately.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When uploading company files, FAQs, or syncing your website link structures to train AI agents.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Upload Documents:</b> Click "Upload Document" to upload pricing guides, service catalogs, or policy sheets (PDF/TXT).</li>
+          <li><b>Step 2: Crawl target URL:</b> Enter your website domain and click "Crawl URL" to scrape and index your site's content automatically.</li>
+          <li><b>Step 3: Verify sync:</b> Ensure the upload status updates to "Indexed" before testing the changes in the chat widget builder.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Upload Document</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Upload</code></td>
-              <td>Accepts PDF, text, or markdown document sheets for RAG database sync.</td>
-              <td>Loads file, triggers embedding indexing progress.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Crawl URL</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Search</code></td>
-              <td>Parses text links on target websites and indexes text content.</td>
-              <td>Crawl simulation starts, status changes to "Indexed".</td>
-            </tr>
+            <tr><td class="accent-text">Upload Document</td><td>Button</td><td>Accepts PDF/TXT files for indexing.</td><td>Launches system file upload dialog.</td></tr>
+            <tr><td class="accent-text">Crawl URL</td><td>Button</td><td>Crawls and indexes website domain content.</td><td>Starts crawl process; updates index count.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1258,35 +1118,37 @@
     <!-- SECTION: AI Settings -->
     <section id="ai-settings">
       <h2>⚙️ AI Settings</h2>
-      <p class="sec-desc">Settings panel for managing global LLM model selection, API key authorization, and rate limit settings.</p>
+      <p class="sec-desc">Global settings panel for API keys and LLM inference engine configurations.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To set your own API keys, choose your active AI models, and define global safety and rate limit settings.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When connecting API keys, choosing a different active model (e.g. Gemini-1.5), or updating global prompt configurations.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Bind API keys:</b> Enter your OpenAI, Anthropic, or Google Gemini credentials into the API configuration fields.</li>
+          <li><b>Step 2: Select LLM Model:</b> Use the "Model Selector" dropdown to set your preferred inference model.</li>
+          <li><b>Step 3: Save configuration:</b> Click "Save Brain Configuration" to update your global settings.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Save Brain Configuration</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Saves all active LLM thresholds and API key credentials.</td>
-              <td>Banner alert: "AI settings persisted and deployed."</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Model Selector</td>
-              <td><span class="badge tag-menu">Dropdown</span></td>
-              <td>Dropdown Menu</td>
-              <td>Sets active AI backend models (Gemini-1.5, GPT-4o, Claude-3).</td>
-              <td>Switches system inference engine routing configuration.</td>
-            </tr>
+            <tr><td class="accent-text">Save Brain Configuration</td><td>Button</td><td>Saves LLM credentials and thresholds.</td><td>Shows configurations save confirmation alert.</td></tr>
+            <tr><td class="accent-text">Model Selector</td><td>Dropdown</td><td>Selects the active LLM engine.</td><td>Updates target inference engine configurations.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1295,42 +1157,37 @@
     <!-- SECTION: Chat Widget Builder -->
     <section id="widget-builder">
       <h2>💬 Chat Widget Builder</h2>
-      <p class="sec-desc">Design customizer for altering website chat widget colors, launcher layout shapes, and copying integration script blocks.</p>
+      <p class="sec-desc">Design customizer for building, styling, and generating embed scripts for website widgets.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To style your website chat widget to match your brand identity and retrieve the Javascript bundle code needed for installation.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When customizing widget colors, changing the assistant's avatar name, or installing the widget on your business website.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Customize Styling:</b> Set widget headers, color themes, and chatbot avatar names using the styling controls.</li>
+          <li><b>Step 2: Preview live chat:</b> Use the smartphone beaker mockup on the right to test chat and voice call integrations live.</li>
+          <li><b>Step 3: Embed widget:</b> Click "Copy Embed Code" and paste the code block into your website's HTML body tag.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Copy Embed Code</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td><code>Copy</code></td>
-              <td>Copies widget launcher JavaScript bundle script tags.</td>
-              <td>Script block copied to clipboard (ready to paste inside website HTML body tags).</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Launcher Position</td>
-              <td><span class="badge tag-menu">Toggle</span></td>
-              <td>Right / Left buttons</td>
-              <td>Alters chatbot float positioning inside target site.</td>
-              <td>Updates smartphone beaker mockup view to reflect placement.</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Widget Color Picker</td>
-              <td><span class="badge tag-input">Input</span></td>
-              <td>Color box</td>
-              <td>Alters top header and action color themes on the widget preview.</td>
-              <td>Smartphone beaker header background color updates immediately.</td>
-            </tr>
+            <tr><td class="accent-text">Copy Embed Code</td><td>Button</td><td>Copies script tags to clipboard.</td><td>Saves integration script to clipboard.</td></tr>
+            <tr><td class="accent-text">Widget Color Picker</td><td>Input</td><td>Alters widget color theme.</td><td>Updates mockup header background color immediately.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1339,35 +1196,37 @@
     <!-- SECTION: Platform Settings -->
     <section id="tenant-settings">
       <h2>🔌 Platform Settings</h2>
-      <p class="sec-desc">Platform administration configuration board for custom white-label setups, billing plan tiers, and super admin control modes.</p>
+      <p class="sec-desc">Tenant control panel for whitelabel configuration and custom domain routing.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To configure whitelabel parameters, setup custom domains, manage subscription plans, and configure super admin controls.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When connecting custom domain DNS routing or changing white-label configuration settings.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: Setup DNS:</b> Add CNAME records pointing to GatiDesk within your domain registrar settings.</li>
+          <li><b>Step 2: Setup Domain:</b> Type your subdomain into GatiDesk and click "Setup Custom Domain".</li>
+          <li><b>Step 3: Save details:</b> Click "Save Changes" to deploy white-label branding across your platform.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Save Changes</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Saves active platform white-label configuration settings.</td>
-              <td>Banner alert: "Tenant settings updated successfully."</td>
-            </tr>
-            <tr>
-              <td class="accent-text">Setup Custom Domain</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Saves and verifies custom subdomains using CNAME parameters.</td>
-              <td>Verifies record ping, returns verification status badge.</td>
-            </tr>
+            <tr><td class="accent-text">Save Changes</td><td>Button</td><td>Saves white-label configuration settings.</td><td>Shows tenant profile updated successfully alert.</td></tr>
+            <tr><td class="accent-text">Setup Custom Domain</td><td>Button</td><td>Verifies custom domain records.</td><td>Launches DNS verification test; shows status badge.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1376,28 +1235,35 @@
     <!-- SECTION: Help & Support -->
     <section id="support">
       <h2>🎧 Help & Support</h2>
-      <p class="sec-desc">Support console for filing platform assistance tickets and reviewing developer service SLA status.</p>
+      <p class="sec-desc">Support console for filing platform assistance tickets.</p>
       
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To request assistance from developers, file bug reports, or check current system service status.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">Whenever you encounter integration errors, need custom package limits, or require administrator help.</div>
+        </div>
+      </div>
+
       <div class="glass-card">
-        <h3>Primary Buttons & Actions</h3>
+        <h3>How to use (Step-by-Step Guide)</h3>
+        <ul class="step-guide">
+          <li><b>Step 1: File ticket:</b> Fill out the support request form with ticket details and description.</li>
+          <li><b>Step 2: Submit ticket:</b> Click "Submit Support Ticket". Check your inbox for updates and resolution SLA targets.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
         <table class="control-table">
           <thead>
-            <tr>
-              <th>Button / Control Name</th>
-              <th>Type</th>
-              <th>Icon / State</th>
-              <th>Function & Core Action</th>
-              <th>Expected Output</th>
-            </tr>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="accent-text">Submit Support Ticket</td>
-              <td><span class="badge tag-btn">Button</span></td>
-              <td>—</td>
-              <td>Submits help queries and details straight to developer support.</td>
-              <td>Banner notification: "Ticket logged successfully. Check inbox for updates."</td>
-            </tr>
+            <tr><td class="accent-text">Submit Support Ticket</td><td>Button</td><td>Forwards ticket details to developers.</td><td>Returns ticket registered successfully alert message.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1405,7 +1271,7 @@
   </main>
 
   <script>
-    // Search function to search and filter options/buttons in real-time
+    // Search function to search and filter options/guides/buttons in real-time
     function handleSearch() {
       const query = document.getElementById('docSearch').value.toLowerCase().trim();
       const sections = document.querySelectorAll('section');
@@ -1417,6 +1283,8 @@
         // Search headers and descriptions
         const h2 = section.querySelector('h2');
         const desc = section.querySelector('.sec-desc');
+        const metaBlocks = section.querySelectorAll('.meta-block');
+        const stepGuides = section.querySelectorAll('.step-guide li');
         const tableRows = section.querySelectorAll('tbody tr');
         
         let sectionMatches = false;
@@ -1432,6 +1300,25 @@
           applyHighlight(h2, query);
           applyHighlight(desc, query);
         }
+
+        // Search meta blocks (Why, When)
+        metaBlocks.forEach(block => {
+          const content = block.querySelector('.meta-content');
+          resetHighlights(content);
+          if (content.textContent.toLowerCase().includes(query)) {
+            hasMatch = true;
+            if (query !== '') applyHighlight(content, query);
+          }
+        });
+
+        // Search step guides (How to)
+        stepGuides.forEach(li => {
+          resetHighlights(li);
+          if (li.textContent.toLowerCase().includes(query)) {
+            hasMatch = true;
+            if (query !== '') applyHighlight(li, query);
+          }
+        });
 
         // Search within table rows
         tableRows.forEach(row => {
