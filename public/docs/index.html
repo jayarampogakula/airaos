@@ -1500,6 +1500,89 @@ Date,Source,Spend,Leads,Revenue,CAC,ROI
       </div>
     </section>
 
+    <!-- SECTION: Integrations -->
+    <section id="integrations">
+      <h2>🔌 Integrations Console</h2>
+      <p class="sec-desc">Centralized configurations center to authorize, synchronize, and connect external communication APIs and SaaS utilities.</p>
+      
+      <div class="meta-details">
+        <div class="meta-block">
+          <div class="meta-title why">Why to use this section?</div>
+          <div class="meta-content">To replace simulated dummy feeds with live production pipelines for WhatsApp Cloud, Gmail, Facebook Pages, Instagram, and Twilio/SIP voice carriers.</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-title when">When to use this section?</div>
+          <div class="meta-content">When connecting new support channels, rotating API credentials, performing Google OAuth consent logins, or checking live webhook callback configurations.</div>
+        </div>
+      </div>
+
+      <div class="use-case-card">
+        <span class="use-case-tag">Usecase Example</span>
+        <div class="use-case-title">Connecting Multi-Channel CRM Support (Smile Dentals)</div>
+        <div class="use-case-content">
+          To manage all channels inside one unified board, the administrator connects:
+          <br>1. **WhatsApp Cloud**: Enters Graph API token and Phone Number ID. Configures verify webhook.
+          <br>2. **Gmail Support**: Clicks **Connect Gmail** to authorize OAuth2 access, syncing customer mails.
+          <br>3. **Twilio Voice**: Enters Twilio credentials and maps inbound voice numbers.
+          <br>Inbound contacts from all platforms automatically feed into the central Contacts dashboard.
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <h3>1. WhatsApp Cloud API Integration</h3>
+        <p class="sec-desc">Direct connectivity to Meta Business Cloud without intermediate brokers.</p>
+        <ul class="step-guide">
+          <li><b>Step 1: Save Keys:</b> Navigate to Settings &gt; Integrations, expand "WhatsApp Settings", and enter your Page Token and Phone Number ID.</li>
+          <li><b>Step 2: Configure Webhook:</b> Copy your dynamic Webhook URL (<code>https://app.cleveradai.in/api/whatsapp/webhook?tenantId=YOUR_TENANT_ID</code>) and paste it into Meta's App Settings. Set the Verification Token to <code>gatidesk_verify_token</code>.</li>
+          <li><b>Step 3: Subscribe to Fields:</b> In Meta portal, check the <code>messages</code> change field. Real-time customer texts will now automatically spawn CRM chats.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>2. Gmail OAuth Inbox Sync</h3>
+        <p class="sec-desc">Bi-directional Google OAuth synchronization using secure REST tokens.</p>
+        <ul class="step-guide">
+          <li><b>Step 1: Authenticate Workspace:</b> Under Integrations, click the primary <b>"Connect Gmail"</b> button to launch Google's secure OAuth flow.</li>
+          <li><b>Step 2: Approve Permissions:</b> Log in with your corporate support account, verify scopes (Gmail read & send), and complete auth callback redirection.</li>
+          <li><b>Step 3: Pub/Sub Webhooks:</b> Register watch webhook callbacks targeted on <code>https://app.cleveradai.in/api/gmail/webhook?tenantId=YOUR_TENANT_ID</code>. Incoming buyer mails will trigger real-time inbox threads.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>3. Meta Platforms (Facebook & Instagram DMs)</h3>
+        <p class="sec-desc">Graph API ingestion routing messages from Messenger pages and Instagram Business profiles.</p>
+        <ul class="step-guide">
+          <li><b>Step 1: Page Token:</b> Enter your Facebook Page Token inside the integrations settings section.</li>
+          <li><b>Step 2: Configure Webhooks:</b> Point Meta's Page Subscriptions callback to <code>https://app.cleveradai.in/api/facebook/webhook?tenantId=YOUR_TENANT_ID</code>. Set Verify Token to <code>gatidesk_fb_verify_token</code>.</li>
+          <li><b>Step 3: Test flow:</b> Send a direct message to your Facebook Page; the AI receptionist will auto-score the profile and return responses.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>4. Twilio Voice & Carrier SIP Factory</h3>
+        <p class="sec-desc">Provider-agnostic telephony routing supporting Twilio, Exotel, Plivo, Telnyx, Vonage, or direct trunk SIP trunks.</p>
+        <ul class="step-guide">
+          <li><b>Step 1: Telephony Keys:</b> Input your carrier credentials (e.g. Twilio SID & Token, or SIP SIP host details) and select your active telephony provider.</li>
+          <li><b>Step 2: Inbound Webhook:</b> Copy the voice routing URL (<code>https://app.cleveradai.in/api/voice/inbound?tenantId=YOUR_TENANT_ID</code>) and configure it as the HTTP POST webhook for incoming calls in your carrier console.</li>
+          <li><b>Step 3: Audio Streams:</b> Establish connection targets on <code>wss://app.cleveradai.in/api/voice/stream</code> to enable voice agents to handle real-time audio streams.</li>
+        </ul>
+      </div>
+
+      <div class="glass-card">
+        <h3>Primary Buttons & Actions Reference</h3>
+        <table class="control-table">
+          <thead>
+            <tr><th>Button Name</th><th>Type</th><th>Core Function</th><th>Expected Output</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="accent-text">Connect Gmail</td><td>Button / Link</td><td>Starts Google OAuth redirection flow.</td><td>Launches Google OAuth consent screen.</td></tr>
+            <tr><td class="accent-text">Save Integrations</td><td>Button</td><td>Saves credentials to encrypted vault.</td><td>Encrypts credentials and shows success alert.</td></tr>
+            <tr><td class="accent-text">Verify Webhook</td><td>Button</td><td>Tests local webhook routing health.</td><td>Flashes green if the server receives verification.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- SECTION: Chat Widget Builder -->
     <section id="widget-builder">
       <h2>💬 Chat Widget Builder</h2>
