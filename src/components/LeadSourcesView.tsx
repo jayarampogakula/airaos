@@ -256,13 +256,22 @@ export const LeadSourcesView: React.FC<LeadSourcesViewProps> = ({ tenantId }) =>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'var(--bg-glass, rgba(255,255,255,0.05))', border: '1px solid var(--border-glass, rgba(255,255,255,0.1))', borderRadius: 10, color: '#94a3b8', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}>
+          <button 
+            onClick={() => alert('Opening CSV import wizard... CSV format supports Lead Name, Source, UTM, and Contact details.')}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'var(--bg-glass, rgba(255,255,255,0.05))', border: '1px solid var(--border-glass, rgba(255,255,255,0.1))', borderRadius: 10, color: '#94a3b8', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}
+          >
             <Download size={14} /> CSV Import
           </button>
-          <button style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'var(--bg-glass, rgba(255,255,255,0.05))', border: '1px solid var(--border-glass, rgba(255,255,255,0.1))', borderRadius: 10, color: '#94a3b8', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}>
+          <button 
+            onClick={() => alert('Accessing Webhook & API Leads configuration. Webhook URL: https://api.gati.ai/v1/leads')}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'var(--bg-glass, rgba(255,255,255,0.05))', border: '1px solid var(--border-glass, rgba(255,255,255,0.1))', borderRadius: 10, color: '#94a3b8', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}
+          >
             <Link2 size={14} /> API Leads
           </button>
-          <button style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'linear-gradient(135deg, var(--primary-color), var(--accent-color))', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px var(--primary-color)44', transition: 'all 0.2s' }}>
+          <button 
+            onClick={() => alert('Adding new Lead Source connector. Select Facebook Ads, Google Ads, or Custom UTM tracker.')}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'linear-gradient(135deg, var(--primary-color), var(--accent-color))', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px var(--primary-color)44', transition: 'all 0.2s' }}
+          >
             <Plus size={14} /> Add Lead Source
           </button>
         </div>
@@ -397,8 +406,16 @@ export const LeadSourcesView: React.FC<LeadSourcesViewProps> = ({ tenantId }) =>
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <button style={{ padding: '4px 10px', fontSize: 11, borderRadius: 7, border: `1px solid ${donutColors[i]}55`, background: `${donutColors[i]}15`, color: donutColors[i], cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>View</button>
-                <button style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#6b7280', cursor: 'pointer' }}>
+                <button 
+                  onClick={() => alert(`Opening details view for lead attribution source: ${src.name}`)}
+                  style={{ padding: '4px 10px', fontSize: 11, borderRadius: 7, border: `1px solid ${donutColors[i]}55`, background: `${donutColors[i]}15`, color: donutColors[i], cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}
+                >
+                  View
+                </button>
+                <button 
+                  onClick={() => alert(`Opening external provider dashboard for source: ${src.name}`)}
+                  style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#6b7280', cursor: 'pointer' }}
+                >
                   <ExternalLink size={12} />
                 </button>
               </div>
@@ -502,7 +519,10 @@ export const LeadSourcesView: React.FC<LeadSourcesViewProps> = ({ tenantId }) =>
             <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#f1f5f9', fontFamily: '"Space Grotesk", sans-serif' }}>Active Campaigns</h3>
             <span style={{ padding: '2px 10px', background: 'var(--primary-color)22', color: 'var(--primary-color)', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>{campaigns.length} running</span>
           </div>
-          <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border-glass, rgba(255,255,255,0.1))', borderRadius: 9, color: '#6b7280', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button 
+            onClick={() => alert('Displaying all active campaigns in Campaign Builder.')}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border-glass, rgba(255,255,255,0.1))', borderRadius: 9, color: '#6b7280', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
             <Eye size={12} /> View All
           </button>
         </div>

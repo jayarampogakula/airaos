@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MessageSquare, Phone, Search, Filter, ChevronLeft, ChevronRight,
   Brain, BookOpen, Bot, Zap, Calendar, Flag, Download, CheckCircle2,
@@ -269,6 +269,24 @@ export const ConversationReplayView: React.FC<ConversationReplayViewProps> = ({ 
 
   const selected = MOCK_CONVERSATIONS.find(c => c.id === selectedId) ?? MOCK_CONVERSATIONS[0];
 
+  useEffect(() => {
+    let timer: any;
+    if (isPlaying) {
+      timer = setInterval(() => {
+        setActiveStep(prev => {
+          if (prev >= selected.steps.length - 1) {
+            setIsPlaying(false);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1500);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isPlaying, selected.steps.length]);
+
   const filtered = MOCK_CONVERSATIONS.filter(c => {
     const matchFilter = filter === 'all' || c.outcome === filter;
     const matchSearch = c.contactName.toLowerCase().includes(search.toLowerCase());
@@ -277,6 +295,22 @@ export const ConversationReplayView: React.FC<ConversationReplayViewProps> = ({ 
 
   const handlePrev = () => setActiveStep(s => Math.max(0, s - 1));
   const handleNext = () => setActiveStep(s => Math.min(selected.steps.length - 1, s + 1));
+
+  const handleFilterDate = () => {
+    alert("Date filtering simulated: Conversations from the last 7 days are active.");
+  };
+
+  const handleViewAnalytics = () => {
+    alert("Navigating to Analytics Center...");
+  };
+
+  const handleFlagReview = () => {
+    alert(`Conversation with ${selected.contactName} flagged for administrator manual review.`);
+  };
+
+  const handleExportReplay = () => {
+    alert(`Replay data for ${selected.contactName} exported to JSON format successfully.`);
+  };
 
   const selectConversation = (id: string) => {
     setSelectedId(id);
@@ -298,10 +332,10 @@ export const ConversationReplayView: React.FC<ConversationReplayViewProps> = ({ 
           <p className="view-subtitle" style={{ marginLeft: 48 }}>Step-by-step AI reasoning, knowledge lookups, and action logs</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          <button onClick={handleFilterDate} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
             <Filter size={14} /> Filter Date
           </button>
-          <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          <button onClick={handleViewAnalytics} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
             <BarChart2 size={14} /> Analytics
           </button>
         </div>
@@ -415,10 +449,10 @@ export const ConversationReplayView: React.FC<ConversationReplayViewProps> = ({ 
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '7px 14px' }}>
+                <button onClick={handleFlagReview} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '7px 14px' }}>
                   <Flag size={13} /> Flag for Review
                 </button>
-                <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '7px 14px' }}>
+                <button onClick={handleExportReplay} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '7px 14px' }}>
                   <Download size={13} /> Export Replay
                 </button>
               </div>

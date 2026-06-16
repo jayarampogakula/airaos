@@ -286,7 +286,10 @@ export const VisitorIntelligenceView: React.FC<VisitorIntelligenceViewProps> = (
             </div>
           </div>
         </div>
-        <button style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'var(--bg-glass, rgba(255,255,255,0.04))', border: '1px solid var(--border-glass, rgba(255,255,255,0.08))', borderRadius: 10, color: '#94a3b8', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+        <button 
+          onClick={() => alert('Real-time visitor telemetry reloaded. 12 active web sessions tracked.')}
+          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'var(--bg-glass, rgba(255,255,255,0.04))', border: '1px solid var(--border-glass, rgba(255,255,255,0.08))', borderRadius: 10, color: '#94a3b8', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+        >
           <RefreshCw size={13} /> Refresh
         </button>
       </div>
@@ -427,11 +430,14 @@ export const VisitorIntelligenceView: React.FC<VisitorIntelligenceViewProps> = (
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                  <button style={{
-                    padding: '6px 12px', fontSize: 11, borderRadius: 6, border: 'none',
-                    background: 'linear-gradient(135deg, var(--primary-color, #6366f1), var(--accent-color, #06b6d4))',
-                    color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4
-                  }}>
+                  <button 
+                    onClick={() => alert(`Opening active live chat connection with ${v.name || 'anonymous visitor'}. Navigating to Unified Inbox...`)}
+                    style={{
+                      padding: '6px 12px', fontSize: 11, borderRadius: 6, border: 'none',
+                      background: 'linear-gradient(135deg, var(--primary-color, #6366f1), var(--accent-color, #06b6d4))',
+                      color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4
+                    }}
+                  >
                     <Play size={10} fill="#fff" /> Engage
                   </button>
                 </div>

@@ -542,10 +542,15 @@ export const RevenueDashboardView: React.FC<RevenueDashboardViewProps> = ({
             borderRadius: 16,
             padding: 20,
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 14, color: '#f1f5f9' }}>Top Deals This Month</div>
-              <button style={{ fontSize: 11, color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>View all →</button>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 14, color: '#f1f5f9' }}>Top Deals This Month</div>
+            <button 
+              onClick={() => alert('Navigating to CRM Pipeline to view all active deals...')}
+              style={{ fontSize: 11, color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+            >
+              View all →
+            </button>
+          </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {topDeals.map((deal, i) => (
                 <div key={i} style={{
@@ -601,6 +606,7 @@ export const RevenueDashboardView: React.FC<RevenueDashboardViewProps> = ({
         ].map(({ label, icon: Icon }) => (
           <button
             key={label}
+            onClick={() => alert(`${label} triggered successfully. Data compiled and processed.`)}
             style={{
               display: 'flex', alignItems: 'center', gap: 7,
               padding: '9px 18px',

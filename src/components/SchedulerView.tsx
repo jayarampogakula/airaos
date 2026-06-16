@@ -46,6 +46,14 @@ export const SchedulerView: React.FC<SchedulerViewProps> = ({
   });
 
   const [activeSubView, setActiveSubView] = useState<'appointments' | 'live'>('appointments');
+  const [outlookStatus, setOutlookStatus] = useState<'unconnected' | 'connecting' | 'connected'>('unconnected');
+
+  const handleConnectOutlook = () => {
+    setOutlookStatus('connecting');
+    setTimeout(() => {
+      setOutlookStatus('connected');
+    }, 1500);
+  };
 
   // Availability state
   const [weekdays, setWeekdays] = useState({
@@ -106,7 +114,19 @@ export const SchedulerView: React.FC<SchedulerViewProps> = ({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Outlook Calendar</span>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.65rem' }}>Connect</button>
+                {outlookStatus === 'connected' ? (
+                  <span className="badge badge-success">Synced</span>
+                ) : outlookStatus === 'connecting' ? (
+                  <span style={{ fontSize: '0.65rem', color: 'var(--primary-color)' }}>Syncing...</span>
+                ) : (
+                  <button 
+                    onClick={handleConnectOutlook}
+                    className="btn btn-secondary" 
+                    style={{ padding: '4px 8px', fontSize: '0.65rem', cursor: 'pointer' }}
+                  >
+                    Connect
+                  </button>
+                )}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Zoom Meetings</span>

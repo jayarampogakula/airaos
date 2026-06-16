@@ -16,6 +16,17 @@ export const AIBrainView: React.FC<AIBrainViewProps> = ({ tenant }) => {
     grounding: true,
     moderation: false,
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const handleSaveConfig = () => {
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    }, 1000);
+  };
 
   const dentalPrompt = `You are Sarah, the AI Dental Receptionist for Smile Dental Clinic. Your main job is to answer patients FAQs about clinical procedures, working hours (Mon-Fri 9AM-6PM), pricing, and book, reschedule, or cancel dental appointments.\n\nKeep answers polite, professional, and relatively short. Always confirm details (name, phone number, date/time) before scheduling a dentist slot in the Calendar Scheduler.\n\nIf the patient describes severe bleeding, excruciating pain, or other major emergencies, flag that you are transferring them to a human receptionist immediately.`;
 
@@ -213,6 +224,32 @@ export const AIBrainView: React.FC<AIBrainViewProps> = ({ tenant }) => {
               onChange={(e) => setSystemPrompt(e.target.value)}
               style={{ flex: 1, minHeight: '140px', fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: '1.4', background: 'var(--bg-secondary)', resize: 'vertical' }}
             />
+          </div>
+
+          <div style={{ marginTop: '16px' }}>
+            <button
+              onClick={handleSaveConfig}
+              disabled={isSaving}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: '10px',
+                border: 'none',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                background: saveSuccess ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, var(--primary-color, #6366f1), var(--accent-color, #06b6d4))',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: saveSuccess ? '0 0 16px rgba(16,185,129,0.4)' : '0 4px 15px rgba(99,102,241,0.25)',
+                transition: 'all 0.3s'
+              }}
+            >
+              {isSaving ? 'Saving Configurations...' : saveSuccess ? '✅ Brain settings saved successfully!' : '💾 Save Brain Configuration'}
+            </button>
           </div>
 
         </div>

@@ -68,6 +68,22 @@ export const MultiAgentEcosystemView: React.FC<MultiAgentEcosystemViewProps> = (
   const [agents, setAgents] = useState<AgentCardData[]>(MOCK_AGENTS);
   const [rules, setRules] = useState<RoutingRule[]>(MOCK_RULES);
   const [showAddRuleModal, setShowAddRuleModal] = useState(false);
+  const [newRuleKeywords, setNewRuleKeywords] = useState('');
+  const [newRuleAgent, setNewRuleAgent] = useState('Sales Agent');
+
+  const handleAddRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRuleKeywords.trim()) return;
+    const keywordsArray = newRuleKeywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    const newRule: RoutingRule = {
+      id: `r-${Date.now()}`,
+      keywords: keywordsArray,
+      targetAgent: newRuleAgent
+    };
+    setRules(prev => [...prev, newRule]);
+    setShowAddRuleModal(false);
+    setNewRuleKeywords('');
+  };
 
   const toggleAgent = (id: string) => {
     setAgents(prev => prev.map(a => {
@@ -113,7 +129,7 @@ export const MultiAgentEcosystemView: React.FC<MultiAgentEcosystemViewProps> = (
             </div>
           </div>
         </div>
-        <button onClick={onAddAgent} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'linear-gradient(135deg, var(--primary-color, #6366f1), var(--accent-color, #06b6d4))', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(99,102,241,0.35)' }}>
+        <button onClick={onAddAgent || (() => alert("To add a new agent, write custom prompts and configure personalities in the 'AI Agent Builder' tab!"))} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'linear-gradient(135deg, var(--primary-color, #6366f1), var(--accent-color, #06b6d4))', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(99,102,241,0.35)' }}>
           <Plus size={14} /> Add New Agent Role
         </button>
       </div>
@@ -219,7 +235,7 @@ export const MultiAgentEcosystemView: React.FC<MultiAgentEcosystemViewProps> = (
                 <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#f1f5f9', fontFamily: '"Space Grotesk", sans-serif' }}>Routing Rules Editor</h3>
                 <p style={{ margin: 0, fontSize: 12, color: '#64748b', marginTop: 2 }}>Define trigger keywords to route conversations to specific agents</p>
               </div>
-              <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#cbd5e1', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+              <button onClick={() => setShowAddRuleModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#cbd5e1', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
                 <Plus size={12} /> Add Routing Rule
               </button>
             </div>
@@ -310,6 +326,45 @@ export const MultiAgentEcosystemView: React.FC<MultiAgentEcosystemViewProps> = (
         </div>
 
       </div>
+
+      {showAddRuleModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="glass-panel" style={{ width: '400px', padding: '24px', backgroundColor: 'var(--bg-secondary)', position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif', margin: 0 }}>Create Routing Rule</h3>
+              <button onClick={() => setShowAddRuleModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+            </div>
+            <form onSubmit={handleAddRule} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Trigger Keywords (comma separated)</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="e.g. quote, price, discount" 
+                  value={newRuleKeywords} 
+                  onChange={e => setNewRuleKeywords(e.target.value)} 
+                  required 
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Route to Agent</label>
+                <select 
+                  className="form-input" 
+                  value={newRuleAgent} 
+                  onChange={e => setNewRuleAgent(e.target.value)}
+                  style={{ background: '#0b0f19', color: '#fff', padding: '8px' }}
+                >
+                  {agents.map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowAddRuleModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Create Rule</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

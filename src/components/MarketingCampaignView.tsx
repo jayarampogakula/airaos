@@ -66,6 +66,71 @@ export const MarketingCampaignView: React.FC<MarketingCampaignViewProps> = ({ te
     setMessage(`Hello {contact_name}!\n\nWe noticed you are doing amazing work at {company}. We have prepared a customized AI-sales sequence that can boost your conversions.\n\nLet's connect soon!\n\nBest,\nSales Team`);
   };
 
+  const handleNewCampaign = () => {
+    const newCamp: CampaignCard = {
+      id: `camp-${Date.now()}`,
+      name: 'New AI Sales Sequence',
+      channel: 'email',
+      status: 'Draft',
+      audienceSize: 0,
+      sentCount: 0,
+      updatedAt: 'Just now'
+    };
+    setSelectedCampaign(newCamp);
+    setCampaignName(newCamp.name);
+    setCampaignChannel(newCamp.channel);
+    setSubject('Exclusive Access: Learn about our new features');
+    setMessage('Hi {contact_name},\n\nWe wanted to share some exciting updates...');
+    setEditorTab('compose');
+  };
+
+  const handleSaveDraft = () => {
+    const updated = {
+      ...selectedCampaign,
+      name: campaignName,
+      channel: campaignChannel,
+      status: 'Draft' as const,
+      updatedAt: 'Just now'
+    };
+    setCampaigns(prev => {
+      const idx = prev.findIndex(c => c.id === selectedCampaign.id);
+      if (idx !== -1) {
+        const copy = [...prev];
+        copy[idx] = updated;
+        return copy;
+      }
+      return [...prev, updated];
+    });
+    setSelectedCampaign(updated);
+    alert('Campaign saved to drafts successfully!');
+  };
+
+  const handleLaunchCampaign = () => {
+    const updated = {
+      ...selectedCampaign,
+      name: campaignName,
+      channel: campaignChannel,
+      status: 'Active' as const,
+      audienceSize: 1250,
+      sentCount: 1250,
+      openRate: 45,
+      replyRate: 28,
+      updatedAt: 'Just now'
+    };
+    setCampaigns(prev => {
+      const idx = prev.findIndex(c => c.id === selectedCampaign.id);
+      if (idx !== -1) {
+        const copy = [...prev];
+        copy[idx] = updated;
+        return copy;
+      }
+      return [...prev, updated];
+    });
+    setSelectedCampaign(updated);
+    setEditorTab('analytics');
+    alert(`Campaign "${campaignName}" launched successfully! 1,250 messages sent.`);
+  };
+
   const getChannelIcon = (ch: 'email' | 'whatsapp' | 'sms') => {
     if (ch === 'email') return <Mail size={14} color="#3b82f6" />;
     if (ch === 'whatsapp') return <MessageCircle size={14} color="#22c55e" />;
@@ -97,7 +162,7 @@ export const MarketingCampaignView: React.FC<MarketingCampaignViewProps> = ({ te
             </div>
           </div>
         </div>
-        <button style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'linear-gradient(135deg, var(--primary-color, #6366f1), var(--accent-color, #06b6d4))', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(99,102,241,0.35)' }}>
+        <button onClick={handleNewCampaign} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', background: 'linear-gradient(135deg, var(--primary-color, #6366f1), var(--accent-color, #06b6d4))', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(99,102,241,0.35)' }}>
           <Plus size={14} /> New Campaign
         </button>
       </div>
@@ -352,8 +417,8 @@ export const MarketingCampaignView: React.FC<MarketingCampaignViewProps> = ({ te
 
           {/* Action buttons */}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
-            <button style={{ padding: '9px 16px', background: 'transparent', border: '1px solid var(--border-glass, rgba(255,255,255,0.1))', borderRadius: 10, color: '#cbd5e1', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Save Draft</button>
-            <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: 'linear-gradient(135deg, var(--primary-color, #6366f1), var(--accent-color, #06b6d4))', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={handleSaveDraft} style={{ padding: '9px 16px', background: 'transparent', border: '1px solid var(--border-glass, rgba(255,255,255,0.1))', borderRadius: 10, color: '#cbd5e1', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Save Draft</button>
+            <button onClick={handleLaunchCampaign} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: 'linear-gradient(135deg, var(--primary-color, #6366f1), var(--accent-color, #06b6d4))', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
               <Play size={13} fill="#fff" /> Launch Campaign
             </button>
           </div>

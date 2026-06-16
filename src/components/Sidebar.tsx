@@ -56,10 +56,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const groups = [
     {
-      title: '🏠 Dashboard',
+      title: '🏠 Dashboard & Analytics',
       tabs: [
         { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-        { id: 'revenue_dashboard', label: 'Revenue Dashboard', icon: TrendingUp, badge: 'NEW' }
+        { id: 'revenue_dashboard', label: 'Revenue Dashboard', icon: TrendingUp, badge: 'NEW' },
+        { id: 'analytics_center', label: 'Analytics Center', icon: BarChart3, badge: 'NEW' }
       ]
     },
     {
@@ -99,7 +100,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'multi_agents', label: 'Multi-Agent Ecosystem', icon: GitBranch, badge: 'NEW' },
         { id: 'knowledge', label: 'Knowledge Hub', icon: Database },
         { id: 'conv_replay', label: 'Conversation Replay', icon: Play, badge: 'NEW' },
-        { id: 'crew', label: 'Agent Orchestrator', icon: Network }
+        { id: 'crew', label: 'Agent Orchestrator', icon: Network },
+        { id: 'brain', label: 'AI Brain Settings', icon: BrainCircuit }
       ]
     },
     {
@@ -110,30 +112,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ]
     },
     {
-      title: '📊 Analytics',
-      tabs: [
-        { id: 'analytics_center', label: 'Analytics Center', icon: BarChart3, badge: 'NEW' }
-      ]
-    },
-    {
-      title: '🧠 AI Models',
-      tabs: [
-        { id: 'brain', label: 'AI Brain', icon: BrainCircuit }
-      ]
-    },
-    {
-      title: '🔌 Platform',
+      title: '🔌 Platform & Settings',
       tabs: [
         { id: 'integrations', label: 'Integrations', icon: PlugZap },
         { id: 'team', label: 'Team & Permissions', icon: Shield },
         { id: 'whitelabel', label: 'White Label', icon: Palette },
-        { id: 'billing', label: 'Billing & Credits', icon: CreditCard }
-      ]
-    },
-    {
-      title: '⚙️ System',
-      tabs: [
-        { id: 'tenant_settings', label: 'Settings', icon: Settings },
+        { id: 'billing', label: 'Billing & Credits', icon: CreditCard },
+        { id: 'tenant_settings', label: 'System Settings', icon: Settings },
         { id: 'tenant_support', label: 'Help & Support', icon: LifeBuoy }
       ]
     }

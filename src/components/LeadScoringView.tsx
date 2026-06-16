@@ -509,24 +509,39 @@ export const LeadScoringView: React.FC<LeadScoringViewProps> = ({ contacts, tena
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button style={{
-                flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: '#fff',
-                fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                boxShadow: '0 0 16px rgba(139,92,246,0.4)',
-              }}><Calendar size={14} /> Book Demo</button>
-              <button style={{
-                flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff',
-                fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                boxShadow: '0 0 16px rgba(16,185,129,0.4)',
-              }}><MessageSquare size={14} /> Send WhatsApp</button>
-              <button style={{
-                flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
-                background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.8)',
-                fontWeight: 700, fontSize: '13px', border: '1px solid rgba(255,255,255,0.15)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-              }}><UserCheck size={14} /> Assign to Sales</button>
+              <button 
+                onClick={() => alert(`Booking demo session for ${selectedLead.name} (${selectedLead.company}). Calendar invitation dispatched.`)}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: '#fff',
+                  fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  boxShadow: '0 0 16px rgba(139,92,246,0.4)',
+                }}
+              >
+                <Calendar size={14} /> Book Demo
+              </button>
+              <button 
+                onClick={() => alert(`Initiating direct WhatsApp outbound channel to ${selectedLead.name} at ${selectedLead.phone}...`)}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff',
+                  fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  boxShadow: '0 0 16px rgba(16,185,129,0.4)',
+                }}
+              >
+                <MessageSquare size={14} /> Send WhatsApp
+              </button>
+              <button 
+                onClick={() => alert(`Assigning lead ${selectedLead.name} to sales agent. CRM ownership record updated.`)}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.8)',
+                  fontWeight: 700, fontSize: '13px', border: '1px solid rgba(255,255,255,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                }}
+              >
+                <UserCheck size={14} /> Assign to Sales
+              </button>
             </div>
           </div>
 
