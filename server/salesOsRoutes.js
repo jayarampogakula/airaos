@@ -101,6 +101,70 @@ export function registerSalesOSRoutes(app, { authMiddleware, tenantMiddleware, r
     res.json({ ok: true });
   });
 
+  app.put('/api/current-tenant/deals/:id', authMiddleware, tenantMiddleware, async (req, res) => {
+    const db = readDb();
+    const deals = db.deals || [];
+    const idx = deals.findIndex(c => c.id === req.params.id && c.tenantId === req.tenantId);
+    if (idx === -1) return res.status(404).json({ error: 'Deal not found' });
+
+    const oldStage = deals[idx].stage || 'lead';
+    const newStage = req.body.stage;
+    
+    deals[idx] = { ...deals[idx], ...req.body, updatedAt: new Date().toISOString() };
+    db.deals = deals;
+
+    if (newStage && newStage !== oldStage) {
+      // 1. Log timeline event
+      const event = {
+        id: `te-${Date.now()}`,
+        tenantId: req.tenantId,
+        contactId: deals[idx].contactId,
+        timestamp: new Date().toISOString(),
+        eventType: 'deal_stage_changed',
+        title: `Deal Stage changed to ${newStage}`,
+        description: `Deal "${deals[idx].name}" shifted from "${oldStage}" to "${newStage}".`,
+        actorType: 'human',
+        actorName: req.user?.name || 'System'
+      };
+      if (!db.customer_timeline) db.customer_timeline = [];
+      db.customer_timeline.push(event);
+
+      // 2. Adjust contact lead score
+      const contactIdx = (db.contacts || []).findIndex(c => c.id === deals[idx].contactId && c.tenantId === req.tenantId);
+      if (contactIdx !== -1) {
+        const scoreMap = { lead: 10, qualified: 50, proposal: 75, negotiation: 90, won: 100, lost: 0 };
+        if (scoreMap[newStage.toLowerCase()] !== undefined) {
+          db.contacts[contactIdx].leadScore = scoreMap[newStage.toLowerCase()];
+          db.contacts[contactIdx].pipelineStage = newStage;
+        }
+      }
+
+      // 3. Log Audit logs
+      const audit = {
+        id: `audit-${Date.now()}`,
+        tenantId: req.tenantId,
+        action: 'DEAL_STAGE_TRANSITION',
+        details: `Deal ${deals[idx].name} (${req.params.id}) transitioned from ${oldStage} to ${newStage}`,
+        timestamp: new Date().toISOString(),
+        userId: req.user?.id || 'system'
+      };
+      if (!db.audit_logs) db.audit_logs = [];
+      db.audit_logs.push(audit);
+
+      // 4. Trigger visual workflow automations
+      try {
+        const { enqueueWorkflowTrigger } = await import('./workflowEngine.js');
+        const contact = db.contacts?.find(c => c.id === deals[idx].contactId);
+        enqueueWorkflowTrigger(db, req.tenantId, 'webhook', { deal: deals[idx], contact, oldStage, newStage });
+      } catch (wfErr) {
+        console.error('Workflow trigger failed during deal transition:', wfErr);
+      }
+    }
+
+    writeDb(db);
+    res.json(deals[idx]);
+  });
+
   app.post('/api/current-tenant/campaigns/:id/send', authMiddleware, tenantMiddleware, (req, res) => {
     const db = readDb();
     db.campaigns = (db.campaigns || []).map(c => c.id === req.params.id && c.tenantId === req.tenantId ? { ...c, status: 'active', updatedAt: new Date().toISOString() } : c);

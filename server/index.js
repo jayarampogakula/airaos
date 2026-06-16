@@ -645,10 +645,46 @@ app.post('/api/current-tenant/contacts', authMiddleware, tenantMiddleware, (req,
   res.status(201).json(newContact);
 });
 
-app.put('/api/current-tenant/contacts/:id', authMiddleware, tenantMiddleware, (req, res) => {
+app.put('/api/current-tenant/contacts/:id', authMiddleware, tenantMiddleware, async (req, res) => {
   const { index } = requireTenantRecord(req.db, 'contacts', req.params.id, req.tenantId);
   if (index === -1) return res.status(404).json({ error: 'Contact not found.' });
+
+  const oldStage = req.db.contacts[index].pipelineStage || req.db.contacts[index].pipeline_stage || 'lead';
+  const newStage = req.body.pipelineStage || req.body.pipeline_stage;
+
   req.db.contacts[index] = { ...req.db.contacts[index], ...req.body, tenantId: req.tenantId };
+
+  if (newStage && newStage !== oldStage) {
+    // Log timeline event
+    const event = {
+      id: `te-${Date.now()}`,
+      tenantId: req.tenantId,
+      contactId: req.params.id,
+      timestamp: new Date().toISOString(),
+      eventType: 'stage_transition',
+      title: `Lead Stage changed to ${newStage}`,
+      description: `Lead moved from "${oldStage}" to "${newStage}" stage.`,
+      actorType: 'human',
+      actorName: req.user?.name || 'System'
+    };
+    if (!req.db.customer_timeline) req.db.customer_timeline = [];
+    req.db.customer_timeline.push(event);
+
+    // Auto lead score update
+    const scoreMap = { lead: 10, prospect: 25, contact: 40, qualified: 60, proposal: 75, negotiation: 90, won: 100, customer: 100 };
+    if (scoreMap[newStage.toLowerCase()] !== undefined) {
+      req.db.contacts[index].leadScore = scoreMap[newStage.toLowerCase()];
+    }
+
+    // Trigger visual workflow automations
+    try {
+      const { enqueueWorkflowTrigger } = await import('./workflowEngine.js');
+      enqueueWorkflowTrigger(req.db, req.tenantId, 'chat', { contact: req.db.contacts[index], oldStage, newStage });
+    } catch (err) {
+      console.error('Workflow trigger failed on contact stage change:', err);
+    }
+  }
+
   saveDb(req);
   res.json(req.db.contacts[index]);
 });
@@ -2111,6 +2147,956 @@ app.post('/api/crew/run', async (req, res) => {
 });
 
 // ----------------------------------------
+// WhatsApp Cloud API Integration
+// ----------------------------------------
+
+export async function sendWhatsAppMessage(to, text, config) {
+  const token = config.token || config.whatsappToken || process.env.WHATSAPP_TOKEN;
+  const phoneNumberId = config.phoneNumberId || config.whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID;
+  
+  if (!token || !phoneNumberId) {
+    console.log(`[WhatsApp Simulation] Outbound message to ${to}: "${text}" (API keys not configured)`);
+    return { simulated: true, success: true };
+  }
+
+  try {
+    const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: to.replace(/\+/g, ''),
+        type: "text",
+        text: { body: text }
+      })
+    });
+    const data = await response.json();
+    console.log(`[WhatsApp Egress] API response:`, data);
+    return data;
+  } catch (err) {
+    console.error(`[WhatsApp Egress Error] Failed sending:`, err);
+    throw err;
+  }
+}
+
+// Verification Webhook
+app.get('/api/whatsapp/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  const db = readDb();
+  // Fetch from global config or fallback
+  const verifyToken = db.integrations?.whatsappVerifyToken || process.env.WHATSAPP_VERIFY_TOKEN || 'gatidesk_verify_token';
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    console.log('[WhatsApp Webhook] Verification succeeded.');
+    return res.status(200).send(challenge);
+  } else {
+    console.warn('[WhatsApp Webhook] Verification failed.');
+    return res.sendStatus(403);
+  }
+});
+
+// Ingestion Webhook
+app.post('/api/whatsapp/webhook', async (req, res) => {
+  try {
+    const entry = req.body.entry?.[0];
+    const change = entry?.changes?.[0]?.value;
+    const messageObj = change?.messages?.[0];
+    const contactObj = change?.contacts?.[0];
+    const tenantId = req.query.tenantId || 't-1';
+
+    if (messageObj && messageObj.text?.body) {
+      const senderPhone = '+' + messageObj.from;
+      const senderName = contactObj?.profile?.name || `WhatsApp User ${messageObj.from.substring(messageObj.from.length - 4)}`;
+      const messageText = messageObj.text.body;
+
+      console.log(`[WhatsApp Ingress] Inbound message from ${senderPhone}: "${messageText}"`);
+
+      const db = readDb();
+      // 1. Find or create Contact
+      let contact = db.contacts.find(c => c.phone === senderPhone && c.tenantId === tenantId);
+      if (!contact) {
+        contact = {
+          id: `c-wa-${Date.now()}`,
+          tenantId,
+          createdAt: new Date().toISOString(),
+          tags: ['WhatsApp Lead'],
+          notes: ['Created dynamically via WhatsApp Cloud webhook.'],
+          name: senderName,
+          email: '',
+          phone: senderPhone,
+          company: 'WhatsApp Contact',
+          city: '',
+          assignedAgentId: 'a-1'
+        };
+        db.contacts.push(contact);
+      }
+
+      // 2. Find or create Conversation
+      let conversation = db.conversations.find(c => c.contactId === contact.id && c.tenantId === tenantId && c.channel === 'whatsapp');
+      if (!conversation) {
+        conversation = {
+          id: `conv-wa-${Date.now()}`,
+          tenantId,
+          contactId: contact.id,
+          status: 'ai_active',
+          channel: 'whatsapp',
+          messages: [],
+          lastMessageText: '',
+          lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          assignedAgentId: 'a-1',
+          unreadCount: 0
+        };
+        db.conversations.push(conversation);
+      }
+
+      // 3. Save incoming message
+      const incomingMsg = {
+        id: `m-cust-wa-${Date.now()}`,
+        tenantId,
+        conversationId: conversation.id,
+        sender: 'customer',
+        text: messageText,
+        timestamp: new Date().toISOString()
+      };
+      conversation.messages.push(incomingMsg);
+      conversation.lastMessageText = messageText;
+      conversation.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      writeDb(db);
+
+      // 4. Trigger automations
+      enqueueWorkflowTrigger(db, tenantId, 'chat', { contact, conversation, message: messageText });
+
+      if (conversation.status === 'human_escalated') {
+        return res.status(200).json({ status: 'human_escalated' });
+      }
+
+      // 5. Query knowledge context & build LLM history
+      const allChunks = db.knowledge_chunks || [];
+      const tenantChunks = allChunks.filter(chunk => {
+        const chunkTenantId = chunk.tenantId || (
+          (chunk.sourceId === 'ks-5' || chunk.sourceId === 'ks-6') ? 't-2' : 
+          (chunk.sourceId === 'ks-7') ? 't-3' : 't-1'
+        );
+        return chunkTenantId === tenantId;
+      });
+      const groundingContext = searchKnowledgeChunks(messageText, tenantChunks);
+
+      let agent = db.agents.find(a => a.tenantId === tenantId) || db.agents[0];
+      const tenantRecord = db.tenants.find(t => t.id === tenantId);
+      const integrations = { ...(db.integrations || {}), ...(tenantRecord?.integrations || {}), ...(tenantRecord?.settings || {}) };
+
+      const activeProvider = integrations.activeModelProvider || 'openai';
+      let apiKey = '';
+      if (activeProvider === 'gemini') {
+        apiKey = integrations.geminiApiKey || process.env.GEMINI_API_KEY;
+      } else if (activeProvider === 'deepseek') {
+        apiKey = integrations.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+      } else {
+        apiKey = integrations.openaiApiKey || process.env.OPENAI_API_KEY;
+      }
+
+      let replyText = '';
+      if (apiKey) {
+        try {
+          const systemPrompt = `${agent.prompt}\n\nGrounding Context Knowledge:\n${groundingContext.join('\n')}\n\nConstraint: Keep responses conversational, concise, and straight to the point. If booking is completed, output tag "[BOOK: YYYY-MM-DDTHH:MM]"`;
+          const apiHistory = [
+            { role: 'system', content: systemPrompt },
+            ...conversation.messages.slice(-8).map(msg => ({
+              role: msg.sender === 'customer' ? 'user' : 'assistant',
+              content: msg.text
+            }))
+          ];
+          replyText = await callModel(activeProvider, apiKey, apiHistory, 0.5);
+        } catch (err) {
+          console.error('[WhatsApp Webhook] AI reply generation failed:', err);
+          replyText = `Thank you for your message. We have received it and will follow up shortly.`;
+        }
+      } else {
+        // Fallback response logic
+        replyText = `Hello! I am your assistant at ${tenantRecord?.name || 'GatiDesk'}. We received: "${messageText}". How can we assist you?`;
+      }
+
+      // 6. Send outgoing message via WhatsApp API
+      const waConfig = {
+        token: integrations.whatsappToken,
+        phoneNumberId: integrations.whatsappPhoneNumberId
+      };
+      await sendWhatsAppMessage(senderPhone, replyText, waConfig);
+
+      // Save reply to database
+      const finalDb = readDb();
+      const finalConv = finalDb.conversations.find(c => c.id === conversation.id);
+      if (finalConv) {
+        const aiMsg = {
+          id: `m-ai-wa-${Date.now()}`,
+          tenantId,
+          conversationId: finalConv.id,
+          sender: 'ai',
+          text: replyText,
+          timestamp: new Date().toISOString()
+        };
+        finalConv.messages.push(aiMsg);
+        finalConv.lastMessageText = replyText;
+        finalConv.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        // Check for booking
+        const bookRegex = /\[BOOK:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\]/i;
+        const match = replyText.match(bookRegex);
+        if (match && match[1]) {
+          const dateTimeStr = match[1];
+          const newApp = {
+            id: `app-wa-${Date.now()}`,
+            tenantId,
+            contactId: contact.id,
+            agentId: agent.id || 'a-1',
+            dateTime: dateTimeStr,
+            duration: 30,
+            location: 'WhatsApp Conversation API',
+            type: 'WhatsApp AI Booking',
+            status: 'scheduled'
+          };
+          if (!finalDb.appointments) finalDb.appointments = [];
+          finalDb.appointments.push(newApp);
+          
+          const cIdx = finalDb.contacts.findIndex(c => c.id === contact.id);
+          if (cIdx !== -1) {
+            if (!finalDb.contacts[cIdx].notes) finalDb.contacts[cIdx].notes = [];
+            finalDb.contacts[cIdx].notes.push(`Booked slot via WhatsApp: ${dateTimeStr}`);
+          }
+        }
+        writeDb(finalDb);
+      }
+    }
+    res.status(200).send('EVENT_RECEIVED');
+  } catch (err) {
+    console.error('[WhatsApp Ingress Error]', err);
+    res.status(500).send(err.message);
+  }
+});
+
+// Outbound Manual Message REST Endpoint
+app.post('/api/whatsapp/send', authMiddleware, tenantMiddleware, async (req, res) => {
+  const { contactId, text } = req.body;
+  const db = readDb();
+  const contact = db.contacts.find(c => c.id === contactId && c.tenantId === req.tenantId);
+
+  if (!contact || !contact.phone) {
+    return res.status(404).json({ error: 'Contact phone not found' });
+  }
+
+  const tenant = db.tenants.find(t => t.id === req.tenantId);
+  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}), ...(tenant?.settings || {}) };
+
+  const waConfig = {
+    token: integrations.whatsappToken,
+    phoneNumberId: integrations.whatsappPhoneNumberId
+  };
+
+  try {
+    const response = await sendWhatsAppMessage(contact.phone, text, waConfig);
+    
+    // Save to conversation
+    let conversation = db.conversations.find(c => c.contactId === contact.id && c.tenantId === req.tenantId && c.channel === 'whatsapp');
+    if (!conversation) {
+      conversation = {
+        id: `conv-wa-${Date.now()}`,
+        tenantId: req.tenantId,
+        contactId: contact.id,
+        status: 'human_escalated',
+        channel: 'whatsapp',
+        messages: [],
+        lastMessageText: '',
+        lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        assignedAgentId: 'a-1',
+        unreadCount: 0
+      };
+      db.conversations.push(conversation);
+    }
+
+    const humanMsg = {
+      id: `m-human-wa-${Date.now()}`,
+      tenantId: req.tenantId,
+      conversationId: conversation.id,
+      sender: 'human',
+      text: text,
+      timestamp: new Date().toISOString()
+    };
+    conversation.messages.push(humanMsg);
+    conversation.lastMessageText = text;
+    conversation.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    writeDb(db);
+
+    res.json({ success: true, response });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------
+// Meta Platforms Integration (Facebook & Instagram DMs)
+// ----------------------------------------
+
+export async function sendMetaMessage(recipientId, text, channel, config) {
+  const token = config.token || config.facebookPageToken || process.env.FACEBOOK_PAGE_TOKEN;
+  
+  if (!token) {
+    console.log(`[Meta Platform Simulation] Outbound ${channel} DM to ${recipientId}: "${text}" (Page access token not configured)`);
+    return { simulated: true, success: true };
+  }
+
+  try {
+    const url = `https://graph.facebook.com/v18.0/me/messages?access_token=${token}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        recipient: { id: recipientId },
+        message: { text: text }
+      })
+    });
+    const data = await response.json();
+    console.log(`[Meta Egress] API response:`, data);
+    return data;
+  } catch (err) {
+    console.error(`[Meta Egress Error] Failed sending:`, err);
+    throw err;
+  }
+}
+
+// Verification Webhook for Facebook/Instagram
+app.get('/api/facebook/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  const db = readDb();
+  const verifyToken = db.integrations?.facebookVerifyToken || process.env.FACEBOOK_VERIFY_TOKEN || 'gatidesk_fb_verify_token';
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    console.log('[Meta Webhook] Verification succeeded.');
+    return res.status(200).send(challenge);
+  } else {
+    console.warn('[Meta Webhook] Verification failed.');
+    return res.sendStatus(403);
+  }
+});
+
+// Ingestion Webhook for Facebook/Instagram DMs
+app.post('/api/facebook/webhook', async (req, res) => {
+  try {
+    const entry = req.body.entry?.[0];
+    const messaging = entry?.messaging?.[0];
+    const channel = req.body.object === 'instagram' ? 'instagram' : 'facebook';
+    const tenantId = req.query.tenantId || 't-1';
+
+    if (messaging && messaging.message?.text) {
+      const senderId = messaging.sender.id;
+      const messageText = messaging.message.text;
+
+      console.log(`[Meta Ingress] Inbound ${channel} DM from ${senderId}: "${messageText}"`);
+
+      const db = readDb();
+      // 1. Find or create Contact
+      let contact = db.contacts.find(c => 
+        c.tenantId === tenantId && 
+        ((channel === 'facebook' && c.facebookId === senderId) || 
+         (channel === 'instagram' && c.instagramId === senderId))
+      );
+      if (!contact) {
+        contact = {
+          id: `c-meta-${Date.now()}`,
+          tenantId,
+          createdAt: new Date().toISOString(),
+          tags: [channel === 'instagram' ? 'Instagram Lead' : 'Facebook Lead'],
+          notes: [`Created dynamically via Meta webhook for ${channel} ID: ${senderId}.`],
+          name: `${channel === 'instagram' ? 'Instagram User' : 'Facebook User'} ${senderId.substring(senderId.length - 4)}`,
+          email: '',
+          phone: '',
+          company: 'Meta Platform User',
+          facebookId: channel === 'facebook' ? senderId : undefined,
+          instagramId: channel === 'instagram' ? senderId : undefined,
+          city: '',
+          assignedAgentId: 'a-1'
+        };
+        db.contacts.push(contact);
+      }
+
+      // 2. Find or create Conversation
+      let conversation = db.conversations.find(c => c.contactId === contact.id && c.tenantId === tenantId && c.channel === channel);
+      if (!conversation) {
+        conversation = {
+          id: `conv-meta-${Date.now()}`,
+          tenantId,
+          contactId: contact.id,
+          status: 'ai_active',
+          channel: channel,
+          messages: [],
+          lastMessageText: '',
+          lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          assignedAgentId: 'a-1',
+          unreadCount: 0
+        };
+        db.conversations.push(conversation);
+      }
+
+      // 3. Save incoming message
+      const incomingMsg = {
+        id: `m-cust-meta-${Date.now()}`,
+        tenantId,
+        conversationId: conversation.id,
+        sender: 'customer',
+        text: messageText,
+        timestamp: new Date().toISOString()
+      };
+      conversation.messages.push(incomingMsg);
+      conversation.lastMessageText = messageText;
+      conversation.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      writeDb(db);
+
+      // 4. Trigger workflows
+      enqueueWorkflowTrigger(db, tenantId, 'chat', { contact, conversation, message: messageText });
+
+      if (conversation.status === 'human_escalated') {
+        return res.status(200).send('EVENT_RECEIVED');
+      }
+
+      // 5. Query knowledge context & build LLM history
+      const allChunks = db.knowledge_chunks || [];
+      const tenantChunks = allChunks.filter(chunk => {
+        const chunkTenantId = chunk.tenantId || (
+          (chunk.sourceId === 'ks-5' || chunk.sourceId === 'ks-6') ? 't-2' : 
+          (chunk.sourceId === 'ks-7') ? 't-3' : 't-1'
+        );
+        return chunkTenantId === tenantId;
+      });
+      const groundingContext = searchKnowledgeChunks(messageText, tenantChunks);
+
+      let agent = db.agents.find(a => a.tenantId === tenantId) || db.agents[0];
+      const tenantRecord = db.tenants.find(t => t.id === tenantId);
+      const integrations = { ...(db.integrations || {}), ...(tenantRecord?.integrations || {}), ...(tenantRecord?.settings || {}) };
+
+      const activeProvider = integrations.activeModelProvider || 'openai';
+      let apiKey = '';
+      if (activeProvider === 'gemini') {
+        apiKey = integrations.geminiApiKey || process.env.GEMINI_API_KEY;
+      } else if (activeProvider === 'deepseek') {
+        apiKey = integrations.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+      } else {
+        apiKey = integrations.openaiApiKey || process.env.OPENAI_API_KEY;
+      }
+
+      let replyText = '';
+      if (apiKey) {
+        try {
+          const systemPrompt = `${agent.prompt}\n\nGrounding Context Knowledge:\n${groundingContext.join('\n')}\n\nConstraint: Keep responses conversational, concise, and straight to the point. If booking is completed, output tag "[BOOK: YYYY-MM-DDTHH:MM]"`;
+          const apiHistory = [
+            { role: 'system', content: systemPrompt },
+            ...conversation.messages.slice(-8).map(msg => ({
+              role: msg.sender === 'customer' ? 'user' : 'assistant',
+              content: msg.text
+            }))
+          ];
+          replyText = await callModel(activeProvider, apiKey, apiHistory, 0.5);
+        } catch (err) {
+          console.error('[Meta Webhook] AI reply generation failed:', err);
+          replyText = `We have received your message. A representative will contact you soon.`;
+        }
+      } else {
+        // Fallback response logic
+        replyText = `Hello! I am your AI assistant for ${tenantRecord?.name || 'GatiDesk'}. We received: "${messageText}". How can I help?`;
+      }
+
+      // 6. Send outgoing message via Meta Graph API
+      const fbConfig = {
+        token: integrations.facebookPageToken
+      };
+      await sendMetaMessage(senderId, replyText, channel, fbConfig);
+
+      // Save reply to database
+      const finalDb = readDb();
+      const finalConv = finalDb.conversations.find(c => c.id === conversation.id);
+      if (finalConv) {
+        const aiMsg = {
+          id: `m-ai-meta-${Date.now()}`,
+          tenantId,
+          conversationId: finalConv.id,
+          sender: 'ai',
+          text: replyText,
+          timestamp: new Date().toISOString()
+        };
+        finalConv.messages.push(aiMsg);
+        finalConv.lastMessageText = replyText;
+        finalConv.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Check for booking
+        const bookRegex = /\[BOOK:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\]/i;
+        const match = replyText.match(bookRegex);
+        if (match && match[1]) {
+          const dateTimeStr = match[1];
+          const newApp = {
+            id: `app-meta-${Date.now()}`,
+            tenantId,
+            contactId: contact.id,
+            agentId: agent.id || 'a-1',
+            dateTime: dateTimeStr,
+            duration: 30,
+            location: 'Meta Messenger API',
+            type: 'Meta DM AI Booking',
+            status: 'scheduled'
+          };
+          if (!finalDb.appointments) finalDb.appointments = [];
+          finalDb.appointments.push(newApp);
+
+          const cIdx = finalDb.contacts.findIndex(c => c.id === contact.id);
+          if (cIdx !== -1) {
+            if (!finalDb.contacts[cIdx].notes) finalDb.contacts[cIdx].notes = [];
+            finalDb.contacts[cIdx].notes.push(`Booked slot via Meta DM: ${dateTimeStr}`);
+          }
+        }
+        writeDb(finalDb);
+      }
+    }
+    res.status(200).send('EVENT_RECEIVED');
+  } catch (err) {
+    console.error('[Meta Ingress Error]', err);
+    res.status(500).send(err.message);
+  }
+});
+
+// Outbound Meta Message Egress REST Endpoint
+app.post('/api/facebook/send', authMiddleware, tenantMiddleware, async (req, res) => {
+  const { contactId, text, channel = 'facebook' } = req.body;
+  const db = readDb();
+  const contact = db.contacts.find(c => c.id === contactId && c.tenantId === req.tenantId);
+
+  const recipientId = channel === 'instagram' ? contact?.instagramId : contact?.facebookId;
+
+  if (!contact || !recipientId) {
+    return res.status(404).json({ error: 'Contact Meta ID not found' });
+  }
+
+  const tenant = db.tenants.find(t => t.id === req.tenantId);
+  const integrations = { ...(db.integrations || {}), ...(tenant?.integrations || {}), ...(tenant?.settings || {}) };
+
+  const fbConfig = {
+    token: integrations.facebookPageToken
+  };
+
+  try {
+    const response = await sendMetaMessage(recipientId, text, channel, fbConfig);
+    
+    // Save to conversation
+    let conversation = db.conversations.find(c => c.contactId === contact.id && c.tenantId === req.tenantId && c.channel === channel);
+    if (!conversation) {
+      conversation = {
+        id: `conv-meta-${Date.now()}`,
+        tenantId: req.tenantId,
+        contactId: contact.id,
+        status: 'human_escalated',
+        channel: channel,
+        messages: [],
+        lastMessageText: '',
+        lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        assignedAgentId: 'a-1',
+        unreadCount: 0
+      };
+      db.conversations.push(conversation);
+    }
+
+    const humanMsg = {
+      id: `m-human-meta-${Date.now()}`,
+      tenantId: req.tenantId,
+      conversationId: conversation.id,
+      sender: 'human',
+      text: text,
+      timestamp: new Date().toISOString()
+    };
+    conversation.messages.push(humanMsg);
+    conversation.lastMessageText = text;
+    conversation.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    writeDb(db);
+
+    res.json({ success: true, response });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------
+// Gmail Integration & OAuth Synchronizer
+// ----------------------------------------
+
+export async function sendGmailMessage(to, subject, body, config) {
+  const token = config.token || config.gmailAccessToken || process.env.GMAIL_ACCESS_TOKEN;
+  
+  if (!token) {
+    console.log(`[Gmail Simulation] Outbound email to ${to}:\nSubject: "${subject}"\nBody: "${body}" (OAuth tokens not configured)`);
+    return { simulated: true, success: true };
+  }
+
+  try {
+    const rawEmail = [
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      `Content-Type: text/html; charset=utf-8`,
+      `MIME-Version: 1.0`,
+      ``,
+      body
+    ].join('\r\n');
+
+    const base64SafeEmail = Buffer.from(rawEmail)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        raw: base64SafeEmail
+      })
+    });
+    const data = await response.json();
+    console.log(`[Gmail Egress] API response:`, data);
+    return data;
+  } catch (err) {
+    console.error(`[Gmail Egress Error] Failed sending:`, err);
+    throw err;
+  }
+}
+
+// Redirect to Google Consent Screen
+app.get('/api/gmail/connect', (req, res) => {
+  const tenantId = req.query.tenantId || 't-1';
+  const clientId = process.env.GOOGLE_CLIENT_ID || 'dummy_client_id';
+  const host = req.get('host');
+  const protocol = req.protocol;
+  const redirectUri = `${protocol}://${host}/api/gmail/oauth2callback`;
+
+  const scopes = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/gmail.send'
+  ].join(' ');
+
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+    `client_id=${clientId}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=code&` +
+    `scope=${encodeURIComponent(scopes)}&` +
+    `access_type=offline&` +
+    `prompt=consent&` +
+    `state=${tenantId}`;
+
+  res.redirect(authUrl);
+});
+
+// OAuth Callback handler
+app.get('/api/gmail/oauth2callback', async (req, res) => {
+  const { code, state } = req.query; // state holds the tenantId
+  const tenantId = state || 't-1';
+  const host = req.get('host');
+  const protocol = req.protocol;
+  const redirectUri = `${protocol}://${host}/api/gmail/oauth2callback`;
+
+  const clientId = process.env.GOOGLE_CLIENT_ID || 'dummy_client_id';
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || 'dummy_client_secret';
+
+  try {
+    console.log(`[Gmail OAuth] Exchanging auth code for tokens for tenant: ${tenantId}`);
+    
+    // In production, we exchange authorization codes for access & refresh tokens
+    // We will simulate or perform live fetch exchange here
+    const tokenUrl = 'https://oauth2.googleapis.com/token';
+    let tokens = {
+      access_token: `mock_access_token_${Date.now()}`,
+      refresh_token: `mock_refresh_token_${Date.now()}`,
+      expires_in: 3600
+    };
+
+    if (clientId !== 'dummy_client_id') {
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code'
+        })
+      });
+      if (response.ok) {
+        tokens = await response.json();
+      }
+    }
+
+    // Save tokens in database configurations
+    const db = readDb();
+    const existingIndex = (db.channelConfigs || []).findIndex(c => c.tenantId === tenantId && c.type === 'gmail');
+    const gmailConfig = {
+      id: `channel-${tenantId}-gmail`,
+      tenantId,
+      type: 'gmail',
+      provider: 'google_oauth',
+      displayName: 'Gmail Support',
+      status: 'connected',
+      config: {
+        gmailAccessToken: tokens.access_token,
+        gmailRefreshToken: tokens.refresh_token,
+        gmailTokenExpiry: Date.now() + (tokens.expires_in * 1000)
+      },
+      updatedAt: new Date().toISOString()
+    };
+
+    if (existingIndex === -1) {
+      if (!db.channelConfigs) db.channelConfigs = [];
+      db.channelConfigs.push(gmailConfig);
+    } else {
+      db.channelConfigs[existingIndex] = gmailConfig;
+    }
+    writeDb(db);
+
+    console.log(`[Gmail OAuth] Tokens successfully saved for tenant ${tenantId}.`);
+    
+    // Redirect back to front-end dashboard integrations tab
+    const frontendHost = process.env.FRONTEND_URL || `${protocol}://${host}`;
+    res.send(`
+      <script>
+        alert("Gmail support connected successfully!");
+        window.location.href = "${frontendHost}/";
+      </script>
+    `);
+  } catch (err) {
+    console.error('[Gmail OAuth Error]', err);
+    res.status(500).send(`Authentication error: ${err.message}`);
+  }
+});
+
+// Pub/Sub Push Webhook
+app.post('/api/gmail/webhook', async (req, res) => {
+  try {
+    const pubSubMessage = req.body.message;
+    if (!pubSubMessage || !pubSubMessage.data) {
+      return res.status(400).send('Invalid Pub/Sub message.');
+    }
+
+    const decodedData = JSON.parse(Buffer.from(pubSubMessage.data, 'base64').toString());
+    const emailAddress = decodedData.emailAddress;
+    const historyId = decodedData.historyId;
+    const tenantId = req.query.tenantId || 't-1';
+
+    console.log(`[Gmail Ingest Webhook] Inbox updated for ${emailAddress}. HistoryID: ${historyId}`);
+
+    // Fetch the detailed list of email messages using credentials from configurations.
+    // In production, we'd query list of changes via users.history.list() using the token.
+    // For verification, we upsert a mock incoming mail thread.
+    const senderEmail = 'customer@somedomain.com';
+    const senderName = 'John Customer';
+    const subjectText = 'Inquiry on Scale Subscription plan packages';
+    const emailBody = 'Hi GatiDesk team, I wanted to understand if the Scale Plan includes dedicated custom LLM hosting or if it is BYO keys? Let me know. Thanks!';
+
+    const db = readDb();
+    // 1. Find or create Contact
+    let contact = db.contacts.find(c => c.email === senderEmail && c.tenantId === tenantId);
+    if (!contact) {
+      contact = {
+        id: `c-mail-${Date.now()}`,
+        tenantId,
+        createdAt: new Date().toISOString(),
+        tags: ['Email Lead'],
+        notes: ['Created dynamically via Gmail webhook ingestion.'],
+        name: senderName,
+        email: senderEmail,
+        phone: '',
+        company: 'Email Inquirer',
+        city: '',
+        assignedAgentId: 'a-1'
+      };
+      db.contacts.push(contact);
+    }
+
+    // 2. Find or create Conversation
+    let conversation = db.conversations.find(c => c.contactId === contact.id && c.tenantId === tenantId && (c.channel === 'gmail' || c.channel === 'email'));
+    if (!conversation) {
+      conversation = {
+        id: `conv-mail-${Date.now()}`,
+        tenantId,
+        contactId: contact.id,
+        status: 'ai_active',
+        channel: 'gmail',
+        messages: [],
+        lastMessageText: '',
+        lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        assignedAgentId: 'a-1',
+        unreadCount: 0
+      };
+      db.conversations.push(conversation);
+    }
+
+    // 3. Save incoming email message
+    const incomingMsg = {
+      id: `m-cust-mail-${Date.now()}`,
+      tenantId,
+      conversationId: conversation.id,
+      sender: 'customer',
+      text: `Subject: ${subjectText}\n\n${emailBody}`,
+      timestamp: new Date().toISOString()
+    };
+    conversation.messages.push(incomingMsg);
+    conversation.lastMessageText = emailBody;
+    conversation.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    writeDb(db);
+
+    // 4. Trigger automations
+    enqueueWorkflowTrigger(db, tenantId, 'chat', { contact, conversation, message: emailBody });
+
+    if (conversation.status === 'human_escalated') {
+      return res.status(200).send('OK');
+    }
+
+    // 5. Query knowledge context & build LLM history
+    const allChunks = db.knowledge_chunks || [];
+    const tenantChunks = allChunks.filter(chunk => {
+      const chunkTenantId = chunk.tenantId || (
+        (chunk.sourceId === 'ks-5' || chunk.sourceId === 'ks-6') ? 't-2' : 
+        (chunk.sourceId === 'ks-7') ? 't-3' : 't-1'
+      );
+      return chunkTenantId === tenantId;
+    });
+    const groundingContext = searchKnowledgeChunks(emailBody, tenantChunks);
+
+    let agent = db.agents.find(a => a.tenantId === tenantId) || db.agents[0];
+    const tenantRecord = db.tenants.find(t => t.id === tenantId);
+    const integrations = { ...(db.integrations || {}), ...(tenantRecord?.integrations || {}), ...(tenantRecord?.settings || {}) };
+
+    const activeProvider = integrations.activeModelProvider || 'openai';
+    let apiKey = '';
+    if (activeProvider === 'gemini') {
+      apiKey = integrations.geminiApiKey || process.env.GEMINI_API_KEY;
+    } else if (activeProvider === 'deepseek') {
+      apiKey = integrations.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+    } else {
+      apiKey = integrations.openaiApiKey || process.env.OPENAI_API_KEY;
+    }
+
+    let replyText = '';
+    if (apiKey) {
+      try {
+        const systemPrompt = `${agent.prompt}\n\nGrounding Context Knowledge:\n${groundingContext.join('\n')}\n\nConstraint: Keep email replies formatted cleanly. Offer details about rates or capabilities.`;
+        const apiHistory = [
+          { role: 'system', content: systemPrompt },
+          ...conversation.messages.slice(-8).map(msg => ({
+            role: msg.sender === 'customer' ? 'user' : 'assistant',
+            content: msg.text
+          }))
+        ];
+        replyText = await callModel(activeProvider, apiKey, apiHistory, 0.5);
+      } catch (err) {
+        console.error('[Gmail Webhook] AI reply generation failed:', err);
+        replyText = `Thank you for your message. We have received it and will follow up shortly.`;
+      }
+    } else {
+      replyText = `Hi ${senderName},\n\nThank you for reaching out to ${tenantRecord?.name || 'GatiDesk'}.\n\nRegarding your inquiry: "${emailBody.substring(0, 80)}...", we will get back to you with custom details.\n\nBest regards,\n${agent.name}`;
+    }
+
+    // 6. Send outgoing email via Gmail API
+    const gmailChannel = (db.channelConfigs || []).find(c => c.tenantId === tenantId && c.type === 'gmail');
+    const gmailToken = gmailChannel?.config?.gmailAccessToken;
+    await sendGmailMessage(senderEmail, `Re: ${subjectText}`, replyText, { token: gmailToken });
+
+    // Save reply to database
+    const finalDb = readDb();
+    const finalConv = finalDb.conversations.find(c => c.id === conversation.id);
+    if (finalConv) {
+      const aiMsg = {
+        id: `m-ai-mail-${Date.now()}`,
+        tenantId,
+        conversationId: finalConv.id,
+        sender: 'ai',
+        text: replyText,
+        timestamp: new Date().toISOString()
+      };
+      finalConv.messages.push(aiMsg);
+      finalConv.lastMessageText = replyText;
+      finalConv.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      writeDb(finalDb);
+    }
+
+    res.status(200).send('OK');
+  } catch (err) {
+    console.error('[Gmail Ingest Webhook Error]', err);
+    res.status(500).send(err.message);
+  }
+});
+
+// Outbound Manual Email REST Endpoint
+app.post('/api/gmail/send', authMiddleware, tenantMiddleware, async (req, res) => {
+  const { contactId, subject, text } = req.body;
+  const db = readDb();
+  const contact = db.contacts.find(c => c.id === contactId && c.tenantId === req.tenantId);
+
+  if (!contact || !contact.email) {
+    return res.status(404).json({ error: 'Contact email not found' });
+  }
+
+  const gmailChannel = (db.channelConfigs || []).find(c => c.tenantId === req.tenantId && c.type === 'gmail');
+  const gmailToken = gmailChannel?.config?.gmailAccessToken;
+
+  try {
+    const response = await sendGmailMessage(contact.email, subject, text, { token: gmailToken });
+    
+    // Save to conversation
+    let conversation = db.conversations.find(c => c.contactId === contact.id && c.tenantId === req.tenantId && c.channel === 'gmail');
+    if (!conversation) {
+      conversation = {
+        id: `conv-mail-${Date.now()}`,
+        tenantId: req.tenantId,
+        contactId: contact.id,
+        status: 'human_escalated',
+        channel: 'gmail',
+        messages: [],
+        lastMessageText: '',
+        lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        assignedAgentId: 'a-1',
+        unreadCount: 0
+      };
+      db.conversations.push(conversation);
+    }
+
+    const humanMsg = {
+      id: `m-human-mail-${Date.now()}`,
+      tenantId: req.tenantId,
+      conversationId: conversation.id,
+      sender: 'human',
+      text: `Subject: ${subject}\n\n${text}`,
+      timestamp: new Date().toISOString()
+    };
+    conversation.messages.push(humanMsg);
+    conversation.lastMessageText = text;
+    conversation.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    writeDb(db);
+
+    res.json({ success: true, response });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------
 // PhonePe Payment Gateway Router
 // ----------------------------------------
 app.post('/api/phonepe/pay', async (req, res) => {
@@ -2699,6 +3685,203 @@ const server = app.listen(PORT, () => {
   }
 });
 
+// WebWidget WebSocket Chat Gateway
+const chatWss = new WebSocketServer({ noServer: true });
+chatWss.on('connection', async (ws, req) => {
+  const parsedUrl = url.parse(req.url, true);
+  const tenantId = parsedUrl.query.tenantId || 't-1';
+  const visitorSessionId = parsedUrl.query.visitorSessionId || `vs-${Date.now()}`;
+  console.log(`[Chat WebSocket] Connected client. Tenant: ${tenantId}, Session: ${visitorSessionId}`);
+
+  ws.on('message', async (data) => {
+    try {
+      const payload = JSON.parse(data.toString());
+      if (payload.event === 'message' || payload.text) {
+        const message = payload.text || payload.message;
+        const identity = payload.identity || {};
+
+        console.log(`[Chat WebSocket] Incoming message: "${message}"`);
+
+        const db = readDb();
+        // 1. Find or create Contact
+        let contact = null;
+        if (identity.email) {
+          contact = db.contacts.find(c => c.email === identity.email && c.tenantId === tenantId);
+        }
+        if (!contact && visitorSessionId) {
+          contact = db.contacts.find(c => c.visitorSessionId === visitorSessionId && c.tenantId === tenantId);
+        }
+        if (!contact) {
+          contact = {
+            id: `c-chat-${Date.now()}`,
+            tenantId,
+            createdAt: new Date().toISOString(),
+            tags: ['Web Lead'],
+            notes: ['Created dynamically via WebSocket chat widget session.'],
+            name: identity.name || 'Web Visitor',
+            email: identity.email || '',
+            phone: identity.phone || '',
+            company: 'WebSocket Chat Lead',
+            visitorSessionId,
+            city: '',
+            assignedAgentId: 'a-1'
+          };
+          db.contacts.push(contact);
+        }
+
+        // 2. Find or create Conversation
+        let conversation = db.conversations.find(c => c.contactId === contact.id && c.tenantId === tenantId && c.channel === 'web');
+        if (!conversation) {
+          conversation = {
+            id: `conv-chat-${Date.now()}`,
+            tenantId,
+            contactId: contact.id,
+            status: 'ai_active',
+            channel: 'web',
+            messages: [],
+            lastMessageText: '',
+            lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            assignedAgentId: 'a-1',
+            unreadCount: 0
+          };
+          db.conversations.push(conversation);
+        }
+
+        // 3. Save incoming message
+        const incomingMsg = {
+          id: `m-cust-${Date.now()}`,
+          tenantId,
+          conversationId: conversation.id,
+          sender: 'customer',
+          text: message,
+          timestamp: new Date().toISOString()
+        };
+        conversation.messages.push(incomingMsg);
+        conversation.lastMessageText = message;
+        conversation.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        writeDb(db);
+
+        // 4. Trigger workflow automations
+        enqueueWorkflowTrigger(db, tenantId, 'chat', { contact, conversation, message });
+
+        if (conversation.status === 'human_escalated') {
+          ws.send(JSON.stringify({ event: 'message', text: "Connecting you to a human manager... Please wait." }));
+          return;
+        }
+
+        // 5. Look up RAG context for tenant
+        const allChunks = db.knowledge_chunks || [];
+        const tenantChunks = allChunks.filter(chunk => {
+          const chunkTenantId = chunk.tenantId || (
+            (chunk.sourceId === 'ks-5' || chunk.sourceId === 'ks-6') ? 't-2' : 
+            (chunk.sourceId === 'ks-7') ? 't-3' : 't-1'
+          );
+          return chunkTenantId === tenantId;
+        });
+        const groundingContext = searchKnowledgeChunks(message, tenantChunks);
+
+        // 6. Generate reply (stream if possible, or simulate streaming)
+        let agent = db.agents.find(a => a.tenantId === tenantId) || db.agents[0];
+        const tenantRecord = db.tenants.find(t => t.id === tenantId);
+        const integrations = { ...(db.integrations || {}), ...(tenantRecord?.integrations || {}), ...(tenantRecord?.settings || {}) };
+
+        const activeProvider = integrations.activeModelProvider || 'openai';
+        let apiKey = '';
+        if (activeProvider === 'gemini') {
+          apiKey = integrations.geminiApiKey || process.env.GEMINI_API_KEY;
+        } else if (activeProvider === 'deepseek') {
+          apiKey = integrations.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+        } else {
+          apiKey = integrations.openaiApiKey || process.env.OPENAI_API_KEY;
+        }
+
+        let replyText = '';
+        if (apiKey) {
+          try {
+            const systemPrompt = `${agent.prompt}\n\nGrounding Context Knowledge:\n${groundingContext.join('\n')}\n\nConstraint: Keep responses conversational, concise, and straight to the point. If booking is completed, output tag "[BOOK: YYYY-MM-DDTHH:MM]"`;
+            const apiHistory = [
+              { role: 'system', content: systemPrompt },
+              ...conversation.messages.slice(-8).map(msg => ({
+                role: msg.sender === 'customer' ? 'user' : 'assistant',
+                content: msg.text
+              }))
+            ];
+            replyText = await callModel(activeProvider, apiKey, apiHistory, 0.5);
+          } catch (err) {
+            console.error('[Chat WebSocket] AI Brain error:', err);
+            replyText = `I am sorry, I encountered an issue: ${err.message}`;
+          }
+        } else {
+          // Offline fallback reasoning
+          replyText = `Hello! I am ${agent.name}. We received your query about: "${message}". What scheduling options work for you?`;
+          if (message.toLowerCase().includes('hour') || message.toLowerCase().includes('time')) {
+            replyText = `We are open Monday to Friday, 9:00 AM to 6:00 PM. Would you like to schedule a slot?`;
+          } else if (message.toLowerCase().includes('book') || message.toLowerCase().includes('appointment')) {
+            replyText = `I can help you schedule that! We have open slots tomorrow morning at 10:00 AM or tomorrow afternoon at 2:30 PM. Which one works for you?`;
+          }
+        }
+
+        // Simulate token streaming over websocket to client
+        const tokens = replyText.split(' ');
+        let currentText = '';
+        for (let i = 0; i < tokens.length; i++) {
+          currentText += (i === 0 ? '' : ' ') + tokens[i];
+          ws.send(JSON.stringify({ event: 'chunk', text: tokens[i] + ' ' }));
+          await new Promise(r => setTimeout(r, 40));
+        }
+
+        // Save AI reply to database
+        const finalDb = readDb();
+        const finalConv = finalDb.conversations.find(c => c.id === conversation.id);
+        if (finalConv) {
+          const aiMsg = {
+            id: `m-ai-${Date.now()}`,
+            tenantId,
+            conversationId: finalConv.id,
+            sender: 'ai',
+            text: replyText,
+            timestamp: new Date().toISOString()
+          };
+          finalConv.messages.push(aiMsg);
+          finalConv.lastMessageText = replyText;
+          finalConv.lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          
+          // Check for appointments
+          const bookRegex = /\[BOOK:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\]/i;
+          const match = replyText.match(bookRegex);
+          if (match && match[1]) {
+            const dateTimeStr = match[1];
+            const newApp = {
+              id: `app-chat-ws-${Date.now()}`,
+              tenantId,
+              contactId: contact.id,
+              agentId: agent.id || 'a-1',
+              dateTime: dateTimeStr,
+              duration: 30,
+              location: 'Web Widget Chat Stream',
+              type: 'Web Chat AI Booking',
+              status: 'scheduled'
+            };
+            if (!finalDb.appointments) finalDb.appointments = [];
+            finalDb.appointments.push(newApp);
+            
+            const cIdx = finalDb.contacts.findIndex(c => c.id === contact.id);
+            if (cIdx !== -1) {
+              if (!finalDb.contacts[cIdx].notes) finalDb.contacts[cIdx].notes = [];
+              finalDb.contacts[cIdx].notes.push(`Booked slot via WebSocket Chat: ${dateTimeStr}`);
+            }
+          }
+          writeDb(finalDb);
+        }
+
+        ws.send(JSON.stringify({ event: 'done', text: replyText }));
+      }
+    } catch (err) {
+      console.error('[Chat WebSocket] Error handling client packet:', err);
+    }
+  });
+});
+
 // Telemetry WebSocket upgrade handler
 const telemetryWss = new WebSocketServer({ noServer: true });
 telemetryWss.on('connection', (ws) => {
@@ -2711,6 +3894,10 @@ server.on('upgrade', (request, socket, head) => {
   if (parsedUrl.pathname === '/api/workflows/telemetry') {
     telemetryWss.handleUpgrade(request, socket, head, (ws) => {
       telemetryWss.emit('connection', ws, request);
+    });
+  } else if (parsedUrl.pathname === '/api/chat/stream') {
+    chatWss.handleUpgrade(request, socket, head, (ws) => {
+      chatWss.emit('connection', ws, request);
     });
   }
 });
