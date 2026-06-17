@@ -4,7 +4,8 @@ import {
   Bot, Database, Network, MessageSquareCode, Globe, BrainCircuit,
   PlugZap, Shield, Palette, CreditCard, Settings, LifeBuoy,
   ChevronDown, ChevronRight, AlertCircle, ShieldAlert, Key, ShoppingBag, MessageSquare,
-  TrendingUp, Target, Eye, RefreshCw, Play, BarChart3, Megaphone, GitBranch, Zap, Clock
+  TrendingUp, Target, Eye, RefreshCw, Play, BarChart3, Megaphone, GitBranch, Zap, Clock,
+  UserPlus
 } from 'lucide-react';
 import { Tenant, User } from '../types';
 
@@ -130,6 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const adminTabs = [
     { id: 'tenants', label: 'Manage Tenants', icon: Users },
+    { id: 'admin_team', label: 'Admin Team', icon: UserPlus },
     { id: 'plans', label: 'Billing & Plans', icon: Settings },
     { id: 'infrastructure', label: 'Infrastructure Status', icon: Database },
     { id: 'settings', label: 'API & LLM Settings', icon: Key },

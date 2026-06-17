@@ -1141,6 +1141,78 @@ app.get('/api/tenants', authMiddleware, (req, res) => {
 });
 
 // ----------------------------------------
+// Super Admin Management Endpoints
+// ----------------------------------------
+
+// Update tenant plan/status (Super Admin only)
+app.put('/api/admin/tenants/:id', authMiddleware, (req, res) => {
+  const db = readDb();
+  const tenantIndex = db.tenants.findIndex(t => t.id === req.params.id);
+  if (tenantIndex === -1) return res.status(404).json({ error: 'Tenant not found' });
+  const { plan, status } = req.body;
+  if (plan) db.tenants[tenantIndex].plan = plan;
+  if (status) db.tenants[tenantIndex].status = status;
+  writeDb(db);
+  res.json(db.tenants[tenantIndex]);
+});
+
+// Get admin team members
+app.get('/api/admin/team', authMiddleware, (req, res) => {
+  const db = readDb();
+  if (!db.adminTeam) {
+    db.adminTeam = [
+      { id: 'adm-1', name: 'Jayaram Pogakula', email: 'admin@gatidesk.com', role: 'Super Admin', status: 'active', createdAt: '2024-01-01T00:00:00Z', lastLogin: new Date().toISOString() },
+      { id: 'adm-2', name: 'Ops Lead', email: 'ops@gatidesk.com', role: 'Operations Manager', status: 'active', createdAt: '2024-03-15T00:00:00Z', lastLogin: new Date(Date.now() - 86400000).toISOString() },
+      { id: 'adm-3', name: 'Support Agent 1', email: 'support@gatidesk.com', role: 'Platform Support Agent', status: 'invited', createdAt: '2024-06-10T00:00:00Z' }
+    ];
+    writeDb(db);
+  }
+  res.json(db.adminTeam);
+});
+
+// Add new admin team member
+app.post('/api/admin/team', authMiddleware, (req, res) => {
+  const db = readDb();
+  if (!db.adminTeam) db.adminTeam = [];
+  const newMember = {
+    id: req.body.id || `adm-${Date.now()}`,
+    name: req.body.name,
+    email: req.body.email,
+    role: req.body.role || 'Platform Support Agent',
+    status: req.body.status || 'invited',
+    createdAt: req.body.createdAt || new Date().toISOString()
+  };
+  db.adminTeam.push(newMember);
+  writeDb(db);
+  res.json(newMember);
+});
+
+// Update admin team member role/status
+app.put('/api/admin/team/:id', authMiddleware, (req, res) => {
+  const db = readDb();
+  if (!db.adminTeam) return res.status(404).json({ error: 'Admin team not found' });
+  const idx = db.adminTeam.findIndex(m => m.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Member not found' });
+  if (req.body.role) db.adminTeam[idx].role = req.body.role;
+  if (req.body.status) db.adminTeam[idx].status = req.body.status;
+  writeDb(db);
+  res.json(db.adminTeam[idx]);
+});
+
+// Remove admin team member
+app.delete('/api/admin/team/:id', authMiddleware, (req, res) => {
+  const db = readDb();
+  if (!db.adminTeam) return res.status(404).json({ error: 'Admin team not found' });
+  const idx = db.adminTeam.findIndex(m => m.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Member not found' });
+  // Prevent deletion of Super Admin accounts
+  if (db.adminTeam[idx].role === 'Super Admin') return res.status(403).json({ error: 'Cannot remove Super Admin accounts' });
+  db.adminTeam.splice(idx, 1);
+  writeDb(db);
+  res.json({ success: true });
+});
+
+// ----------------------------------------
 // CRM Pipeline Endpoints
 // ----------------------------------------
 app.get('/api/contacts', (req, res) => {

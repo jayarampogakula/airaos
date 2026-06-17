@@ -1,15 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Shield, Users, Server, ShoppingBag, HardDrive, CheckCircle2, 
-  Play, AlertTriangle, DollarSign, Globe, Key, BookOpen, Save, Cpu, Terminal 
+  Play, AlertTriangle, DollarSign, Globe, Key, BookOpen, Save, Cpu, Terminal,
+  UserPlus, Trash2, Edit3, Crown, User, UserCheck
 } from 'lucide-react';
 import { Tenant } from '../types';
+
+interface AdminMember {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Super Admin' | 'Operations Manager' | 'Platform Support Agent' | 'Billing Manager';
+  status: 'active' | 'invited' | 'suspended';
+  createdAt: string;
+  lastLogin?: string;
+}
 
 interface SuperAdminViewProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   tenants: Tenant[];
   onToggleTenantStatus: (tenantId: string) => void;
+  onChangeTenantPlan: (tenantId: string, newPlan: string) => void;
   onInstallTemplate: (templateName: string) => void;
   onVisitTenant: (tenantId: string) => void;
   platformSupportBot: {
@@ -57,6 +69,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   setActiveTab,
   tenants,
   onToggleTenantStatus,
+  onChangeTenantPlan,
   onInstallTemplate,
   onVisitTenant,
   platformSupportBot,
@@ -66,6 +79,73 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 }) => {
   const [installedTemplate, setInstalledTemplate] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+
+  // Admin Team State
+  const defaultAdminTeam: AdminMember[] = [
+    { id: 'adm-1', name: 'Jayaram Pogakula', email: 'admin@gatidesk.com', role: 'Super Admin', status: 'active', createdAt: '2024-01-01T00:00:00Z', lastLogin: new Date().toISOString() },
+    { id: 'adm-2', name: 'Ops Lead', email: 'ops@gatidesk.com', role: 'Operations Manager', status: 'active', createdAt: '2024-03-15T00:00:00Z', lastLogin: new Date(Date.now() - 86400000).toISOString() },
+    { id: 'adm-3', name: 'Support Agent 1', email: 'support@gatidesk.com', role: 'Platform Support Agent', status: 'invited', createdAt: '2024-06-10T00:00:00Z' }
+  ];
+  const [adminTeam, setAdminTeam] = useState<AdminMember[]>(defaultAdminTeam);
+  const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'Platform Support Agent' as AdminMember['role'] });
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editingRole, setEditingRole] = useState<AdminMember['role']>('Platform Support Agent');
+
+  // Load admin team from backend on mount
+  useEffect(() => {
+    fetch('/api/admin/team', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data && Array.isArray(data) && data.length > 0) setAdminTeam(data); })
+      .catch(() => {});
+  }, []);
+
+  const handleInviteMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteForm.name || !inviteForm.email) return;
+    const newMember: AdminMember = {
+      id: `adm-${Date.now()}`,
+      name: inviteForm.name,
+      email: inviteForm.email,
+      role: inviteForm.role,
+      status: 'invited',
+      createdAt: new Date().toISOString()
+    };
+    const updated = [...adminTeam, newMember];
+    setAdminTeam(updated);
+    setInviteForm({ name: '', email: '', role: 'Platform Support Agent' });
+    setShowInviteForm(false);
+    setInviteSuccess(true);
+    setTimeout(() => setInviteSuccess(false), 3000);
+    fetch('/api/admin/team', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(newMember)
+    }).catch(() => {});
+  };
+
+  const handleRemoveMember = (id: string) => {
+    if (!window.confirm('Are you sure you want to remove this admin team member?')) return;
+    setAdminTeam(prev => prev.filter(m => m.id !== id));
+    fetch(`/api/admin/team/${id}`, { method: 'DELETE', credentials: 'include' }).catch(() => {});
+  };
+
+  const handleUpdateRole = (id: string, role: AdminMember['role']) => {
+    setAdminTeam(prev => prev.map(m => m.id === id ? { ...m, role } : m));
+    setEditingMemberId(null);
+    fetch(`/api/admin/team/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ role })
+    }).catch(() => {});
+  };
+
+  const handleToggleMemberStatus = (id: string) => {
+    setAdminTeam(prev => prev.map(m => m.id === id ? { ...m, status: m.status === 'active' ? 'suspended' : 'active' } : m));
+  };
 
   const [botEnabled, setBotEnabled] = useState(platformSupportBot?.enabled ?? true);
   const [botName, setBotName] = useState(platformSupportBot?.name ?? 'Platform Guide');
@@ -350,9 +430,24 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   </td>
                   <td><span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t.domain}</span></td>
                   <td>
-                    <span className={`badge ${t.plan === 'Growth' ? 'badge-primary' : t.plan === 'Scale' ? 'badge-warning' : 'badge-danger'}`}>
-                      {t.plan}
-                    </span>
+                    <select
+                      value={t.plan}
+                      onChange={(e) => onChangeTenantPlan(t.id, e.target.value)}
+                      style={{
+                        background: 'rgba(0,0,0,0.3)',
+                        border: '1px solid var(--border-glass)',
+                        borderRadius: '6px',
+                        padding: '4px 8px',
+                        fontSize: '0.75rem',
+                        color: t.plan === 'Growth' ? 'var(--primary-color)' : t.plan === 'Scale' ? '#f59e0b' : '#ef4444',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      <option value="Growth">Growth</option>
+                      <option value="Scale">Scale</option>
+                      <option value="Enterprise">Enterprise</option>
+                    </select>
                   </td>
                   <td>
                     <span className={`badge ${t.status === 'active' ? 'badge-success' : 'badge-danger'}`}>
@@ -1383,6 +1478,269 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {activeTab === 'admin_team' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Header Card */}
+          <div className="glass-card" style={{ padding: '24px', background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(6,182,212,0.1) 100%)', border: '1px solid rgba(99,102,241,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, #6366f1, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}>
+                  <Shield size={24} color="white" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '4px' }}>Admin Team Management</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Manage super admin accounts, assign roles, and control platform access levels</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {inviteSuccess && (
+                  <span className="badge badge-success" style={{ padding: '6px 14px', fontSize: '0.75rem' }}>✓ Invite sent successfully!</span>
+                )}
+                <button
+                  onClick={() => setShowInviteForm(!showInviteForm)}
+                  className="btn btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.8rem', cursor: 'pointer', background: 'linear-gradient(135deg, #6366f1, #06b6d4)', border: 'none' }}
+                >
+                  <UserPlus size={16} /> Invite Admin Member
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+            {[
+              { label: 'Total Members', value: adminTeam.length, color: '#6366f1', icon: '👥' },
+              { label: 'Active', value: adminTeam.filter(m => m.status === 'active').length, color: '#10b981', icon: '✅' },
+              { label: 'Invited (Pending)', value: adminTeam.filter(m => m.status === 'invited').length, color: '#f59e0b', icon: '📧' },
+              { label: 'Suspended', value: adminTeam.filter(m => m.status === 'suspended').length, color: '#ef4444', icon: '🚫' }
+            ].map((stat, i) => (
+              <div key={i} className="glass-card" style={{ padding: '16px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>{stat.icon}</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: '800', color: stat.color, fontFamily: 'Space Grotesk, sans-serif' }}>{stat.value}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Invite Form */}
+          {showInviteForm && (
+            <div className="glass-panel" style={{ padding: '20px', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '12px' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UserPlus size={16} color="#6366f1" /> Invite New Admin Team Member
+              </h4>
+              <form onSubmit={handleInviteMember} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Full Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Priya Sharma"
+                    value={inviteForm.name}
+                    onChange={e => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
+                    required
+                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '10px 12px', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Email Address *</label>
+                  <input
+                    type="email"
+                    placeholder="admin@yourdomain.com"
+                    value={inviteForm.email}
+                    onChange={e => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '10px 12px', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Assign Role *</label>
+                  <select
+                    value={inviteForm.role}
+                    onChange={e => setInviteForm(prev => ({ ...prev, role: e.target.value as AdminMember['role'] }))}
+                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '10px 12px', color: 'var(--text-primary)', fontSize: '0.82rem', cursor: 'pointer' }}
+                  >
+                    <option value="Super Admin">Super Admin</option>
+                    <option value="Operations Manager">Operations Manager</option>
+                    <option value="Billing Manager">Billing Manager</option>
+                    <option value="Platform Support Agent">Platform Support Agent</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="submit" className="btn btn-primary" style={{ padding: '10px 16px', fontSize: '0.8rem', cursor: 'pointer', background: 'linear-gradient(135deg, #6366f1, #06b6d4)', border: 'none', whiteSpace: 'nowrap' }}>
+                    Send Invite
+                  </button>
+                  <button type="button" onClick={() => setShowInviteForm(false)} className="btn" style={{ padding: '10px 12px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                    ✕
+                  </button>
+                </div>
+              </form>
+              <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(99,102,241,0.08)', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                💡 An invitation email will be sent to the specified address. The member can set their own password upon first login.
+              </div>
+            </div>
+          )}
+
+          {/* Team Members Table */}
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={16} color="var(--primary-color)" /> Team Members Registry
+            </h4>
+            <table className="data-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Last Login</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminTeam.map((member) => {
+                  const roleColors: Record<string, string> = {
+                    'Super Admin': '#ef4444',
+                    'Operations Manager': '#6366f1',
+                    'Billing Manager': '#f59e0b',
+                    'Platform Support Agent': '#10b981'
+                  };
+                  const roleIcons: Record<string, React.ReactNode> = {
+                    'Super Admin': <Crown size={12} />,
+                    'Operations Manager': <UserCheck size={12} />,
+                    'Billing Manager': <DollarSign size={12} />,
+                    'Platform Support Agent': <User size={12} />
+                  };
+                  return (
+                    <tr key={member.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{
+                            width: '34px', height: '34px', borderRadius: '50%',
+                            background: `linear-gradient(135deg, ${roleColors[member.role] || '#6366f1'}, ${roleColors[member.role] || '#06b6d4'}44)`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '0.9rem', fontWeight: '700', color: 'white', flexShrink: 0
+                          }}>
+                            {member.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span style={{ fontWeight: '600', fontSize: '0.85rem' }}>{member.name}</span>
+                        </div>
+                      </td>
+                      <td><span style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{member.email}</span></td>
+                      <td>
+                        {editingMemberId === member.id ? (
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <select
+                              value={editingRole}
+                              onChange={e => setEditingRole(e.target.value as AdminMember['role'])}
+                              style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-glass)', borderRadius: '6px', padding: '4px 8px', fontSize: '0.75rem', color: 'var(--text-primary)', cursor: 'pointer' }}
+                            >
+                              <option value="Super Admin">Super Admin</option>
+                              <option value="Operations Manager">Operations Manager</option>
+                              <option value="Billing Manager">Billing Manager</option>
+                              <option value="Platform Support Agent">Platform Support Agent</option>
+                            </select>
+                            <button onClick={() => handleUpdateRole(member.id, editingRole)} style={{ background: 'rgba(16,185,129,0.15)', border: 'none', borderRadius: '4px', padding: '4px 8px', color: '#10b981', cursor: 'pointer', fontSize: '0.72rem' }}>Save</button>
+                            <button onClick={() => setEditingMemberId(null)} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: '4px', padding: '4px 8px', color: '#ef4444', cursor: 'pointer', fontSize: '0.72rem' }}>✕</button>
+                          </div>
+                        ) : (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '5px',
+                            padding: '3px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: '600',
+                            background: `${roleColors[member.role] || '#6366f1'}18`,
+                            color: roleColors[member.role] || '#6366f1',
+                            border: `1px solid ${roleColors[member.role] || '#6366f1'}30`
+                          }}>
+                            {roleIcons[member.role]} {member.role}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          padding: '3px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: '600',
+                          background: member.status === 'active' ? 'rgba(16,185,129,0.12)' : member.status === 'invited' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)',
+                          color: member.status === 'active' ? '#10b981' : member.status === 'invited' ? '#f59e0b' : '#ef4444'
+                        }}>
+                          {member.status === 'active' ? '🟢' : member.status === 'invited' ? '📧' : '🔴'}
+                          {member.status === 'active' ? 'Active' : member.status === 'invited' ? 'Invited' : 'Suspended'}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {member.lastLogin ? new Date(member.lastLogin).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <button
+                            onClick={() => { setEditingMemberId(member.id); setEditingRole(member.role); }}
+                            title="Edit Role"
+                            style={{ background: 'rgba(99,102,241,0.12)', border: 'none', borderRadius: '6px', padding: '5px 8px', color: '#6366f1', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem' }}
+                          >
+                            <Edit3 size={12} /> Role
+                          </button>
+                          <button
+                            onClick={() => handleToggleMemberStatus(member.id)}
+                            title={member.status === 'active' ? 'Suspend' : 'Activate'}
+                            style={{
+                              background: member.status === 'active' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+                              border: 'none', borderRadius: '6px', padding: '5px 8px',
+                              color: member.status === 'active' ? '#ef4444' : '#10b981',
+                              cursor: 'pointer', fontSize: '0.72rem'
+                            }}
+                          >
+                            {member.status === 'active' ? 'Suspend' : 'Activate'}
+                          </button>
+                          {member.role !== 'Super Admin' && (
+                            <button
+                              onClick={() => handleRemoveMember(member.id)}
+                              title="Remove Member"
+                              style={{ background: 'rgba(239,68,68,0.08)', border: 'none', borderRadius: '6px', padding: '5px 8px', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Role Permissions Reference */}
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={16} color="var(--primary-color)" /> Role Permissions Reference
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+              {[
+                { role: 'Super Admin', color: '#ef4444', icon: '👑', perms: ['Full platform access', 'Manage all tenants', 'Change any plan', 'Add/remove admin members', 'Configure LLM & API keys', 'Access billing & financials'] },
+                { role: 'Operations Manager', color: '#6366f1', icon: '⚙️', perms: ['View all tenants', 'Manage tenant status', 'View billing reports', 'Access marketplace', 'View infrastructure status'] },
+                { role: 'Billing Manager', color: '#f59e0b', icon: '💳', perms: ['View billing & invoices', 'Change tenant plans', 'Process refunds', 'Configure payment gateways', 'View MRR reports'] },
+                { role: 'Platform Support Agent', color: '#10b981', icon: '🎧', perms: ['View tenant accounts', 'Respond to support tickets', 'Access platform support bot', 'View infrastructure health'] }
+              ].map((roleInfo, i) => (
+                <div key={i} style={{ background: `${roleInfo.color}08`, border: `1px solid ${roleInfo.color}20`, borderRadius: '10px', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>{roleInfo.icon}</span>
+                    <span style={{ fontWeight: '700', fontSize: '0.85rem', color: roleInfo.color }}>{roleInfo.role}</span>
+                  </div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {roleInfo.perms.map((perm, j) => (
+                      <li key={j} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        <CheckCircle2 size={12} style={{ color: roleInfo.color, flexShrink: 0 }} />
+                        {perm}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

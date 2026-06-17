@@ -373,7 +373,7 @@ function App() {
 
   // Adjust active tabs when switching between Roles
   useEffect(() => {
-    const superadminTabs = ['tenants', 'plans', 'infrastructure', 'settings', 'marketplace', 'support_bot'];
+    const superadminTabs = ['tenants', 'plans', 'infrastructure', 'settings', 'marketplace', 'support_bot', 'admin_team'];
     const tenantTabs = [
       'dashboard', 'brain', 'employees', 'inbox', 'crm', 
       'scheduler', 'workflow', 'voice', 'knowledge', 'widget', 'whitelabel', 'team', 'integrations', 'crew', 'billing',
@@ -846,12 +846,30 @@ function App() {
 
   // Super Admin: Toggle Client Account Status
   const handleToggleTenantStatus = (tenantId: string) => {
-    setTenants(prev => prev.map(t => {
+    let newStatus: 'active' | 'suspended' = 'active';
+    const updatedTenants = tenants.map(t => {
       if (t.id === tenantId) {
-        return { ...t, status: t.status === 'active' ? 'suspended' : 'active' };
+        newStatus = t.status === 'active' ? 'suspended' : 'active';
+        return { ...t, status: newStatus };
       }
       return t;
-    }));
+    });
+    setTenants(updatedTenants);
+    apiFetch(`/api/admin/tenants/${tenantId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    }).catch(err => console.warn('Could not sync tenant status to backend:', err));
+  };
+
+  // Super Admin: Change Tenant Plan
+  const handleChangeTenantPlan = (tenantId: string, newPlan: string) => {
+    setTenants(prev => prev.map(t => t.id === tenantId ? { ...t, plan: newPlan as any } : t));
+    apiFetch(`/api/admin/tenants/${tenantId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: newPlan })
+    }).catch(err => console.warn('Could not sync tenant plan to backend:', err));
   };
 
   // Super Admin: Marketplace template installer
@@ -1443,6 +1461,7 @@ function App() {
               setActiveTab={setActiveTab}
               tenants={tenants}
               onToggleTenantStatus={handleToggleTenantStatus}
+              onChangeTenantPlan={handleChangeTenantPlan}
               onInstallTemplate={handleInstallTemplate}
               onVisitTenant={handleVisitTenant}
               platformSupportBot={platformSupportBot}
